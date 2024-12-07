@@ -221,9 +221,8 @@ export default function NewBoughtout() {
             <Grid2 size={2} style={{ paddingLeft: 0, paddingRight: 0 }}>
               <div style={{ width: '180px' }}></div>
             </Grid2>
-          </Grid2>
-        </form>
-        {boughoutSupplier.length > 0 &&
+
+            {boughoutSupplier.length > 0 &&
           <CTable small striped style={{ marginTop: '5px' }}>
             <CTableHead color='danger'>
               <CTableRow>
@@ -258,7 +257,9 @@ export default function NewBoughtout() {
               })}
             </CTableBody>
           </CTable>}
-        <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" sx={{ mt: 1 }}
+          </Grid2>
+
+          <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" sx={{ mt: 1 }}
           onClick={() => {
             setShowSupplierDialog(true)
           }}>
@@ -305,7 +306,7 @@ export default function NewBoughtout() {
           </Button>
         </Card>
 
-        <Grid2 size={12} container justifyContent={'flex-end'} sx={{ mt: 2 }}>
+        <Grid2 container justifyContent={'flex-end'} sx={{ mt: 2 }}>
           <Grid2 size={2}>
             <Button variant='outlined' color="primary" fullWidth onClick={(e: any) => {
               navigate(-1)
@@ -321,6 +322,9 @@ export default function NewBoughtout() {
             </Button>
           </Grid2>
         </Grid2>
+        </form>
+        
+       
       </Box>
 
       {/* Supplier Dialog */}

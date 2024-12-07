@@ -94,7 +94,13 @@ export default function Suppliers() {
                     <TableCell>{row.supplier_name}</TableCell>
                     <TableCell>{row.supplier_mobile_no1}</TableCell>
                     <TableCell>{`${row.supplier_address1}\n${row.supplier_address2}\n${row.supplier_city}\n${row.supplier_state}\n${row.supplier_pincode}`}</TableCell>
-                    <TableCell><MdOutlineEdit /></TableCell>
+                    <TableCell><MdOutlineEdit style={{cursor:'pointer'}} onClick={()=>{
+                      navigate('/suppliers/newSupplier', {
+                        state: {
+                          supplier_id: row.id
+                        }
+                      })
+                    }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                       <TableCell colSpan={4} align='center'>No Data</TableCell>

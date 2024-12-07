@@ -101,7 +101,13 @@ export default function Customers() {
                     <TableCell>{row.is_machine ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
                     <TableCell>{row.is_spares ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
                     <TableCell>{row.is_spm ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
-                    <TableCell><MdOutlineEdit /></TableCell>
+                    <TableCell><MdOutlineEdit style={{cursor:'pointer'}} onClick={()=>{
+                      navigate('/customers/newCustomer', {
+                        state: {
+                          customer_id: row.id
+                        }
+                      })
+                    }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                       <TableCell colSpan={7} align='center'>No Data</TableCell>

@@ -100,7 +100,13 @@ export default function Vendors() {
                     <TableCell>{row.process_list.map((process:any)=>{
                       return(<Chip color={'primary'} key={process.id} sx={{ml:1}} label={process.process_name} /> )
                     })}</TableCell>
-                    <TableCell><MdOutlineEdit /></TableCell>
+                    <TableCell><MdOutlineEdit style={{cursor:'pointer'}} onClick={()=>{
+                      navigate("/vendors/newVendor", {
+                        state: {
+                          vendor_id: row.id
+                        }
+                      })
+                    }}/></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                       <TableCell colSpan={5} align='center'>No Data</TableCell>
