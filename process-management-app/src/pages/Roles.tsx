@@ -128,7 +128,7 @@ export default function Roles() {
                   <TableRowStyled key={row.id}>
                     <TableCell>{row.role_code}</TableCell>
                     <TableCell>{row.role_name}</TableCell>
-                    <TableCell>{row.screens.join(",")}</TableCell>
+                    <TableCell>{row.screens.map((sc:any) => sc.screen).join(" , ")}</TableCell>
                     <TableCell><MdOutlineEdit /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>

@@ -136,10 +136,10 @@ export default function OrderDetail() {
                                                 borderRadius: '4px', cursor: 'pointer'
                                             }} onClick={() => {
                                                 setSelectedPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
-                                                const processVendors = orderDetail.parts?.orderDetail?.partVendors.filter((pv: any) =>
+                                                const processVendors = orderDetail?.parts?.partVendors?.filter((pv: any) =>
                                                     pv.part.id == row.part_id && pv.process.id == row.process_id
                                                 )
-                                                if (processVendors.length > 0) {
+                                                if (processVendors?.length > 0) {
                                                     setVendorList(processVendors[0].part_process_vendor_list)
                                                     setEditDialog(true)
                                                 }
@@ -163,10 +163,10 @@ export default function OrderDetail() {
                                             if (row.status.includes('Progress')) {
                                                 // setDeliveredDialog(true)
                                                 setCompleteDialog(true)
-                                                setCompleteData({id: row.id})
+                                                setCompleteData({id: row.id, delivery_date: row.delivery_date, reminder_date: row.reminder_date})
                                                 // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
                                             } else if (row.status.toLowerCase() == 'move to vendor') {
-                                                const processVendors = orderDetail.parts?.orderDetail?.partVendors.filter((pv: any) =>
+                                                const processVendors = orderDetail.parts?.partVendors.filter((pv: any) =>
                                                     pv.part.id == row.part_id && pv.process.id == row.process_id
                                                 )
                                                 if (processVendors.length > 0) {
@@ -192,8 +192,11 @@ export default function OrderDetail() {
                                             if (row.vendor_id) {
                                                 dispatch(fetchVendorAttachment({ vendor_id: row.vendor_id, part_id: row.part_id })).unwrap().then((res: any) => {
                                                     if (res.attachments?.length > 0) {
-                                                        const link = res.attachments.map((att: any) => `https://localhost:3000/machine/loadAttachment/${att.file_name}`).join(',')
-                                                        window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${link}`, '_blank')?.focus()
+                                                        const link = res.attachments.map((att: any) => `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`).join(',')
+                                                        const text = `Hi ${res.vendor.vendor_name}
+                                                        Accept the order using following link ${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row.id} 
+                                                        Get the drawings from following link ${link}`
+                                                        window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${text}`, '_blank')?.focus()
                                                         console.log(res)
                                                     } else {
                                                         DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)

@@ -11,11 +11,13 @@ import {
   Card,
   CardContent,
   Divider,
+  CircularProgress,
+  Dialog,
 } from "@mui/material";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
-import { useAppDispatch } from "../hooks/redux-hooks";
+import { useAppDispatch, useAppSelector } from "../hooks/redux-hooks";
 import { login } from "../slices/authSlice";
 import ceLogo from "../assets/image/ce_logo.png"
 
@@ -23,6 +25,9 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useAppDispatch()
+  const { status } = useAppSelector(
+          (state) => state.auth
+  );
 
   const handleLogin = async () => {
       await dispatch(login({
@@ -99,6 +104,11 @@ const Login = () => {
                 </Box>
             </CardContent>
         </Card>
+
+        <Dialog maxWidth={'md'}
+                open={status == "loading"}>
+                  <CircularProgress color='success' sx={{m:3}} />
+        </Dialog>
       </Container>
     </>
   );

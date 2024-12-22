@@ -1,20 +1,25 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Card, CardContent, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import moment from 'moment';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { nav_dashboard, TableRowStyled } from '../constants';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
-import { fetchPendingDeliveryParts, fetchPendingPaymentBOs, updateBoughtoutPayment } from '../slices/dashboardSlice';
+import { fetchDashboardDetail, fetchDeliveryDateList, fetchPartsInStores, fetchPendingDeliveryParts, fetchPendingPaymentBOs, fetchReminderDateList, fetchReminderQuotations, updateBoughtoutPayment } from '../slices/dashboardSlice';
 import SidebarNav from './SidebarNav';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
+import { AdminRole, getPermission, getRole, StoreRole, SuperAdminRole } from '../utils/Permissions';
+import { SiApplearcade } from 'react-icons/si';
+import { GrInProgress } from "react-icons/gr";
+import { FaUsersLine } from 'react-icons/fa6';
+import { HiServer } from "react-icons/hi";
 
 const Dashboard = () => {
     const dispatch = useAppDispatch()
     const { enqueueSnackbar } = useSnackbar()
 
-    const { pendingPayments, pendingDelivery } = useAppSelector(
+    const { pendingPayments, pendingDelivery, dashboardDetail } = useAppSelector(
         (state) => state.dashboard
     );
 
@@ -26,15 +31,58 @@ const Dashboard = () => {
     const [updateDeliveryDialog, setUpdateDeliveryDialog] = useState(false)
     const [pendingDeliveryList, setPendingDeliveryList] = useState<any[]>()
 
-    useEffect(() => {
-        dispatch(fetchPendingPaymentBOs()).unwrap().then((res: any) => {
-            setPendingPaymentsList(res?.list)
-        })
+    const [reminderDateList, setReminderDateList] = useState<any[]>()
+    const [deliveryDateList, setDeliveryDateList] = useState<any[]>()
+    const [partsInStoresList, setPartsInStoresList] = useState<any[]>()
 
-        dispatch(fetchPendingDeliveryParts()).unwrap().then((res: any) => {
-            setPendingDeliveryList(res)
-        })
-    }, [dispatch])
+    const [currentRole, setCurrentRole] = useState()
+
+    const [quotationReminderList, setQuotationReminderList] = useState<any[]>()
+
+    useEffect(() => {
+        setCurrentRole(getRole())
+    }, [])
+
+    useEffect(() => {
+        if (currentRole === SuperAdminRole || currentRole === AdminRole) {
+            dispatch(fetchPendingPaymentBOs()).unwrap().then((res: any) => {
+                setPendingPaymentsList(res?.list)
+            })
+            dispatch(fetchPartsInStores()).unwrap().then((res: any) => {
+                setPartsInStoresList(res?.list)
+            })
+        }
+
+        if (currentRole == SuperAdminRole || currentRole == StoreRole) {
+            dispatch(fetchPendingDeliveryParts()).unwrap().then((res: any) => {
+                setPendingDeliveryList(res)
+            })
+        }
+
+        if (currentRole == SuperAdminRole) {
+            dispatch(fetchDashboardDetail())
+
+            dispatch(fetchReminderDateList({
+                from_date: moment(new Date()).format('DD-MM-YYYY'),
+                to_date: moment(new Date()).format('DD-MM-YYYY')
+            })).unwrap().then((res: any) => {
+                setReminderDateList(res)
+            })
+
+            dispatch(fetchDeliveryDateList({
+                from_date: moment(new Date()).format('DD-MM-YYYY'),
+                to_date: moment(new Date()).format('DD-MM-YYYY')
+            })).unwrap().then((res: any) => {
+                setDeliveryDateList(res)
+            })
+
+            dispatch(fetchReminderQuotations({
+                date: moment(new Date()).format('DD-MM-YYYY')
+            })).unwrap().then((res: any) => {
+                setQuotationReminderList(res.list)
+            })
+        }
+    }, [currentRole])
 
     return (
         <>
@@ -43,9 +91,82 @@ const Dashboard = () => {
 
                 <Grid2 container sx={{ mt: 12, ml: 3 }}>
 
+                    {currentRole == SuperAdminRole && <Grid2 size={2}>
+                        <Card sx={{ width: '100%', height: '140px', backgroundColor: '#0D92F4', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', flexDirection:'column', width: '100%', height: '100%' }}>
+                                <Typography variant='h6' color='white' margin={2}>Machines</Typography>
+                                <div style={{display: 'flex',marginTop: 'auto'}}>
+                                    <Typography variant='h5' color='white' margin={2}
+                                        sx={{marginTop:'auto', marginRight:'auto'}}>{dashboardDetail.machines || 0}</Typography>
+                                    <div style={{
+                                        width: '50px', height: '50px', borderRadius: '50%', display: 'flex',
+                                        backgroundColor: 'white', marginLeft: 'auto', marginTop: 'auto',
+                                        marginRight: '10px', marginBottom: '10px', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <SiApplearcade color='#0D92F4' style={{ width: '30px', height: '30px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </Grid2>}
+                    {currentRole == SuperAdminRole && <Grid2 size={2} sx={{ ml: 2 }}>
+                    <Card sx={{ width: '100%', height: '140px', backgroundColor: '#F72C5B', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', flexDirection:'column', width: '100%', height: '100%' }}>
+                                <Typography variant='h6' color='white' margin={2}>Customers</Typography>
+                                <div style={{display: 'flex',marginTop: 'auto'}}>
+                                    <Typography variant='h5' color='white' margin={2}
+                                        sx={{marginTop:'auto', marginRight:'auto'}}>{dashboardDetail.customers || 0}</Typography>
+                                    <div style={{
+                                        width: '50px', height: '50px', borderRadius: '50%', display: 'flex',
+                                        backgroundColor: 'white', marginLeft: 'auto', marginTop: 'auto',
+                                        marginRight: '10px', marginBottom: '10px', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <FaUsersLine color='#F72C5B' style={{ width: '30px', height: '30px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </Grid2>}
+                    {currentRole == SuperAdminRole && <Grid2 size={2} sx={{ ml: 2 }}>
+                    <Card sx={{ width: '100%', height: '140px', backgroundColor: '#118B50', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', flexDirection:'column', width: '100%', height: '100%' }}>
+                                <Typography variant='h6' color='white' margin={2}>Orders Pending</Typography>
+                                <div style={{display: 'flex',marginTop: 'auto'}}>
+                                    <Typography variant='h5' color='white' margin={2}
+                                        sx={{marginTop:'auto', marginRight:'auto'}}>{dashboardDetail.customers || 0}</Typography>
+                                    <div style={{
+                                        width: '50px', height: '50px', borderRadius: '50%', display: 'flex',
+                                        backgroundColor: 'white', marginLeft: 'auto', marginTop: 'auto',
+                                        marginRight: '10px', marginBottom: '10px', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <GrInProgress color='#118B50' style={{ width: '30px', height: '30px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </Grid2>}
+                    {currentRole == SuperAdminRole && <Grid2 size={2} sx={{ ml: 2 }}>
+                    <Card sx={{ width: '100%', height: '140px', backgroundColor: '#640D5F', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', flexDirection:'column', width: '100%', height: '100%' }}>
+                                <Typography variant='h6' color='white' margin={2}>Vendors</Typography>
+                                <div style={{display: 'flex',marginTop: 'auto'}}>
+                                    <Typography variant='h5' color='white' margin={2}
+                                        sx={{marginTop:'auto', marginRight:'auto'}}>{dashboardDetail.customers || 0}</Typography>
+                                    <div style={{
+                                        width: '50px', height: '50px', borderRadius: '50%', display: 'flex',
+                                        backgroundColor: 'white', marginLeft: 'auto', marginTop: 'auto',
+                                        marginRight: '10px', marginBottom: '10px', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        <HiServer color='#640D5F' style={{ width: '30px', height: '30px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </Grid2>}
+
                     {/* For Admin Role */}
-                    <Grid2 size={12}><h5>Pending Payments for Suppliers</h5></Grid2>
-                    <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
+                    {(currentRole == SuperAdminRole || currentRole == AdminRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Pending Payments for Suppliers</h5></Grid2>}
+                    {(currentRole == SuperAdminRole || currentRole == AdminRole) && <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
                             <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
                                 <TableHead>
@@ -97,10 +218,10 @@ const Dashboard = () => {
                                 </TableBody>
                             </Table>
                         </TableContainer>
-                    </Grid2>
+                    </Grid2>}
 
                     {/* For Store Role */}
-                    <Grid2 size={12} sx={{mt:3}}><h5>Pending Delivery Parts</h5></Grid2>
+                    {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Pending Delivery Parts</h5></Grid2>}
                     <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
                             <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
@@ -146,9 +267,138 @@ const Dashboard = () => {
                             </Table>
                         </TableContainer>
                     </Grid2>
+
+                    {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Parts In Stores</h5></Grid2>}
+                    {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
+                        <TableContainer component={Paper}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>S.No</TableCell>
+                                        <TableCell>Part Name</TableCell>
+                                        <TableCell>Available Qty</TableCell>
+                                        <TableCell>Minimum Stock Qty</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {partsInStoresList && partsInStoresList?.length > 0 ? partsInStoresList?.map((row: any, index: number) => (
+                                        <TableRowStyled key={row.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{row.part_name}</TableCell>
+                                            <TableCell>{row.available_aty}</TableCell>
+                                            <TableCell>{row.minimum_stock_qty}</TableCell>
+                                        </TableRowStyled>
+                                    )) : <TableRow key={0}>
+                                        <TableCell colSpan={9} align='center'>No Data</TableCell>
+                                    </TableRow>}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid2>}
+
+                    {/* For Reminder list */}
+                    {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 3, mr: 3 }}><h5>Reminder for Parts</h5></Grid2>}
+                    {currentRole == SuperAdminRole && <Grid2 size={5} sx={{ mt: 3 }}><h5>Parts Delivery</h5></Grid2>}
+
+                    {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 1, mr: 3 }}>
+                        <TableContainer component={Paper}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>S.No</TableCell>
+                                        <TableCell>Machine Name</TableCell>
+                                        <TableCell>Part Name</TableCell>
+                                        <TableCell>Qty</TableCell>
+                                        <TableCell>Vendor</TableCell>
+                                        <TableCell>Mobile No</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {reminderDateList && reminderDateList?.length > 0 ? reminderDateList?.map((row: any, index: number) => (
+                                        <TableRowStyled key={row.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{row.o_machine_name}</TableCell>
+                                            <TableCell>{row.pm_part_name}</TableCell>
+                                            <TableCell>{row.pm_order_qty}</TableCell>
+                                            <TableCell>{row.pm_vendor_name}</TableCell>
+                                            <TableCell>{row.v_vendor_mobile_no1}</TableCell>
+                                        </TableRowStyled>
+                                    )) : <TableRow key={0}>
+                                        <TableCell colSpan={9} align='center'>No Data</TableCell>
+                                    </TableRow>}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid2>}
+                    {/* For delivery list */}
+                    {currentRole == SuperAdminRole && <Grid2 size={5} sx={{ mt: 1 }}>
+                        <TableContainer component={Paper}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>S.No</TableCell>
+                                        <TableCell>Machine Name</TableCell>
+                                        <TableCell>Part Name</TableCell>
+                                        <TableCell>Qty</TableCell>
+                                        <TableCell>Vendor</TableCell>
+                                        <TableCell>Mobile No</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {deliveryDateList && deliveryDateList?.length > 0 ? deliveryDateList?.map((row: any, index: number) => (
+                                        <TableRowStyled key={row.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{row.o_machine_name}</TableCell>
+                                            <TableCell>{row.pm_part_name}</TableCell>
+                                            <TableCell>{row.pm_order_qty}</TableCell>
+                                            <TableCell>{row.pm_vendor_name}</TableCell>
+                                            <TableCell>{row.v_vendor_mobile_no1}</TableCell>
+                                        </TableRowStyled>
+                                    )) : <TableRow key={0}>
+                                        <TableCell colSpan={9} align='center'>No Data</TableCell>
+                                    </TableRow>}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid2>}
+
+                    {/* For quotation reminder list */}
+                    {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 3 }}><h5>Quotation Reminder</h5></Grid2>}
+                    {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 1, mr: 3 }}>
+                        <TableContainer component={Paper}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>S.No</TableCell>
+                                        <TableCell>Customer Name</TableCell>
+                                        <TableCell>Machine Name</TableCell>
+                                        <TableCell>Employee</TableCell>
+                                        <TableCell>Cost</TableCell>
+                                        <TableCell>Qty</TableCell>
+                                        <TableCell>Status</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {quotationReminderList && quotationReminderList?.length > 0 ? quotationReminderList?.map((row: any, index: number) => (
+                                        <TableRowStyled key={row.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{row.customer.customer_name}</TableCell>
+                                            <TableCell>{row.machine.machine_name}</TableCell>
+                                            <TableCell>{row.user.emp_name}</TableCell>
+                                            <TableCell>{row.initial_cost}</TableCell>
+                                            <TableCell>{row.qty}</TableCell>
+                                            <TableCell>{row.status}</TableCell>
+                                        </TableRowStyled>
+                                    )) : <TableRow key={0}>
+                                        <TableCell colSpan={9} align='center'>No Data</TableCell>
+                                    </TableRow>}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid2>}
                 </Grid2>
 
-                
+
                 {/* Dialog to update boughtout payment */}
                 <Dialog
                     PaperProps={{
@@ -227,8 +477,8 @@ const Dashboard = () => {
                     </DialogActions>
                 </Dialog>
 
-                 {/* Dialog to deliver items */}
-                 <Dialog
+                {/* Dialog to deliver items */}
+                <Dialog
                     PaperProps={{
                         sx: {
                             width: "100%",
