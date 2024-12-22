@@ -17,13 +17,15 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { HiTruck } from "react-icons/hi";
 import { HiServer } from "react-icons/hi";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LuBoxes } from "react-icons/lu";
 import { AiFillDashboard } from "react-icons/ai";
 import { FaUsers } from "react-icons/fa6";
 import { AiFillMerge } from "react-icons/ai";
 import { RiLogoutCircleLine } from "react-icons/ri";
+import { FaStoreAlt } from "react-icons/fa";
 import preview from "../assets/image/preview.jpg"
+import ceLogo from "../assets/image/ce_logo.png"
 import { useNavigate } from 'react-router-dom';
 import { FaBuffer } from "react-icons/fa";
 import { FiCpu } from "react-icons/fi";
@@ -35,6 +37,9 @@ import { GiCircuitry } from "react-icons/gi";
 import { SiApplearcade } from "react-icons/si";
 import { VscTypeHierarchySub } from "react-icons/vsc";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
+import { getPermission, getPermissionScreens } from '../utils/Permissions';
+import { logout } from '../slices/authSlice';
+import { useAppDispatch } from '../hooks/redux-hooks';
 
 const drawerWidth = 240;
 
@@ -122,9 +127,73 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 export default function SidebarNav(props: {currentPage?: string}) {
   const theme = useTheme();
+  const dispatch = useAppDispatch()
   const [open, setOpen] = useState(false)
   const [menuData, setMenuData] = useState(props.currentPage ? props.currentPage : 'Dashboard')
   const navigate = useNavigate()
+  const [screens, setScreens] = useState<string[]>()
+  const [homeScreens, setHomeScreens] = useState<any[]>()
+  const [vendorScreens, setVendorScreens] = useState<any[]>()
+  const [partScreens, setPartScreens] = useState<any[]>()
+  const [orderScreens, setOrderScreens] = useState<any[]>()
+  const [menuIcons, setMenuIcons] = useState([
+    {
+      name: 'dashboard',
+      icon: <AiFillDashboard />
+    },
+    {
+      name: 'roles',
+      icon: <AiFillMerge />
+    },
+    {
+      name: 'users',
+      icon: <FaUsers />
+    },
+    {
+      name: 'stores',
+      icon: <FaStoreAlt  />
+    },
+    {
+      name: 'vendor',
+      icon: <HiServer />
+    },
+    {
+      name: 'supplier',
+      icon: <HiTruck />
+    },
+    {
+      name: 'customer',
+      icon: <FaUsersLine />
+    },
+    {
+      name: 'process',
+      icon: <FaBuffer  />
+    },
+    {
+      name: 'parts',
+      icon: <FiCpu />
+    },
+    {
+      name: 'boughtouts',
+      icon: <PiHandArrowDownBold />
+    },
+    {
+      name: 'subAssembly',
+      icon: <VscTypeHierarchySub />
+    },
+    {
+      name: 'machines',
+      icon: <SiApplearcade />
+    },
+    {
+      name: 'quotations',
+      icon: <HiOutlineClipboardDocumentList />
+    },
+    {
+      name: 'orders',
+      icon: <LuBoxes />
+    }
+  ])
 
   const [homeExpand, setHomeExpand] = useState(false)
   const handleDrawerOpen = () => {
@@ -135,6 +204,17 @@ export default function SidebarNav(props: {currentPage?: string}) {
     setOpen(false);
   };
 
+  useEffect(()=>{
+    if(!screens || screens?.length == 0){
+      const permission = getPermission()
+      if(permission?.length > 0){
+        setHomeScreens(permission.filter((p:any) => p.type == "home"))
+        setVendorScreens(permission.filter((p:any) => p.type == "vendor"))
+        setPartScreens(permission.filter((p:any) => p.type == "part"))
+        setOrderScreens(permission.filter((p:any) => p.type == "order"))
+      }
+    }
+  },[])
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -150,8 +230,8 @@ export default function SidebarNav(props: {currentPage?: string}) {
           </IconButton>
           
           <Typography variant="h6" noWrap component="div">
-            <img src={preview} alt="" width={"50px"} height={"50px"} />
-            {menuData}
+            <img src={ceLogo} alt="" width={"50px"} height={"50px"} />
+            {getPermission()?.length > 0 ? getPermission().find((per:any)=> per.screen == menuData).name : ""}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -163,19 +243,289 @@ export default function SidebarNav(props: {currentPage?: string}) {
         </DrawerHeader>
         <Divider />
         
-        {/* <ListItem key={'Home'} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              setHomeExpand(!homeExpand)     
+          <List>
+            {homeScreens?.map((hs:any) => (
+              <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{ 
+                setMenuData(hs.screen) 
+                if(hs.screen == "dashboard") {
+                  navigate("/")
+                }else if(hs.screen == "roles") {
+                  navigate("/roles")
+                }else if(hs.screen == "users") {
+                  navigate("/users")
+                }
+                }} >
+                    <ListItemButton
+                      sx={[
+                        { height: 40, minHeight: 28, px: 2.5, backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                          ":hover":{ backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground } },
+                        open ? { justifyContent: 'initial', } : { justifyContent: 'center', }]}>
+                      <ListItemIcon
+                        sx={[
+                          { minWidth: 0, justifyContent: 'center', backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                            color: menuData == hs.screen ? 'white' : navIconColor,":hover":{ backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground } },
+                          open ? { mr: 3, } : { mr: 'auto', },]} > 
+                          {menuIcons.find((mi:any) => mi.name == hs.screen)?.icon}
+                        </ListItemIcon>
+                      <ListItemText
+                        primary={hs.name}
+                        sx={[{color: menuData == hs.screen ? 'white' : navTextColor},
+                          open ? {  opacity: 1 } : { opacity: 0 } ]} />
+                    </ListItemButton>
+              </ListItem>
+            ))}
+          
+          </List>
+        {/* </Collapse> */}
+          
+        <Divider />
+        
+        <List>
+          {vendorScreens?.map((hs:any) => (
+            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+              setMenuData(hs.screen)
+              if(hs.screen == "vendor") {
+                navigate("/vendors")
+              }else if(hs.screen == "supplier") {
+                navigate("/suppliers")
+              }else if(hs.screen == "customer"){
+                navigate("/customers")
+              }
             }} >
-              
+              {/* <Tooltip title={text}> */}
                 <ListItemButton
                   sx={[
                     {
                       height: 40,
                       minHeight: 28,
                       px: 2.5,
-                      backgroundColor: 'white',
+                      backgroundColor: menuData == hs.screen ? primaryColor : 'white',
                       ":hover":{
-                        backgroundColor: navHoverBackground,
+                        backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                      }
+                    },
+                    open
+                      ? {
+                          justifyContent: 'initial',
+                        }
+                      : {
+                          justifyContent: 'center',
+                        },
+                  ]}
+                >
+                  <ListItemIcon
+                    sx={[
+                      {
+                        minWidth: 0,
+                        justifyContent: 'center',
+                        backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                        color: menuData == hs.screen ? 'white' : navIconColor,
+                        ":hover":{
+                          backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                        }
+                      },
+                      open
+                        ? {
+                            mr: 3,
+                          }
+                        : {
+                            mr: 'auto',
+                          },
+                    ]}
+                  >
+                    {menuIcons.find((mi:any) => mi.name == hs.screen)?.icon}
+                  </ListItemIcon>
+
+                  <ListItemText
+                    primary={hs.name}
+                    sx={[{color: menuData == hs.screen ? 'white' : navTextColor},
+                      open
+                        ? {
+                            opacity: 1,
+                          }
+                        : {
+                            opacity: 0,
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              {/* </Tooltip> */}
+            </ListItem>
+          ))}
+        </List>
+
+        <Divider />
+
+        <List>
+          {partScreens?.map((hs:any) => (
+            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+              setMenuData(hs.screen)
+                if(hs.screen == "process"){
+                    navigate("/process")
+                }else if(hs.screen == "parts"){
+                    navigate("/parts")
+                }else if(hs.screen == "boughtouts"){
+                    navigate("/boughtout")
+                }else if(hs.screen == 'subAssembly'){
+                  navigate("/subAssembly")
+                }else if(hs.screen == 'machines'){
+                    navigate("/machines")
+                }
+            }} >
+              {/* <Tooltip title={text}> */}
+                <ListItemButton
+                  sx={[
+                    {
+                      height: 40,
+                      minHeight: 28,
+                      px: 2.5,
+                      backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                      ":hover":{
+                        backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                      }
+                    },
+                    open
+                      ? {
+                          justifyContent: 'initial',
+                        }
+                      : {
+                          justifyContent: 'center',
+                        },
+                  ]}
+                >
+                  <ListItemIcon
+                    sx={[
+                      {
+                        minWidth: 0,
+                        justifyContent: 'center',
+                        backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                        color: menuData == hs.screen ? 'white' : navIconColor,
+                        ":hover":{
+                          backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                        }
+                      },
+                      open
+                        ? {
+                            mr: 3,
+                          }
+                        : {
+                            mr: 'auto',
+                          },
+                    ]}
+                  >
+                    {menuIcons.find((mi:any) => mi.name == hs.screen)?.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={hs.name}
+                    sx={[{color: menuData == hs.screen ? 'white' : navTextColor},
+                      open
+                        ? {
+                            opacity: 1,
+                          }
+                        : {
+                            opacity: 0,
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              {/* </Tooltip> */}
+            </ListItem>
+          ))}
+        </List>
+        
+        <Divider />
+        
+        <List>
+          {orderScreens?.map((hs:any) => (
+            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+              setMenuData(hs.screen)
+                if(hs.screen == "quotations"){
+                  navigate('/quotations')
+                }else if(hs.screen == "orders"){
+                    navigate("/orders")
+                }
+              
+            }} >
+              {/* <Tooltip title={text}> */}
+                <ListItemButton
+                  sx={[
+                    {
+                      height: 40,
+                      minHeight: 28,
+                      px: 2.5,
+                      backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                      ":hover":{
+                        backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                      }
+                    },
+                    open
+                      ? {
+                          justifyContent: 'initial',
+                        }
+                      : {
+                          justifyContent: 'center',
+                        },
+                  ]}
+                >
+                  <ListItemIcon
+                    sx={[
+                      {
+                        minWidth: 0,
+                        justifyContent: 'center',
+                        backgroundColor: menuData == hs.screen ? primaryColor : 'white',
+                        color: menuData == hs.screen ? 'white' : navIconColor,
+                        ":hover":{
+                          backgroundColor: menuData == hs.screen ? primaryColor : navHoverBackground,
+                        }
+                      },
+                      open
+                        ? {
+                            mr: 3,
+                          }
+                        : {
+                            mr: 'auto',
+                          },
+                    ]}
+                  >
+                    {menuIcons.find((mi:any) => mi.name == hs.screen)?.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={hs.name}
+                    sx={[{color: menuData == hs.screen ? 'white' : navTextColor},
+                      open
+                        ? {
+                            opacity: 1,
+                          }
+                        : {
+                            opacity: 0,
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              {/* </Tooltip> */}
+            </ListItem>
+          ))}
+        </List>
+        
+        <Divider />
+        
+        <List>
+          {['Logout'].map((text, index) => (
+            <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
+              localStorage.clear()
+              dispatch(logout())
+              navigate("/login")
+            }} >
+              {/* <Tooltip title={text}> */}
+                <ListItemButton
+                  sx={[
+                    {
+                      height: 40,
+                      minHeight: 28,
+                      px: 2.5,
+                      backgroundColor:'white',
+                      ":hover":{
+                        backgroundColor: menuData == text ? primaryColor : navHoverBackground,
                       }
                     },
                     open
@@ -194,369 +544,6 @@ export default function SidebarNav(props: {currentPage?: string}) {
                         justifyContent: 'center',
                         backgroundColor: 'white',
                         color: navIconColor,
-                        ":hover":{
-                          backgroundColor: navHoverBackground,
-                        }
-                      },
-                      open
-                        ? {
-                            mr: 3,
-                          }
-                        : {
-                            mr: 'auto',
-                          },
-                    ]}
-                  >
-                    <FaUsers />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={"Home"}
-                    sx={[{color: navTextColor},
-                      open
-                        ? {
-                            opacity: 1,
-                          }
-                        : {
-                            opacity: 0,
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-        </ListItem> 
-
-        <Collapse in={homeExpand} timeout='auto' unmountOnExit>*/}
-          <List>
-          {['Dashboard', 'Users', 'Roles'].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              setMenuData(text)
-                if(text == "Dashboard"){
-                    navigate("/")
-                }else if(text == "Users"){
-                    navigate("/users")
-                }else if(text == "Roles") {
-                    navigate("/roles")
-                }
-            }} >
-              {/* <Tooltip title={text}> */}
-                <ListItemButton
-                  sx={[
-                    {
-                      height: 40,
-                      minHeight: 28,
-                      px: 2.5,
-                      backgroundColor: menuData == text ? primaryColor : 'white',
-                      ":hover":{
-                        backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                      }
-                    },
-                    open
-                      ? {
-                          justifyContent: 'initial',
-                        }
-                      : {
-                          justifyContent: 'center',
-                        },
-                  ]}
-                >
-                  <ListItemIcon
-                    sx={[
-                      {
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        backgroundColor: menuData == text ? primaryColor : 'white',
-                        color: menuData == text ? 'white' : navIconColor,
-                        ":hover":{
-                          backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                        }
-                      },
-                      open
-                        ? {
-                            mr: 3,
-                          }
-                        : {
-                            mr: 'auto',
-                          },
-                    ]}
-                  >
-                    {index === 0 ? <AiFillDashboard /> : index === 1 ? <FaUsers />  : <AiFillMerge />}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                    sx={[{color: menuData == text ? 'white' : navTextColor},
-                      open
-                        ? {
-                            opacity: 1,
-                          }
-                        : {
-                            opacity: 0,
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              {/* </Tooltip> */}
-            </ListItem>
-          ))}
-          </List>
-        {/* </Collapse> */}
-          
-        <Divider />
-        <List>
-          {['Vendors', 'Suppliers', 'Customers'].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              setMenuData(text)
-              if(text == "Vendors") {
-                navigate("/vendors")
-              }else if(text == "Suppliers") {
-                navigate("/suppliers")
-              }else{
-                navigate("/customers")
-              }
-            }} >
-              {/* <Tooltip title={text}> */}
-                <ListItemButton
-                  sx={[
-                    {
-                      height: 40,
-                      minHeight: 28,
-                      px: 2.5,
-                      backgroundColor: menuData == text ? primaryColor : 'white',
-                      ":hover":{
-                        backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                      }
-                    },
-                    open
-                      ? {
-                          justifyContent: 'initial',
-                        }
-                      : {
-                          justifyContent: 'center',
-                        },
-                  ]}
-                >
-                  <ListItemIcon
-                    sx={[
-                      {
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        backgroundColor: menuData == text ? primaryColor : 'white',
-                        color: menuData == text ? 'white' : navIconColor,
-                        ":hover":{
-                          backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                        }
-                      },
-                      open
-                        ? {
-                            mr: 3,
-                          }
-                        : {
-                            mr: 'auto',
-                          },
-                    ]}
-                  >
-                    {index === 0 ? <HiServer /> : index === 1 ? <HiTruck /> : <FaUsersLine />}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                    sx={[{color: menuData == text ? 'white' : navTextColor},
-                      open
-                        ? {
-                            opacity: 1,
-                          }
-                        : {
-                            opacity: 0,
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              {/* </Tooltip> */}
-            </ListItem>
-          ))}
-        </List>
-        <Divider />
-        <List>
-          {['Process', 'Parts', 'Boughtouts', 'Sub Assembly', 'Machines'].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              setMenuData(text)
-                if(text == "Process"){
-                    navigate("/process")
-                }else if(text == "Parts"){
-                    navigate("/parts")
-                }else if(text == "Boughtouts"){
-                    navigate("/boughtout")
-                }else if(text == 'Sub Assembly'){
-                  navigate("/subAssembly")
-                }else if(text == 'Machines'){
-                    navigate("/machines")
-                }
-            }} >
-              {/* <Tooltip title={text}> */}
-                <ListItemButton
-                  sx={[
-                    {
-                      height: 40,
-                      minHeight: 28,
-                      px: 2.5,
-                      backgroundColor: menuData == text ? primaryColor : 'white',
-                      ":hover":{
-                        backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                      }
-                    },
-                    open
-                      ? {
-                          justifyContent: 'initial',
-                        }
-                      : {
-                          justifyContent: 'center',
-                        },
-                  ]}
-                >
-                  <ListItemIcon
-                    sx={[
-                      {
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        backgroundColor: menuData == text ? primaryColor : 'white',
-                        color: menuData == text ? 'white' : navIconColor,
-                        ":hover":{
-                          backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                        }
-                      },
-                      open
-                        ? {
-                            mr: 3,
-                          }
-                        : {
-                            mr: 'auto',
-                          },
-                    ]}
-                  >
-                    {index === 0 ? <FaBuffer /> : index === 1 ? <FiCpu /> : index == 2 ? <PiHandArrowDownBold /> :
-                    index == 3 ? <VscTypeHierarchySub /> : <SiApplearcade /> }
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                    sx={[{color: menuData == text ? 'white' : navTextColor},
-                      open
-                        ? {
-                            opacity: 1,
-                          }
-                        : {
-                            opacity: 0,
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              {/* </Tooltip> */}
-            </ListItem>
-          ))}
-        </List>
-        <Divider />
-        <List>
-          {['Quotations', 'Orders'].map((item, index) => (
-            <ListItem key={item} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              setMenuData(item)
-                if(item == "Quotations"){
-                  navigate('/quotations')
-                }else if(item == "Orders"){
-                    navigate("/orders")
-                }
-              
-            }} >
-              {/* <Tooltip title={text}> */}
-                <ListItemButton
-                  sx={[
-                    {
-                      height: 40,
-                      minHeight: 28,
-                      px: 2.5,
-                      backgroundColor: menuData == item ? primaryColor : 'white',
-                      ":hover":{
-                        backgroundColor: menuData == item ? primaryColor : navHoverBackground,
-                      }
-                    },
-                    open
-                      ? {
-                          justifyContent: 'initial',
-                        }
-                      : {
-                          justifyContent: 'center',
-                        },
-                  ]}
-                >
-                  <ListItemIcon
-                    sx={[
-                      {
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        backgroundColor: menuData == item ? primaryColor : 'white',
-                        color: menuData == item ? 'white' : navIconColor,
-                        ":hover":{
-                          backgroundColor: menuData == item ? primaryColor : navHoverBackground,
-                        }
-                      },
-                      open
-                        ? {
-                            mr: 3,
-                          }
-                        : {
-                            mr: 'auto',
-                          },
-                    ]}
-                  >
-                    {index == 0 ? <HiOutlineClipboardDocumentList /> : <LuBoxes />}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item}
-                    sx={[{color: menuData == item ? 'white' : navTextColor},
-                      open
-                        ? {
-                            opacity: 1,
-                          }
-                        : {
-                            opacity: 0,
-                          },
-                    ]}
-                  />
-                </ListItemButton>
-              {/* </Tooltip> */}
-            </ListItem>
-          ))}
-        </List>
-            <Divider />
-        <List>
-          {['Logout'].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              localStorage.clear()
-              navigate("/login")
-            }} >
-              {/* <Tooltip title={text}> */}
-                <ListItemButton
-                  sx={[
-                    {
-                      height: 40,
-                      minHeight: 28,
-                      px: 2.5,
-                      backgroundColor: menuData == text ? primaryColor : 'white',
-                      ":hover":{
-                        backgroundColor: menuData == text ? primaryColor : navHoverBackground,
-                      }
-                    },
-                    open
-                      ? {
-                          justifyContent: 'initial',
-                        }
-                      : {
-                          justifyContent: 'center',
-                        },
-                  ]}
-                >
-                  <ListItemIcon
-                    sx={[
-                      {
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        backgroundColor: menuData == text ? primaryColor : 'white',
-                        color: menuData == text ? 'white' : navIconColor,
                         ":hover":{
                           backgroundColor: menuData == text ? primaryColor : navHoverBackground,
                         }
@@ -589,7 +576,9 @@ export default function SidebarNav(props: {currentPage?: string}) {
             </ListItem>
           ))}
         </List>
+        
         <Divider />
+
       </Drawer>
     </Box>
   );

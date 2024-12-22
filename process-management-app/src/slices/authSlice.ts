@@ -11,7 +11,7 @@ type AuthApiState = {
     status: 'idle' | 'failed' | 'loading',
     error: string | null,
     productionPart: any;
-    acceptStatus: any;
+    acceptStatus: any
 }
 
 const initialState: AuthApiState = {
@@ -45,6 +45,9 @@ export const vendorAcceptStatus = createAsyncThunk("vendorAcceptStatus", async (
     return resData
 })
 
+export const logout = createAsyncThunk("logout", async () => {
+    return ""
+})
 
 const authSlice = createSlice({
     name: 'auth',
@@ -65,6 +68,7 @@ const authSlice = createSlice({
                 state.error = action.error.message || 'Login failed'
             })
 
+            
             .addCase(productionPartDetail.pending, (state)=>{
                 state.status = 'loading';
                 state.error = null;
@@ -89,6 +93,19 @@ const authSlice = createSlice({
             .addCase(vendorAcceptStatus.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Unable to accept/reject order'
+            })
+
+            .addCase(logout.pending, (state)=>{
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(logout.fulfilled, (state, action: PayloadAction<any>) => {
+                state.status = 'idle';
+                state.userDetail = null;
+            })
+            .addCase(logout.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Logout failed'
             })
     }
 })

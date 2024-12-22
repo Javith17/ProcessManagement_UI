@@ -7,6 +7,11 @@ type DashboardStateApi = {
         count: number
     },
     pendingDelivery: any,
+    partsInStoresList: {
+        list: Array<any>,
+        count: number
+    },
+    dashboardDetail: any,
     status: 'loading' | 'idle' | 'error',
     error: string | null,
     message: string | null
@@ -17,6 +22,11 @@ const initialState: DashboardStateApi = {
         list: [],
         count: 0
     },
+    partsInStoresList: {
+        list: [],
+        count: 0
+    },
+    dashboardDetail: {},
     pendingDelivery: {},
     status: 'idle',
     error: null,
@@ -55,6 +65,70 @@ export const fetchPendingDeliveryParts = createAsyncThunk('deliveryPendingParts'
     })
     const resData = response.data
     return resData
+})
+
+export const fetchReminderDateList = createAsyncThunk('partListFilter', async (data?: { from_date?:String, to_date?:String, searchText?:String, limit?: number, page?: number }) => {
+    const response = await axiosInstance.get(`order/partListFilter/reminder/${data?.from_date}/${data?.to_date}`,
+    {
+        params: {
+            limit: data?.limit,
+            page: data?.page
+        },
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchDeliveryDateList = createAsyncThunk('partListFilter', async (data?: { from_date?:String, to_date?:String, searchText?:String, limit?: number, page?: number }) => {
+    const response = await axiosInstance.get(`order/partListFilter/delivery/${data?.from_date}/${data?.to_date}`,
+    {
+        params: {
+            limit: data?.limit,
+            page: data?.page
+        },
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchPartsInStores = createAsyncThunk('partsInStoresList', async (data?: { searchText?:String, limit?: number, page?: number }) => {
+    const response = await axiosInstance.get(`machine/partsInStoresList`,
+    {
+        params: {
+            limit: data?.limit,
+            page: data?.page
+        },
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchReminderQuotations = createAsyncThunk('machineQuotationListReminder', async (data?: { date?:String, searchText?:String, limit?: number, page?: number }) => {
+    const response = await axiosInstance.get(`quotation/machineQuotationListReminder/${data?.date}`,
+    {
+        params: {
+            limit: data?.limit,
+            page: data?.page
+        },
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchDashboardDetail = createAsyncThunk('getDashboardDetail', async (data?: String) => {
+    try{
+        const response = await axiosInstance.get(`order/dashboardDetails`,{
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
 })
 
 const dashboardSlice = createSlice({
@@ -100,6 +174,32 @@ const dashboardSlice = createSlice({
         .addCase(fetchPendingDeliveryParts.rejected, (state, action) => {
             state.status = 'error';
             state.error = action.error.message || "Unable to load roles"
+        })
+
+        .addCase(fetchPartsInStores.pending, (state) => {
+            state.status = 'loading';
+            state.error = null
+        })
+        .addCase(fetchPartsInStores.fulfilled, (state, action) => {
+            state.status = 'idle';
+            state.partsInStoresList = action.payload
+        })
+        .addCase(fetchPartsInStores.rejected, (state, action) => {
+            state.status = 'error';
+            state.error = action.error.message || "Unable to load roles"
+        })
+
+        .addCase(fetchDashboardDetail.pending, (state) => {
+            state.status = 'loading'
+            state.error = null
+        })
+        .addCase(fetchDashboardDetail.fulfilled, (state, action) => {
+            state.status = 'idle'
+            state.dashboardDetail = action.payload
+        })
+        .addCase(fetchDashboardDetail.rejected, (state, action) => {
+            state.status = 'error'
+            state.error = action.error.message || 'unable to add supplier'
         })
     }
 })
