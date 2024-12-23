@@ -33,6 +33,7 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import EditBoughtout from './pages/EditBoughtout';
 import VendorAcceptance from './pages/VendorAcceptance';
+import Stores from './pages/Stores';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path="/roles" element={<Roles />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/stores" element={<Stores />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/process" element={<Process />} />
           <Route path="/parts" element={<Parts />} />

@@ -9,6 +9,7 @@ import Chip from '@mui/material/Chip';
 import { ArrowBackIos } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
+import { nav_quotations } from '../constants';
 
 export default function NewQuotation() {
   const dispatch = useAppDispatch()
@@ -75,7 +76,7 @@ export default function NewQuotation() {
 
   return (
     <Box sx={{display:'flex', direction:'row', ml:2, mr:5}}>
-        <SidebarNav />
+        <SidebarNav currentPage={nav_quotations} />
         <Box sx={{display: 'flex', flexDirection:'column', mt:10, alignItems:'start', }}>
           <Button variant='text' color="primary" startIcon={<ArrowBackIos />} onClick={(e:any)=>{
                   navigate(-1)

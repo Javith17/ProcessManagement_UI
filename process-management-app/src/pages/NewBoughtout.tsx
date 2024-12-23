@@ -16,7 +16,7 @@ import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
 import { MdDeleteOutline } from "react-icons/md";
 import { BsPersonFillAdd } from "react-icons/bs";
-import { VisuallyHiddenInput } from '../constants';
+import { nav_boughtouts, VisuallyHiddenInput } from '../constants';
 
 export default function NewBoughtout() {
   const dispatch = useAppDispatch()
@@ -165,7 +165,7 @@ export default function NewBoughtout() {
 
   return (
     <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
-      <SidebarNav currentPage='Part' />
+      <SidebarNav currentPage={nav_boughtouts} />
       <Box sx={{ display: 'flex', flexDirection: 'column', mt: 10, alignItems: 'start', }}>
         <Button variant='text' color="primary" startIcon={<ArrowBackIos />} onClick={(e: any) => {
           navigate(-1)

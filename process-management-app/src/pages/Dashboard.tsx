@@ -168,7 +168,7 @@ const Dashboard = () => {
                     {(currentRole == SuperAdminRole || currentRole == AdminRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Pending Payments for Suppliers</h5></Grid2>}
                     {(currentRole == SuperAdminRole || currentRole == AdminRole) && <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>
@@ -224,7 +224,7 @@ const Dashboard = () => {
                     {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Pending Delivery Parts</h5></Grid2>}
                     <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>
@@ -271,7 +271,7 @@ const Dashboard = () => {
                     {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 3 }}><h5>Parts In Stores</h5></Grid2>}
                     {(currentRole == SuperAdminRole || currentRole == StoreRole) && <Grid2 size={12} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>
@@ -302,7 +302,7 @@ const Dashboard = () => {
 
                     {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>
@@ -333,7 +333,7 @@ const Dashboard = () => {
                     {/* For delivery list */}
                     {currentRole == SuperAdminRole && <Grid2 size={5} sx={{ mt: 1 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>
@@ -366,7 +366,7 @@ const Dashboard = () => {
                     {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 3 }}><h5>Quotation Reminder</h5></Grid2>}
                     {currentRole == SuperAdminRole && <Grid2 size={6} sx={{ mt: 1, mr: 3 }}>
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>S.No</TableCell>

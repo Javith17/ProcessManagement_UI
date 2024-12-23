@@ -106,21 +106,21 @@ export default function Roles() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+          {/* <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
             setCreateDialog(true)
           }}>
             Add New
-          </Button>
+          </Button> */}
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>
-            <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda" } }}>
+            <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Role Code</TableCell>
                   <TableCell>Role Name</TableCell>
                   <TableCell>Screens</TableCell>
-                  <TableCell></TableCell>
+                  {/* <TableCell></TableCell> */}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -129,7 +129,7 @@ export default function Roles() {
                     <TableCell>{row.role_code}</TableCell>
                     <TableCell>{row.role_name}</TableCell>
                     <TableCell>{row.screens.map((sc:any) => sc.screen).join(" , ")}</TableCell>
-                    <TableCell><MdOutlineEdit /></TableCell>
+                    {/* <TableCell><MdOutlineEdit /></TableCell> */}
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                       <TableCell colSpan={4} align='center'>No Data</TableCell>

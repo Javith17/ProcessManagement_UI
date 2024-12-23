@@ -412,7 +412,7 @@ export default function Quotations() {
                 <Grid2 size={{ xs: 6, md: 12 }}>
                     {(currentTab == 0) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>
@@ -496,7 +496,7 @@ export default function Quotations() {
 
                         {(currentTab == 2) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>
@@ -590,7 +590,7 @@ export default function Quotations() {
 
                         {(currentTab == 3) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>

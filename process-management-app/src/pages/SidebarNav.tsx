@@ -253,6 +253,8 @@ export default function SidebarNav(props: {currentPage?: string}) {
                   navigate("/roles")
                 }else if(hs.screen == "users") {
                   navigate("/users")
+                }else if(hs.screen == "stores") {
+                  navigate("/stores")
                 }
                 }} >
                     <ListItemButton

@@ -15,7 +15,7 @@ import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
 import { MdDeleteOutline } from "react-icons/md";
-import { VisuallyHiddenInput } from '../constants';
+import { nav_parts, VisuallyHiddenInput } from '../constants';
 
 export default function NewPart() {
   const dispatch = useAppDispatch()
@@ -192,7 +192,7 @@ export default function NewPart() {
 
   return (
     <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
-      <SidebarNav currentPage='Part' />
+      <SidebarNav currentPage={nav_parts} />
       <Box sx={{ display: 'flex', flexDirection: 'column', mt: 10, alignItems: 'start', }}>
         <Button variant='text' color="primary" startIcon={<ArrowBackIos />} onClick={(e: any) => {
           navigate(-1)

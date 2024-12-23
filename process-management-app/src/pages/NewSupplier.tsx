@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowBackIos } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
+import { nav_subassembly, nav_suppliers } from '../constants';
 
 export default function NewSupplier() {
   const dispatch = useAppDispatch()
@@ -140,7 +141,7 @@ export default function NewSupplier() {
 
   return (
     <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 5 }}>
-      <SidebarNav />
+      <SidebarNav currentPage={nav_suppliers} />
       <Box sx={{ display: 'flex', flexDirection: 'column', mt: 10, alignItems: 'start', }}>
         <Button variant='text' color="primary" startIcon={<ArrowBackIos />} onClick={(e: any) => {
           navigate(-1)

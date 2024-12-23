@@ -12,6 +12,7 @@ import { checkAssemblyName, fetchSubAssemblByMachine, fetchSubAssembly } from '.
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { MdDeleteOutline, MdOutlineEdit } from 'react-icons/md';
 import { IoMdCloseCircle } from "react-icons/io";
+import { nav_machines } from '../constants';
 
 export default function NewMachine() {
   const dispatch = useAppDispatch()
@@ -513,7 +514,7 @@ export default function NewMachine() {
 
   return (
     <Container sx={{ display: 'flex', direction: 'row', ml: 2, mr: 5 }} maxWidth={false}>
-      <SidebarNav />
+      <SidebarNav currentPage={nav_machines} />
       <Box sx={{ display: 'flex', flexDirection: 'column', mt: 10, alignItems: 'start' }}>
         <Button variant='text' color="primary" startIcon={<ArrowBackIos />} onClick={(e: any) => {
           navigate(-1)

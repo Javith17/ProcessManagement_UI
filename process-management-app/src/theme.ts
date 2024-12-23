@@ -17,6 +17,12 @@ const theme = createTheme({
             color: 'secondary'
           }
         }
+      },
+      typography: {
+        allVariants: {
+          fontFamily: "'Montserrat', sans-serif",
+          textTransform: "none",
+        }
       }
 })
 

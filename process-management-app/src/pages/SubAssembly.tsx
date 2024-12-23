@@ -176,7 +176,7 @@ export default function SubAssembly() {
             <Tab label="Section Assembly" value={2} />
           </Tabs>
           <TableContainer component={Paper} sx={{ mt: 1 }}>
-            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Serial No</TableCell>
