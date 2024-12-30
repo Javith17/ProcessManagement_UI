@@ -165,9 +165,9 @@ export const fetchOrdersList = createAsyncThunk('getOrdersList', async (data?: S
     }
 })
 
-export const fetchOrdersDetail = createAsyncThunk('getOrdersDetail', async (data?: String) => {
+export const fetchOrdersDetail = createAsyncThunk('getOrdersDetail', async (data?: { order_id?: String, type?: String}) => {
     try{
-        const response = await axiosInstance.get(`order/order/${data}`,{
+        const response = await axiosInstance.get(`order/order/${data?.order_id}/${data?.type}`,{
             headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
         })
         const resData = response.data
@@ -213,6 +213,18 @@ export const deliverProductionMachinePart = createAsyncThunk('deliverProductionM
     }  
 })
 
+export const deliverProductionMachineBO = createAsyncThunk('deliverProductionMachineBO', async (data:any) => {
+    try{
+        const response = await axiosInstance.post(`order/deliverProductionMachineBO`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }  
+})
+
 export const completeProductPartProcess = createAsyncThunk('completeProductPartProcess', async (data: any) => {
     try{
         const response = await axiosInstance.post(`order/completeProductionPartProcess`, data, {
@@ -247,6 +259,78 @@ export const updateProductionMachineBO = createAsyncThunk('updateProductionMachi
     }catch(error){
         return []
     }  
+})
+
+export const movePartToAssembly = createAsyncThunk('movePartToAssembly', async (data:any) => {
+    try{
+        const response = await axiosInstance.post(`order/movePartsToAssembly`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }  
+})
+
+export const moveBoughtoutToAssembly = createAsyncThunk('moveBoughtoutToAssembly', async (data:any) => {
+    try{
+        const response = await axiosInstance.post(`order/moveBoughtoutsToAssembly`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }  
+})
+
+export const closePartAssembly = createAsyncThunk('closeAssemblyPart', async (data:any) => {
+    try{
+        const response = await axiosInstance.post(`order/closeAssemblyPart`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }  
+})
+
+export const closeBoughtoutAssembly = createAsyncThunk('closeAssemblyBoughtout', async (data:any) => {
+    try{
+        const response = await axiosInstance.post(`order/closeAssemblyBoughtout`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }  
+})
+
+export const closeAssembly = createAsyncThunk('closeAssembly', async (data: any) => {
+    try{
+        const response = await axiosInstance.post('order/closeAssembly', data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const orderHistory = createAsyncThunk('orderHistory', async (data: string) => {
+    try{
+        const response = await axiosInstance.get(`order/orderHistory/${data}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
 })
 
 const quotationSlice = createSlice({

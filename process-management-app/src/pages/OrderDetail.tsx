@@ -6,18 +6,18 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { MdOutlineEdit } from "react-icons/md";
-import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid2, Input, InputAdornment, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid2, Input, InputAdornment, InputLabel, MenuItem, Paper, Select, Tab, Tabs, TextField, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { Add, Search } from '@mui/icons-material';
-import { createNewMachine, fetchBoughtOutList, fetchMachineList, fetchVendorAttachment } from '../slices/machineSlice';
-import { nav_boughtouts, nav_machines, nav_orders, TableRowStyled } from '../constants';
+import { Add, Search, Settings } from '@mui/icons-material';
+import { createNewMachine, fetchBoughtOutList, fetchMachineList, fetchVendorAttachment, getMachineDetails } from '../slices/machineSlice';
+import { nav_assembly, nav_boughtouts, nav_machines, nav_orders, TableRowStyled } from '../constants';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaWhatsapp } from "react-icons/fa6";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
-import { completeProductPartProcess, deliverProductionMachinePart, fetchOrdersDetail, fetchOrdersList, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart } from '../slices/quotationSlice';
+import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchOrdersDetail, fetchOrdersList, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart } from '../slices/quotationSlice';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -42,6 +42,8 @@ export default function OrderDetail() {
     const [orderDetailList, setOrderDetailList] = useState<any[]>([])
     const [orderDetailBOList, setOrderDetailBOList] = useState<any[]>([])
     const [deliveredDialog, setDeliveredDialog] = useState(false)
+    const [assemblyCloseDialog, setAssemblyCloseDialog] = useState(false)
+    const [assemblyPart, setAssemblyPart] = useState<any>()
     const [deliveryPart, setDeliveryPart] = useState<any>()
     const [moveToVendorData, setMoveToVendorData] = useState<any>()
     const [moveToVendorDialog, setMoveToVendorDialog] = useState(false)
@@ -55,15 +57,131 @@ export default function OrderDetail() {
 
     useEffect(() => {
         if (state?.order_id) {
-            dispatch(fetchOrdersDetail(state?.order_id)).unwrap()
+            dispatch(fetchOrdersDetail({ order_id: state?.order_id, type: state?.type })).unwrap()
         }
     }, [state])
 
     const [errors, setErrors] = useState<any>()
+    const [machineId, setMachineId] = useState("")
+    const [orderId, setOrderId] = useState("")
+    const [currentTab, setCurrentTab] = useState(0)
+    const [viewMachineDetailDialog, setViewMachineDetailDialog] = useState(false)
+    const [subAssemblyList, setSubAssemblyList] = useState<Array<{ id: string, name: string, sub_assembly_id: string, qty: number }>>([]);
+    const [mainAssemblyList, setMainAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
+    const [sectionAssemblyList, setSectionAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
+    const [mainAssemblySub, setMainAssemblySub] = useState<Array<{ id: number, main_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
+    const [mainAssemblyParts, setMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+    const [mainAssemblyBoughtouts, setMainAssemblyBoughtouts] = useState<Array<{ id: number, main_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
+    const [sectionAssemblySub, setSectionAssemblySub] = useState<Array<{ id: number, section_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
+    const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+    const [sectionAssemblyBoughtouts, setSectionAssemblyBoughtouts] = useState<Array<{ id: number, section_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
+    const [sectionAssemblyMain, setSectionAssemblyMain] = useState<Array<{ id: number, section_assembly_id: number, main_assembly_id: number, main_assembly_name: string, qty: number }>>([])
+
+    const viewMachineDetail = () => {
+        dispatch(getMachineDetails(machineId)).unwrap()
+            .then((res) => {
+                setViewMachineDetailDialog(true)
+                //   setFormData({
+                //     model_no: res.model_no,
+                //     machine_name: res.machine_name,
+                //     spindles: res.spindles,
+                //     side_type: res.side_type,
+                //     max_spindles: res.max_spindles,
+                //     min_spindles: res.min_spindles
+                //   })
+                res.machine_sub_assembly?.map((sub: any) => {
+                    setSubAssemblyList([...subAssemblyList, { id: sub.id, sub_assembly_id: sub.sub_assembly.id, qty: sub.qty, name: sub.sub_assembly.sub_assembly_name }])
+                })
+                res.main_assembly?.map((main: any) => {
+                    setMainAssemblyList([...mainAssemblyList, { id: main.id, name: main.main_assembly_name, serial_no: main.serial_no }])
+                    const maps: any = []
+                    const bos: any = []
+                    const subs: any = []
+                    main.main_assembly_detail?.map((detail: any) => {
+                        if (detail.part) {
+                            maps.push({
+                                id: detail.id,
+                                main_assembly_id: main.id,
+                                part_id: detail.part.id,
+                                part_name: detail.part.part_name,
+                                qty: detail.qty
+                            })
+                        } else if (detail.bought_out) {
+                            bos.push({
+                                id: detail.id,
+                                main_assembly_id: main.id,
+                                bought_out_id: detail.bought_out.id,
+                                bought_out_name: detail.bought_out.bought_out_name,
+                                qty: detail.qty
+                            })
+                        } else if (detail.sub_assembly) {
+                            subs.push({
+                                id: detail.id,
+                                main_assembly_id: main.id,
+                                sub_assembly_id: detail.sub_assembly.id,
+                                sub_assembly_name: detail.sub_assembly.sub_assembly_name,
+                                qty: detail.qty
+                            })
+                        }
+                    })
+                    setMainAssemblyParts(maps)
+                    setMainAssemblyBoughtouts(bos)
+                    setMainAssemblySub(subs)
+                })
+
+                res.section_assembly?.map((section: any) => {
+                    setSectionAssemblyList([...sectionAssemblyList, { id: section.id, name: section.section_assembly_name, serial_no: section.serial_no }])
+                    const maps: any = []
+                    const bos: any = []
+                    const subs: any = []
+                    const mains: any = []
+                    section.section_assembly_detail?.map((detail: any) => {
+                        if (detail.part) {
+                            maps.push({
+                                id: detail.id,
+                                section_assembly_id: section.id,
+                                part_id: detail.part.id,
+                                part_name: detail.part.part_name,
+                                qty: detail.qty
+                            })
+                        } else if (detail.bought_out) {
+                            bos.push({
+                                id: detail.id,
+                                section_assembly_id: section.id,
+                                bought_out_id: detail.bought_out.id,
+                                bought_out_name: detail.bought_out.bought_out_name,
+                                qty: detail.qty
+                            })
+                        } else if (detail.sub_assembly) {
+                            subs.push({
+                                id: detail.id,
+                                section_assembly_id: section.id,
+                                sub_assembly_id: detail.sub_assembly.id,
+                                sub_assembly_name: detail.sub_assembly.sub_assembly_name,
+                                qty: detail.qty
+                            })
+                        } else if (detail.main_assembly) {
+                            mains.push({
+                                id: detail.id,
+                                section_assembly_id: section.id,
+                                main_assembly_id: detail.main_assembly.id,
+                                main_assembly_name: detail.main_assembly.main_assembly_name,
+                                qty: detail.qty
+                            })
+                        }
+                    })
+                    setSectionAssemblyParts(maps)
+                    setSectionAssemblyBoughtouts(bos)
+                    setSectionAssemblySub(subs)
+                    setSectionAssemblyMain(mains)
+                })
+            })
+    }
 
     useEffect(() => {
         if (orderDetail?.parts?.orderDetail) {
             setHeaderDetail({
+                status: orderDetail?.parts?.orderDetail[0].order.status,
                 quotationNo: orderDetail.parts?.orderDetail[0]?.order.quotation.quotation_no,
                 machineName: orderDetail.parts?.orderDetail[0]?.order.machine_name,
                 customerName: orderDetail.parts?.orderDetail[0]?.order.customer.customer_name,
@@ -73,15 +191,18 @@ export default function OrderDetail() {
             setOrderDetailList(orderDetail.parts?.orderDetail)
             setOrderDetailBOList(orderDetail.boughtouts?.orderDetailBoughtout)
             setSupplierList(orderDetail.boughtouts?.boughtoutSupplier)
+            setMachineId(orderDetail.parts?.orderDetail[0]?.machine_id)
+            setOrderId(orderDetail.parts?.orderDetail[0]?.order.id)
         }
     }, [orderDetail])
+
     return (
         <Box sx={{ display: 'flex', direction: 'column' }}>
-            <SidebarNav currentPage={nav_orders} />
+            <SidebarNav currentPage={state?.type === "assembly" ? nav_assembly : nav_orders} />
 
             <Grid2 container spacing={2} padding={2} sx={{ mt: 10, flexGrow: 1 }}>
 
-                <Grid2 size={3}>
+                <Grid2 size={2}>
                     <Typography variant='subtitle2' color={'grey'}>Quotation No</Typography>
                     <Typography variant='subtitle1'>{headerDetail ? headerDetail.quotationNo : ""}</Typography>
                 </Grid2>
@@ -96,15 +217,37 @@ export default function OrderDetail() {
                     <Typography variant='subtitle1'>{headerDetail ? headerDetail.customerName : ""}</Typography>
                 </Grid2>
 
-                <Grid2 size={2}>
+                <Grid2 size={1}>
                     <Typography variant='subtitle2' color={'grey'}>Cost</Typography>
                     <Typography variant='subtitle1'>{headerDetail ? headerDetail.cost : ""}</Typography>
                 </Grid2>
 
-                <Grid2 size={2}>
+                <Grid2 size={1}>
                     <Typography variant='subtitle2' color={'grey'}>Qty</Typography>
                     <Typography variant='subtitle1'>{headerDetail ? headerDetail.qty : ""}</Typography>
                 </Grid2>
+
+                {state?.type == "assembly" && <Grid2 size={1}>
+                    <Button onClick={(e: any) => {
+                        viewMachineDetail()
+                    }}>View Machine Detail</Button>
+                </Grid2>}
+
+                {state?.type == "assembly" && <Grid2 size={2}>
+                    <Button variant='contained' onClick={(e: any) => {
+                        if(headerDetail?.status !== "Assembly Completed"){
+                            dispatch(closeAssembly({
+                                order_id: orderId
+                            })).unwrap().then((res:any) => {
+                                if(res.message.includes('success')){
+                                    DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                                }else {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                }
+                            })
+                        }                        
+                    }}>{headerDetail?.status == "Assembly Completed" ? "Assembly Completed" : "Complete Assembly"}</Button>
+                </Grid2>}
 
                 <Grid2 size={{ xs: 6, md: 12 }}>
                     <TableContainer component={Paper}>
@@ -114,13 +257,14 @@ export default function OrderDetail() {
                                     <TableCell>S.No</TableCell>
                                     <TableCell>Part Name</TableCell>
                                     <TableCell>Qty</TableCell>
-                                    <TableCell>Process Name</TableCell>
-                                    <TableCell>Vendor Name</TableCell>
+                                    {state?.type == "order" && <TableCell>Process Name</TableCell>}
+                                    {state?.type == "order" && <TableCell>Vendor Name</TableCell>}
                                     <TableCell>Cost</TableCell>
-                                    <TableCell>Delivery Date</TableCell>
-                                    <TableCell>Reminder Date</TableCell>
+                                    {state?.type == "order" && <TableCell>Delivery Date</TableCell>}
+                                    {state?.type == "order" && <TableCell>Reminder Date</TableCell>}
                                     <TableCell>Status</TableCell>
                                     <TableCell></TableCell>
+                                    {state?.type == "assembly" && <TableCell></TableCell>}
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -129,9 +273,9 @@ export default function OrderDetail() {
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell>{row.part_name}</TableCell>
                                         <TableCell>{row.order_qty}</TableCell>
-                                        <TableCell>{row.process_name}</TableCell>
-                                        <TableCell>
-                                            {row.vendor_name ? row.vendor_name : <div style={{
+                                        {state?.type == "order" && <TableCell>{row.process_name}</TableCell>}
+                                        {state?.type == "order" && <TableCell>
+                                            {row?.vendor_name ? row.vendor_name : <div style={{
                                                 backgroundColor: 'teal', textAlign: 'center', color: 'white',
                                                 borderRadius: '4px', cursor: 'pointer'
                                             }} onClick={() => {
@@ -144,10 +288,10 @@ export default function OrderDetail() {
                                                     setEditDialog(true)
                                                 }
                                             }}>Add Vendor</div>}
-                                        </TableCell>
+                                        </TableCell>}
                                         <TableCell>{row.cost}</TableCell>
-                                        <TableCell>{row.delivery_date ? moment(row.delivery_date).format('DD-MM-YYYY') : ''}</TableCell>
-                                        <TableCell>{row.reminder_date ? moment(row.reminder_date).format('DD-MM-YYYY') : ''}</TableCell>
+                                        {state?.type == "order" && <TableCell>{row.delivery_date ? moment(row.delivery_date).format('DD-MM-YYYY') : ''}</TableCell>}
+                                        {state?.type == "order" && <TableCell>{row.reminder_date ? moment(row.reminder_date).format('DD-MM-YYYY') : ''}</TableCell>}
                                         <TableCell><Box sx={{
                                             borderColor: row.status.includes('Pending') ? '#F95454' : row.status.includes('Progress') ? '#006BFF' : '#347928',
                                             color: row.status.includes('Pending') ? '#F95454' : row.status.includes('Progress') ? '#006BFF' : '#347928',
@@ -160,35 +304,42 @@ export default function OrderDetail() {
                                                     row.status.includes('Pending') ? '#F95454' : '#347928'
                                             }
                                         }} onClick={() => {
-                                            if (row.status.includes('Progress')) {
-                                                // setDeliveredDialog(true)
-                                                setCompleteDialog(true)
-                                                setCompleteData({id: row.id, delivery_date: row.delivery_date, reminder_date: row.reminder_date})
-                                                // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
-                                            } else if (row.status.toLowerCase() == 'move to vendor') {
-                                                const processVendors = orderDetail.parts?.partVendors.filter((pv: any) =>
-                                                    pv.part.id == row.part_id && pv.process.id == row.process_id
-                                                )
-                                                if (processVendors.length > 0) {
-                                                    const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
-                                                    const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
-                                                    const reminderDate = deliveryDate.add(-1, 'day')
-                                                    setSelectedPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
-                                                    setSelectedVendor({
-                                                        id: row.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
-                                                        delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
-                                                        delivery_date: deliveryDate, reminder_date: reminderDate
-                                                    })
-                                                    setMoveToVendorData({
-                                                        id: row.id, part_name: row.part_name, process_name: row.process_name,
-                                                        vendor_id: row.vendor_id
-                                                    })
-                                                    setMoveToVendorDialog(true)
-                                                }
+                                            if (state?.type === "order") {
+                                                if (row.status.includes('Progress')) {
+                                                    // setDeliveredDialog(true)
+                                                    setCompleteDialog(true)
+                                                    setCompleteData({ id: row.id, delivery_date: row.delivery_date, reminder_date: row.reminder_date, part_name: row.part_name, process_name: row.process_name })
+                                                    // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                                                } else if (row.status.toLowerCase() == 'move to vendor') {
+                                                    const processVendors = orderDetail.parts?.partVendors.filter((pv: any) =>
+                                                        pv.part.id == row.part_id && pv.process.id == row.process_id
+                                                    )
+                                                    if (processVendors.length > 0) {
+                                                        const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
+                                                        const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
+                                                        const reminderDate = deliveryDate.add(-1, 'day')
+                                                        setSelectedPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                                                        setSelectedVendor({
+                                                            id: row.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
+                                                            delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
+                                                            delivery_date: deliveryDate, reminder_date: reminderDate
+                                                        })
+                                                        setMoveToVendorData({
+                                                            id: row.id, part_name: row.part_name, process_name: row.process_name,
+                                                            vendor_id: row.vendor_id
+                                                        })
+                                                        setMoveToVendorDialog(true)
+                                                    }
 
+                                                }
+                                            } else {
+                                                if(row.status.includes('Assembly In-Progress')){
+                                                    setAssemblyCloseDialog(true)
+                                                    setAssemblyPart({ ...row, type: 'part' })
+                                                }
                                             }
                                         }}>{row.status}</Box></TableCell>
-                                        <TableCell><FaWhatsapp color='green' onClick={() => {
+                                        {state?.type == "order" && <TableCell><FaWhatsapp color='green' onClick={() => {
                                             if (row.vendor_id) {
                                                 dispatch(fetchVendorAttachment({ vendor_id: row.vendor_id, part_id: row.part_id })).unwrap().then((res: any) => {
                                                     if (res.attachments?.length > 0) {
@@ -203,7 +354,9 @@ export default function OrderDetail() {
                                                     }
                                                 })
                                             }
-                                        }} /></TableCell>
+                                        }} /></TableCell>}
+                                        {state?.type == "assembly" && <TableCell></TableCell>}
+                                        {state?.type == "assembly" && <TableCell>View Part Diagrams</TableCell>}
                                     </TableRowStyled>
                                 )) : <TableRow key={0}>
                                     <TableCell colSpan={9} align='center'>No Data</TableCell>
@@ -215,7 +368,7 @@ export default function OrderDetail() {
 
                 {/* Boughtout supplier */}
 
-                <Grid2 size={{ xs: 6, md: 12 }} sx={{mt:3}}>
+                <Grid2 size={{ xs: 6, md: 12 }} sx={{ mt: 3 }}>
                     <TableContainer component={Paper}>
                         <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
                             <TableHead>
@@ -223,12 +376,13 @@ export default function OrderDetail() {
                                     <TableCell>S.No</TableCell>
                                     <TableCell>Boughtout Name</TableCell>
                                     <TableCell>Qty</TableCell>
-                                    <TableCell>Supplier Name</TableCell>
+                                    {state?.type == "order" && <TableCell>Supplier Name</TableCell>}
                                     <TableCell>Cost</TableCell>
-                                    <TableCell>Delivery Date</TableCell>
-                                    <TableCell>Reminder Date</TableCell>
+                                    {state?.type == "order" && <TableCell>Delivery Date</TableCell>}
+                                    {state?.type == "order" && <TableCell>Reminder Date</TableCell>}
                                     <TableCell>Status</TableCell>
                                     <TableCell></TableCell>
+                                    {state?.type == "assembly" && <TableCell></TableCell>}
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -237,7 +391,7 @@ export default function OrderDetail() {
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell>{row.bought_out_name}</TableCell>
                                         <TableCell>{row.order_qty}</TableCell>
-                                        <TableCell>
+                                        {state?.type == "order" && <TableCell>
                                             {row.supplier_name ? row.supplier_name : <div style={{
                                                 backgroundColor: 'teal', textAlign: 'center', color: 'white',
                                                 borderRadius: '4px', cursor: 'pointer'
@@ -254,10 +408,10 @@ export default function OrderDetail() {
                                                 //     setEditDialog(true)
                                                 // }
                                             }}>Add Supplier</div>}
-                                        </TableCell>
+                                        </TableCell>}
                                         <TableCell>{row.cost}</TableCell>
-                                        <TableCell>{row.delivery_date ? moment(row.delivery_date).format('DD-MM-YYYY') : ''}</TableCell>
-                                        <TableCell>{row.reminder_date ? moment(row.reminder_date).format('DD-MM-YYYY') : ''}</TableCell>
+                                        {state?.type == "order" && <TableCell>{row.delivery_date ? moment(row.delivery_date).format('DD-MM-YYYY') : ''}</TableCell>}
+                                        {state?.type == "order" && <TableCell>{row.reminder_date ? moment(row.reminder_date).format('DD-MM-YYYY') : ''}</TableCell>}
                                         <TableCell><Box sx={{
                                             borderColor: row.status.includes('Pending') ? '#F95454' : row.status.includes('Progress') ? '#006BFF' : '#347928',
                                             color: row.status.includes('Pending') ? '#F95454' : row.status.includes('Progress') ? '#006BFF' : '#347928',
@@ -270,35 +424,44 @@ export default function OrderDetail() {
                                                     row.status.includes('Pending') ? '#F95454' : '#347928'
                                             }
                                         }} onClick={() => {
-                                            // if (row.status.includes('Progress')) {
-                                            //     // setDeliveredDialog(true)
-                                            //     setCompleteDialog(true)
-                                            //     setCompleteData({id: row.id})
-                                            //     // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
-                                            // } else if (row.status.toLowerCase() == 'move to vendor') {
-                                            //     const processVendors = orderDetail.parts?.orderDetail?.partVendors.filter((pv: any) =>
-                                            //         pv.part.id == row.part_id && pv.process.id == row.process_id
-                                            //     )
-                                            //     if (processVendors.length > 0) {
-                                            //         const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
-                                            //         const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
-                                            //         const reminderDate = deliveryDate.add(-1, 'day')
-                                            //         setSelectedPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
-                                            //         setSelectedVendor({
-                                            //             id: row.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
-                                            //             delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
-                                            //             delivery_date: deliveryDate, reminder_date: reminderDate
-                                            //         })
-                                            //         setMoveToVendorData({
-                                            //             id: row.id, part_name: row.part_name, process_name: row.process_name,
-                                            //             vendor_id: row.vendor_id
-                                            //         })
-                                            //         setMoveToVendorDialog(true)
-                                            //     }
+                                            if (state?.type === "order") {
+                                                if (row.status.includes('Progress')) {
+                                                    // setDeliveredDialog(true)
+                                                    setCompleteDialog(true)
+                                                    setCompleteData({ id: row.id })
+                                                    // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                                                } else if (row.status.toLowerCase() == 'move to vendor') {
+                                                    const processVendors = orderDetail.parts?.orderDetail?.partVendors.filter((pv: any) =>
+                                                        pv.part.id == row.part_id && pv.process.id == row.process_id
+                                                    )
+                                                    if (processVendors.length > 0) {
+                                                        const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
+                                                        const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
+                                                        const reminderDate = deliveryDate.add(-1, 'day')
+                                                        setSelectedPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                                                        setSelectedVendor({
+                                                            id: row.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
+                                                            delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
+                                                            delivery_date: deliveryDate, reminder_date: reminderDate
+                                                        })
+                                                        setMoveToVendorData({
+                                                            id: row.id, part_name: row.part_name, process_name: row.process_name,
+                                                            vendor_id: row.vendor_id
+                                                        })
+                                                        setMoveToVendorDialog(true)
+                                                    }
 
-                                            // }
+                                                }
+                                            } else {
+                                                if(row.status.includes('Assembly In-Progress')){
+                                                    setAssemblyCloseDialog(true)
+                                                    setAssemblyPart({ ...row, type: 'boughtout' })
+                                                }
+                                            }
                                         }}>{row.status}</Box></TableCell>
-                                        <TableCell><FaWhatsapp color='green' onClick={() => {
+                                        {state?.type == "assembly" && <TableCell></TableCell>}
+                                        {state?.type == "assembly" && <TableCell>View Part Diagrams</TableCell>}
+                                        {state?.type == "order" && <TableCell><FaWhatsapp color='green' onClick={() => {
                                             if (row.vendor_id) {
                                                 dispatch(fetchVendorAttachment({ supplier_id: row.supplier_id, part_id: row.bought_out_id })).unwrap().then((res: any) => {
                                                     if (res.attachments?.length > 0) {
@@ -310,7 +473,7 @@ export default function OrderDetail() {
                                                     }
                                                 })
                                             }
-                                        }} /></TableCell>
+                                        }} /></TableCell>}
                                     </TableRowStyled>
                                 )) : <TableRow key={0}>
                                     <TableCell colSpan={9} align='center'>No Data</TableCell>
@@ -732,7 +895,7 @@ export default function OrderDetail() {
                     }
                     setCompleteDialog(false)
                 }}>
-                <DialogTitle>Update {moveToVendorData?.part_name} - {moveToVendorData?.process_name} Status</DialogTitle>
+                <DialogTitle>Update {completeData?.part_name} - {completeData?.process_name} Status</DialogTitle>
                 <DialogContent>
                     <Box>
                         <Grid2 container>
@@ -756,13 +919,13 @@ export default function OrderDetail() {
                                         dispatch(completeProductPartProcess({
                                             production_part_id: completeData.id,
                                             remarks: completeData.remarks
-                                        })).unwrap().then((res:any) => {
+                                        })).unwrap().then((res: any) => {
                                             DisplaySnackbar(res, 'success', enqueueSnackbar)
                                             setOrderDetailList(
                                                 orderDetailList.map((od: any) => {
                                                     return (od.id == completeData.id) ? {
                                                         ...od,
-                                                        status: 'Completed'
+                                                        status: 'Vendor process completed'
                                                     } : od
                                                 })
                                             )
@@ -837,7 +1000,7 @@ export default function OrderDetail() {
                                         reschedule_reminder_date: completeData.reminder_date,
                                         reschedule_delivery_date: completeData.delivery_date,
                                         remarks: completeData.scheduleRemarks
-                                    })).unwrap().then((res:any) => {
+                                    })).unwrap().then((res: any) => {
                                         DisplaySnackbar(res, 'success', enqueueSnackbar)
                                         setCompleteData({})
                                         setCompleteDialog(false)
@@ -894,7 +1057,7 @@ export default function OrderDetail() {
                                             </CTableRow>
                                         </CTableHead>
                                         <CTableBody>
-                                            {supplierList && supplierList.filter((bs:any)=> bs.bought_out.id == selectedBO?.bought_out_id).map((s: any) => (
+                                            {supplierList && supplierList.filter((bs: any) => bs.bought_out.id == selectedBO?.bought_out_id).map((s: any) => (
                                                 <TableRowStyled key={s.id}>
                                                     <TableCell>{s.supplier.supplier_name}</TableCell>
                                                     <TableCell>{s.cost}</TableCell>
@@ -905,7 +1068,7 @@ export default function OrderDetail() {
                                                         borderRadius: '4px', cursor: 'pointer', borderWidth: 'thin', borderStyle: 'solid'
                                                     }} onClick={() => {
                                                         setSelectedSupplier({
-                                                            id:s.supplier.id, name: s.supplier.supplier_name, cost: s.cost
+                                                            id: s.supplier.id, name: s.supplier.supplier_name, cost: s.cost
                                                         })
                                                     }}>Select</div></TableCell>
                                                 </TableRowStyled>
@@ -1004,6 +1167,356 @@ export default function OrderDetail() {
                         }
                         console.log(errors)
                     }}>Save</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog for machine detail */}
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={viewMachineDetailDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setViewMachineDetailDialog(false)
+                }}>
+                <DialogTitle>Machine Detail</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <Tabs value={currentTab} orientation="vertical" onChange={(e, newValue) => {
+                            setCurrentTab(newValue)
+                        }} variant='fullWidth'>
+                            <Tab label="Sub Assembly" value={0} />
+                            <Tab label="Main Assembly" value={1} />
+                            <Tab label="Section Assembly" value={2} />
+                        </Tabs>
+
+                        {/* Sub Assembly Tab */}
+                        {currentTab == 0 && <Box>
+                            {subAssemblyList && subAssemblyList.map((sa) => {
+                                return (
+                                    <Grid2 container sx={{ mt: 2 }}>
+                                        <Grid2 size={3}>
+                                            <TextField
+                                                sx={{ ml: 1 }}
+                                                size='small'
+                                                variant="outlined"
+                                                fullWidth
+                                                required
+                                                label="Sub Assembly"
+                                                name="serial_no"
+                                                value={sa.name}
+                                            />
+                                        </Grid2>
+                                        <Grid2 size={3} sx={{ ml: 2 }}>
+                                            <TextField
+                                                sx={{ ml: 1 }}
+                                                size='small'
+                                                variant="outlined"
+                                                fullWidth
+                                                required
+                                                label="Qty"
+                                                name="serial_no"
+                                                value={sa.qty}
+                                            />
+                                        </Grid2>
+
+                                        <Grid2 size={3} sx={{ ml: 2 }}>
+
+                                        </Grid2>
+                                    </Grid2>
+                                )
+                            })}
+                            <Button variant="contained" startIcon={<Settings />} size="small" sx={{ mt: 1 }}
+                                onClick={() => {
+                                    setErrors({})
+                                }}>
+                                Add New Sub Assembly
+                            </Button>
+                        </Box>}
+
+                        {/* Main Assembly Tab */}
+                        {currentTab == 1 && <Box>
+                            {mainAssemblyList && mainAssemblyList.map((sa) => {
+                                return (
+                                    <Card sx={{ padding: 3, mt: 1 }}>
+                                        <Grid2 container>
+                                            <Grid2 size={10}>
+                                                <Card sx={{ display: 'flex', flexDirection: 'row', padding: 1, backgroundColor: '#3A6D8C' }}>
+                                                    <h6 style={{ marginTop: 'auto', marginBottom: 'auto', color: 'white' }}>Name: <b>{sa.name}</b></h6>
+                                                    <h6 style={{ margin: 'auto', color: 'white' }}>Serial No: <b>{sa.serial_no}</b></h6>
+                                                </Card>
+                                            </Grid2>
+
+                                            <Grid2 size={10} sx={{ mt: 1 }}>
+                                                {mainAssemblyParts.filter((sap: any) => sap.main_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='primary'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {mainAssemblyParts.filter((sap: any) => sap.main_assembly_id == sa.id)?.map((part) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={10}>
+                                                {mainAssemblyBoughtouts.filter((sab: any) => sab.main_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='success'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Boughtout Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {mainAssemblyBoughtouts.filter((sab: any) => sab.main_assembly_id == sa.id)?.map((boughtout) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{boughtout.bought_out_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{boughtout.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={10}>
+                                                {mainAssemblySub.filter((sab: any) => sab.main_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='danger'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Sub Assembly Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {mainAssemblySub.filter((sab: any) => sab.main_assembly_id == sa.id)?.map((sub) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{sub.sub_assembly_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{sub.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={4} sx={{ ml: 3, display: 'flex', flexDirection: 'row', justifyContent: 'flex-end' }}>
+
+                                            </Grid2>
+                                        </Grid2>
+                                    </Card>)
+                            })}
+                        </Box>}
+
+                        {/* Section Assembly Tab */}
+                        {currentTab == 2 && <Box>
+                            {sectionAssemblyList && sectionAssemblyList.map((sa) => {
+                                return (
+                                    <Card sx={{ padding: 3, mt: 1 }}>
+                                        <Grid2 container>
+                                            <Grid2 size={10}>
+                                                <Card sx={{ display: 'flex', flexDirection: 'row', padding: 1, backgroundColor: '#664343' }}>
+                                                    <h6 style={{ marginTop: 'auto', marginBottom: 'auto', color: 'white' }}>Name: <b>{sa.name}</b></h6>
+                                                    <h6 style={{ margin: 'auto', color: 'white' }}>Serial No: <b>{sa.serial_no}</b></h6>
+                                                </Card>
+                                            </Grid2>
+
+                                            <Grid2 size={10} sx={{ mt: 1 }}>
+                                                {sectionAssemblyParts.filter((sap: any) => sap.section_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='primary'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {sectionAssemblyParts.filter((sap: any) => sap.section_assembly_id == sa.id)?.map((part) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={10}>
+                                                {sectionAssemblyBoughtouts.filter((sab: any) => sab.section_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='success'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Boughtout Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {sectionAssemblyBoughtouts.filter((sab: any) => sab.section_assembly_id == sa.id)?.map((boughtout) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{boughtout.bought_out_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{boughtout.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={10}>
+                                                {sectionAssemblySub.filter((sab: any) => sab.section_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='danger'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Sub Assembly Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {sectionAssemblySub.filter((sab: any) => sab.section_assembly_id == sa.id)?.map((sub) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{sub.sub_assembly_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{sub.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+
+                                            <Grid2 size={10}>
+                                                {sectionAssemblyMain.filter((sab: any) => sab.section_assembly_id == sa.id)?.length > 0 &&
+                                                    <CTable small striped>
+                                                        <CTableHead color='warning'>
+                                                            <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Main Assembly Name</CTableHeaderCell>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                                            </CTableRow>
+                                                        </CTableHead>
+                                                        <CTableBody>
+                                                            {sectionAssemblyMain.filter((sab: any) => sab.section_assembly_id == sa.id)?.map((main) => {
+                                                                return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{main.main_assembly_name}</CTableDataCell>
+                                                                    <CTableDataCell style={{ width: '20%' }}>{main.qty}</CTableDataCell>
+                                                                </CTableRow>)
+                                                            })}
+                                                        </CTableBody>
+                                                    </CTable>}
+                                            </Grid2>
+                                        </Grid2>
+                                    </Card>)
+                            })}
+                        </Box>}
+                    </Box>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setViewMachineDetailDialog(false)
+                    }} sx={{ color: '#bb0037' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Assembly close dialog */}
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "30vw!important",
+                    },
+                }}
+                open={assemblyCloseDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setAssemblyCloseDialog(false)
+                }}>
+                <DialogTitle>Assemble Part/ Boughtout</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Assembly Remarks"
+                        multiline
+                        rows={4}
+                        name="remarks"
+                        sx={{ mt: 1 }}
+                        value={assemblyPart?.remarks ? assemblyPart?.remarks : ""}
+                        onChange={(e: any) => {
+                            setAssemblyPart({ ...assemblyPart, remarks: e.target.value })
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setAssemblyCloseDialog(false)
+                        setErrors({})
+                        setAssemblyPart({})
+                    }} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button variant="contained" onClick={() => {
+                        if (assemblyPart.type === "part") {
+                            dispatch(closePartAssembly({
+                                order_id: orderId,
+                                part_name: assemblyPart.part_name,
+                                remarks: assemblyPart.remarks
+                            })).unwrap().then((res: any) => {
+                                if (res.message.includes('success')) {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                    setOrderDetailList(
+                                        orderDetailList.map((od: any) => {
+                                            return (od.id == assemblyPart.id) ? {
+                                                ...od,
+                                                status: 'Assembly closed'
+                                            } : od
+                                        })
+                                    )
+                                    setAssemblyCloseDialog(false)
+                                    setErrors({})
+                                    setAssemblyPart({})
+                                } else {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                }
+                            })
+                        } else {
+                            dispatch(closeBoughtoutAssembly({
+                                order_id: orderId,
+                                production_boughtout_id: assemblyPart.id,
+                                bought_out_name: assemblyPart.bought_out_name,
+                                remarks: assemblyPart.remarks
+                            })).unwrap().then((res: any) => {
+                                if (res.message.includes('success')) {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                    setOrderDetailBOList(
+                                        orderDetailBOList.map((od: any) => {
+                                            return (od.id == assemblyPart.id) ? {
+                                                ...od,
+                                                status: 'Assembly Closed'
+                                            } : od
+                                        })
+                                    )
+                                    setAssemblyCloseDialog(false)
+                                    setErrors({})
+                                    setAssemblyPart({})
+                                } else {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                }
+                            })
+                        }
+                    }}>
+                        Close Assembly
+                    </Button>
                 </DialogActions>
             </Dialog>
 

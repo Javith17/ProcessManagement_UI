@@ -2,11 +2,12 @@ import { useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createCustomer, fetchCustomerDetail, updateCustomer } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, CircularProgress, Dialog } from '@mui/material';
+import { createCustomer, fetchCustomerDetail, fetchCustomerHistory, updateCustomer } from '../slices/adminSlice';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, Checkbox, FormGroup, FormControlLabel, FormHelperText, 
+  CircularProgress, Dialog, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Pagination, Typography } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowBackIos } from '@mui/icons-material';
-import { nav_customers } from '../constants';
+import { nav_customers, TableRowStyled } from '../constants';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 
@@ -15,6 +16,7 @@ export default function NewCustomer() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   const { state } = useLocation()
+  const [customerHistory, setCustomerHistory] = useState<any>()
 
   const { status } = useAppSelector(
     (state) => state.admin
@@ -61,6 +63,14 @@ export default function NewCustomer() {
           isSpares: res.customer.is_spares,
           isSPM: res.customer.is_spm
         })
+      })
+
+      dispatch(fetchCustomerHistory({
+        searchText: state?.customer_id,
+        page: 1,
+        limit: 10
+      })).unwrap().then((res:any) => {
+        setCustomerHistory(res)
       })
     }
   }, [state?.customer_id])
@@ -356,6 +366,54 @@ export default function NewCustomer() {
               </Button>
             </Grid2>
           </Grid2>
+
+          <Typography sx={{fontWeight:'bold', fontSize:'18px', mt: 1}}>Customer History</Typography>
+          <Grid2 container sx={{mt:1}}>
+            <Grid2 size={{ xs: 6, md: 12 }}>
+              <TableContainer component={Paper}>
+                <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Machine Name</TableCell>
+                      <TableCell>Order No</TableCell>
+                      <TableCell>Order Status</TableCell>
+                      <TableCell>Order Date</TableCell>
+                      <TableCell>Cost</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {customerHistory?.list?.length > 0 ? customerHistory?.list?.map((row:any) => (
+                      <TableRowStyled key={row.id}>
+                        <TableCell>{row.machine_name}</TableCell>
+                        <TableCell>{row.quotation.quotation_no}</TableCell>
+                        <TableCell>{row.status}</TableCell>
+                        <TableCell>{row.created_at}</TableCell>
+                        <TableCell>{row.quotation.approved_cost}</TableCell>
+                      </TableRowStyled>
+                    )) : <TableRow key={0}>
+                          <TableCell colSpan={5} align='center'>No Data</TableCell>
+                        </TableRow>}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Pagination count={Math.ceil(customerHistory?.count/10)} shape="rounded" sx={{
+                '& > .MuiPagination-ul': {
+                  justifyContent: 'center',
+                }, mt:2
+              }} onChange={(e:any, value:number)=>{
+                dispatch(fetchCustomerHistory({
+                  searchText: state?.customer_id,
+                  page: value,
+                  limit: 10
+                })).unwrap().then((res:any) => {
+                  setCustomerHistory(res)
+                })
+              }}/>
+
+            </Grid2>
+          </Grid2>
+
         </form>
       </Box>
 

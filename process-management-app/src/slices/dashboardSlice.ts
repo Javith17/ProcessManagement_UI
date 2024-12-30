@@ -67,6 +67,19 @@ export const fetchPendingDeliveryParts = createAsyncThunk('deliveryPendingParts'
     return resData
 })
 
+export const fetchPendingDeliveryBOs = createAsyncThunk('deliveryPendingBoughtouts', async (data?: { searchText?:String, limit?: number, page?: number }) => {
+    const response = await axiosInstance.get('order/deliveryPendingBoughtouts',
+    {
+        params: {
+            limit: data?.limit,
+            page: data?.page
+        },
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
 export const fetchReminderDateList = createAsyncThunk('partListFilter', async (data?: { from_date?:String, to_date?:String, searchText?:String, limit?: number, page?: number }) => {
     const response = await axiosInstance.get(`order/partListFilter/reminder/${data?.from_date}/${data?.to_date}`,
     {
@@ -128,6 +141,30 @@ export const fetchDashboardDetail = createAsyncThunk('getDashboardDetail', async
         return resData
     }catch(error){
         return {}
+    }
+})
+
+export const fetchOrderParts = createAsyncThunk('orderParts', async (data?: String) => {
+    try{
+        const response = await axiosInstance.get(`order/orderParts`,{
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
+export const closeOrder = createAsyncThunk('closeOrder', async (data: any) => {
+    try{
+        const response = await axiosInstance.post('order/closeOrder', data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
     }
 })
 

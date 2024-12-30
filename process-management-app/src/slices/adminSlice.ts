@@ -253,6 +253,60 @@ export const createNewProcess = createAsyncThunk('createProcess', async (data: a
     return resData
 })
 
+export const fetchVendorHistory = createAsyncThunk('vendorHistory', async (data?: { searchText?: String, limit?: number, page?: number }) => {
+    try {
+        const response = await axiosInstance.get('admin/vendorsHistory',
+            {
+                params: {
+                    search: data?.searchText,
+                    limit: data?.limit,
+                    page: data?.page
+                },
+                headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+            })
+        const resData = response.data
+        return resData
+    } catch (error) {
+        return []
+    }
+})
+
+export const fetchSupplierHistory = createAsyncThunk('supplierHistory', async (data?: { searchText?: String, limit?: number, page?: number }) => {
+    try {
+        const response = await axiosInstance.get('admin/suppliersHistory',
+            {
+                params: {
+                    search: data?.searchText,
+                    limit: data?.limit,
+                    page: data?.page
+                },
+                headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+            })
+        const resData = response.data
+        return resData
+    } catch (error) {
+        return []
+    }
+})
+
+export const fetchCustomerHistory = createAsyncThunk('customerHistory', async (data?: { searchText?: String, limit?: number, page?: number }) => {
+    try {
+        const response = await axiosInstance.get('admin/customersHistory',
+            {
+                params: {
+                    search: data?.searchText,
+                    limit: data?.limit,
+                    page: data?.page
+                },
+                headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+            })
+        const resData = response.data
+        return resData
+    } catch (error) {
+        return []
+    }
+})
+
 const adminSlice = createSlice({
     name: 'admin',
     initialState,

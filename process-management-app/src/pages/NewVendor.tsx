@@ -2,19 +2,20 @@ import { useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createVendor, fetchProcessList, fetchVendorDetail, fetchVendors, updateVendor } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress } from '@mui/material';
+import { createVendor, fetchProcessList, fetchVendorDetail, fetchVendorHistory, fetchVendors, updateVendor } from '../slices/adminSlice';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Pagination, Typography } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
 import { ArrowBackIos } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
-import { nav_vendors } from '../constants';
+import { nav_vendors, TableRowStyled } from '../constants';
 
 export default function NewVendor() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { state } = useLocation()
+  const [vendorHistory, setVendorHistory] = useState<any>()
 
   const { enqueueSnackbar } = useSnackbar()
 
@@ -80,7 +81,16 @@ export default function NewVendor() {
           processList: res.vendorProcess?.map((vp: any) => vp.process_name)
         })
       })
+      
+      dispatch(fetchVendorHistory({
+        searchText: state?.vendor_id,
+        page: 1,
+        limit: 10
+      })).unwrap().then((res:any) => {
+        setVendorHistory(res)
+      })
     }
+
   }, [state?.vendor_id])
 
   const validate = () => {
@@ -404,6 +414,54 @@ export default function NewVendor() {
               }}>
                 Submit
               </Button>
+            </Grid2>
+          </Grid2>
+          <Typography sx={{fontWeight:'bold', fontSize:'18px', mt: 1}}>Vendor History</Typography>
+          <Grid2 container sx={{mt:1}}>
+            <Grid2 size={{ xs: 6, md: 12 }}>
+              <TableContainer component={Paper}>
+                <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Part Name</TableCell>
+                      <TableCell>Process Name</TableCell>
+                      <TableCell>Machine Name</TableCell>
+                      <TableCell>Order No</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Order Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {vendorHistory?.list?.length > 0 ? vendorHistory?.list?.map((row:any) => (
+                      <TableRowStyled key={row.id}>
+                        <TableCell>{row.part_name}</TableCell>
+                        <TableCell>{row.process_name}</TableCell>
+                        <TableCell>{row.order.machine_name}</TableCell>
+                        <TableCell>{row.order.quotation.quotation_no}</TableCell>
+                        <TableCell>{row.status}</TableCell>
+                        <TableCell>{row.order.status}</TableCell>
+                      </TableRowStyled>
+                    )) : <TableRow key={0}>
+                          <TableCell colSpan={5} align='center'>No Data</TableCell>
+                        </TableRow>}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Pagination count={Math.ceil(vendorHistory?.count/10)} shape="rounded" sx={{
+                '& > .MuiPagination-ul': {
+                  justifyContent: 'center',
+                }, mt:2
+              }} onChange={(e:any, value:number)=>{
+                dispatch(fetchVendorHistory({
+                  searchText: state?.vendor_id,
+                  page: value,
+                  limit: 10
+                })).unwrap().then((res:any) => {
+                  setVendorHistory(res)
+                })
+              }}/>
+
             </Grid2>
           </Grid2>
         </form>

@@ -2,19 +2,20 @@ import { useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createSupplier, fetchSupplierDetail, updateSupplier } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress } from '@mui/material';
+import { createSupplier, fetchSupplierDetail, fetchSupplierHistory, updateSupplier } from '../slices/adminSlice';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Pagination } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowBackIos } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
-import { nav_subassembly, nav_suppliers } from '../constants';
+import { nav_subassembly, nav_suppliers, TableRowStyled } from '../constants';
 
 export default function NewSupplier() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   const { state } = useLocation()
+  const [supplierHistory, setSupplierHistory] = useState<any>()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,6 +55,14 @@ export default function NewSupplier() {
           bankName: res.supplier.supplier_bank_name,
           ifsc: res.supplier.supplier_ifsc
         })
+      })
+
+      dispatch(fetchSupplierHistory({
+        searchText: state?.supplier_id,
+        page: 1,
+        limit: 10
+      })).unwrap().then((res: any) => {
+        setSupplierHistory(res)
       })
     }
   }, [state?.supplier_id])
@@ -326,6 +335,53 @@ export default function NewSupplier() {
               }}>
                 Submit
               </Button>
+            </Grid2>
+          </Grid2>
+
+          <Typography sx={{fontWeight:'bold', fontSize:'18px', mt: 1}}>Supplier History</Typography>
+          <Grid2 container sx={{mt:1}}>
+            <Grid2 size={{ xs: 6, md: 12 }}>
+              <TableContainer component={Paper}>
+                <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Boughtout Name</TableCell>
+                      <TableCell>Machine Name</TableCell>
+                      <TableCell>Order No</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Order Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {supplierHistory?.list?.length > 0 ? supplierHistory?.list?.map((row:any) => (
+                      <TableRowStyled key={row.id}>
+                        <TableCell>{row.bought_out_name}</TableCell>
+                        <TableCell>{row.order.machine_name}</TableCell>
+                        <TableCell>{row.order.quotation.quotation_no}</TableCell>
+                        <TableCell>{row.status}</TableCell>
+                        <TableCell>{row.order.status}</TableCell>
+                      </TableRowStyled>
+                    )) : <TableRow key={0}>
+                          <TableCell colSpan={5} align='center'>No Data</TableCell>
+                        </TableRow>}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Pagination count={Math.ceil(supplierHistory?.count/10)} shape="rounded" sx={{
+                '& > .MuiPagination-ul': {
+                  justifyContent: 'center',
+                }, mt:2
+              }} onChange={(e:any, value:number)=>{
+                dispatch(fetchSupplierHistory({
+                  searchText: state?.supplier_id,
+                  page: value,
+                  limit: 10
+                })).unwrap().then((res:any) => {
+                  setSupplierHistory(res)
+                })
+              }}/>
+
             </Grid2>
           </Grid2>
         </form>

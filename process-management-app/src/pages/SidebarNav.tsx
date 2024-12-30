@@ -40,6 +40,7 @@ import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import { getPermission, getPermissionScreens } from '../utils/Permissions';
 import { logout } from '../slices/authSlice';
 import { useAppDispatch } from '../hooks/redux-hooks';
+import { FaStroopwafel } from "react-icons/fa";
 
 const drawerWidth = 240;
 
@@ -188,6 +189,10 @@ export default function SidebarNav(props: {currentPage?: string}) {
     {
       name: 'quotations',
       icon: <HiOutlineClipboardDocumentList />
+    },
+    {
+      name: 'assembly',
+      icon: <FaStroopwafel />
     },
     {
       name: 'orders',
@@ -444,7 +449,17 @@ export default function SidebarNav(props: {currentPage?: string}) {
                 if(hs.screen == "quotations"){
                   navigate('/quotations')
                 }else if(hs.screen == "orders"){
-                    navigate("/orders")
+                    navigate("/orders", {
+                      state: {
+                        type: 'order'
+                      }
+                    })
+                }else if(hs.screen == "assembly"){
+                    navigate("/orders" , {
+                      state: {
+                        type: 'assembly'
+                      }
+                    })
                 }
               
             }} >
