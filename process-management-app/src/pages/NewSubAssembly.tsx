@@ -16,7 +16,7 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import { nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
-import { createAttachment, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
+import { createAttachment, fetchBOListByMachine, fetchBoughtOutList, fetchMachineList, fetchPartsList, fetchPartsListByMachine } from '../slices/machineSlice';
 import { checkAssemblyName, createSubAssembly, fetchSubAssembly } from '../slices/assemblySlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
@@ -27,7 +27,7 @@ export default function NewSubAssembly() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   
-  const { machines, parts, boughtOuts } = useAppSelector(
+  const { machines, parts, boughtoutByMachines, partsByMachines } = useAppSelector(
     (state) => state.machine
   );
 
@@ -47,10 +47,15 @@ export default function NewSubAssembly() {
 
   useEffect(()=> {
     dispatch(fetchSubAssembly()).unwrap()
-    dispatch(fetchPartsList()).unwrap()
-    dispatch(fetchBoughtOutList()).unwrap()
     dispatch(fetchMachineList())
   },[dispatch])
+
+  useEffect(() => {
+    if(selectedMachines.length > 0){
+      dispatch(fetchPartsListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
+      dispatch(fetchBOListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
+    }
+  }, [selectedMachines])
 
   // useEffect(()=>{
   //   dispatch(createAttachment({ files: subAssemblyFiles, type: 'sub_assembly', type_id: 'e2cb4ee7-0d30-4e50-a02a-c6b60977909e'}))
@@ -193,6 +198,40 @@ export default function NewSubAssembly() {
               
               <Grid2 container>
                 
+              <Grid2 size={12}>
+                  <Card sx={{padding:2, mt: 1}}>
+                  <FormControl fullWidth margin="normal">
+                      <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
+                      <Select
+                      labelId="demo-multiple-checkbox-label"
+                      id="demo-multiple-checkbox"
+                      size='small'
+                      multiple
+                      required
+                      value={selectedMachines}
+                      onChange={handleMultiProcessChange}
+                      input={<OutlinedInput label="Tag" />}
+                      renderValue={(selected) => (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {selected.map((value:any) => (
+                                value.length > 0 ?
+                              <Chip key={value} label={value} /> : <></>
+                            ))}
+                          </Box>
+                        )}
+                      // MenuProps={MenuProps}
+                      >
+                      {machines.map((machine) => (
+                          <MenuItem key={machine.id} value={machine.machine_name}>
+                          <Checkbox checked={selectedMachines.includes(machine.machine_name)} />
+                          <ListItemText primary={machine.machine_name} />
+                          </MenuItem>
+                      ))}
+                      </Select>
+                      </FormControl>
+                  </Card>
+                  </Grid2>
+
                 <Grid2 size={12}>
                   <Card sx={{padding:2, mt: 1}}>
                     {subAssemblyParts.map((sap, index) => {
@@ -221,7 +260,7 @@ export default function NewSubAssembly() {
                                             )
                                           }}
                                         >
-                                          {parts.list.map((part) => {
+                                          {partsByMachines.list.map((part) => {
                                             return <MenuItem value={part.id}>{part.part_name}</MenuItem>
                                           })}
                                         </Select>
@@ -257,6 +296,7 @@ export default function NewSubAssembly() {
                               </Box>)
                             })}
                             <Button variant="contained" startIcon={<Settings />} size="small" sx={{mt:1}}
+                            disabled={selectedMachines.length == 0}
                             onClick={()=>{
                               setSubAssemblyParts([...subAssemblyParts, { id: new Date().getTime(), sub_assembly_id:selectedSubAssembly.id, name: selectedSubAssembly.name, part_id:"", part_name: "", qty: 0 }])
                             }}>
@@ -285,14 +325,14 @@ export default function NewSubAssembly() {
                                                   sub_assembly_id: selectedSubAssembly.id,
                                                   name: selectedSubAssembly.name,
                                                   bought_out_id: e.target.value,
-                                                  bought_out_name: boughtOuts.find((b) => b.id == e.target.value).bought_out_name,
+                                                  bought_out_name: boughtoutByMachines?.list?.find((b) => b.id == e.target.value).bought_out_name,
                                                   qty: sub.qty
                                                 } : sub
                                               })
                                             )
                                           }}
                                         >
-                                          {boughtOuts.map((boughtout) => {
+                                          {boughtoutByMachines?.list?.map((boughtout) => {
                                             return <MenuItem value={boughtout.id}>{boughtout.bought_out_name}</MenuItem>
                                           })}
                                         </Select>
@@ -328,6 +368,7 @@ export default function NewSubAssembly() {
                               </Box>)
                             })}
                             <Button variant="contained" startIcon={<Settings />} size="small" sx={{mt:1}}
+                            disabled={selectedMachines.length == 0}
                             onClick={()=>{
                               setSubAssemblyBoughtouts([...subAssemblyBoughtouts, { id: new Date().getTime(), sub_assembly_id: selectedSubAssembly.id,  name: selectedSubAssembly.name, bought_out_id:"", bought_out_name: "", qty: 0 }])
                             }}>
@@ -335,40 +376,6 @@ export default function NewSubAssembly() {
                             </Button>
                   </Card>
                 </Grid2>
-                
-                <Grid2 size={12}>
-                  <Card sx={{padding:2, mt: 1}}>
-                  <FormControl fullWidth margin="normal">
-                      <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
-                      <Select
-                      labelId="demo-multiple-checkbox-label"
-                      id="demo-multiple-checkbox"
-                      size='small'
-                      multiple
-                      required
-                      value={selectedMachines}
-                      onChange={handleMultiProcessChange}
-                      input={<OutlinedInput label="Tag" />}
-                      renderValue={(selected) => (
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {selected.map((value:any) => (
-                                value.length > 0 ?
-                              <Chip key={value} label={value} /> : <></>
-                            ))}
-                          </Box>
-                        )}
-                      // MenuProps={MenuProps}
-                      >
-                      {machines.map((machine) => (
-                          <MenuItem key={machine.id} value={machine.machine_name}>
-                          <Checkbox checked={selectedMachines.includes(machine.machine_name)} />
-                          <ListItemText primary={machine.machine_name} />
-                          </MenuItem>
-                      ))}
-                      </Select>
-                      </FormControl>
-                  </Card>
-                  </Grid2>
 
                 <Grid2 size={12}>
                   <Card sx={{padding:2, mt: 1}}>
@@ -413,15 +420,15 @@ export default function NewSubAssembly() {
                 </Grid2>
               </Grid2>
 
-              <Grid2 size={12} container justifyContent={'flex-end'} sx={{mt:2}}>
-              <Grid2 size={2}>
+              <Grid2 container sx={{mt:2}} size={{xs: 12, md: 12}}>
+              <Grid2 size={6}>
                 <Button variant='outlined' color="primary" fullWidth onClick={(e:any)=>{
                   navigate(-1)
                 }}>
                   Cancel
                 </Button>
               </Grid2>
-              <Grid2 size={2}>
+              <Grid2 size={6}>
                 <Button variant="contained" color="secondary" fullWidth sx={{ml:2}} onClick={(e:any)=>{
                     handleSubmit()
                 }}>

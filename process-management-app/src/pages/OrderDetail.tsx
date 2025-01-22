@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -23,6 +23,11 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import moment from 'moment';
+import {
+    MaterialReactTable,
+    useMaterialReactTable,
+    type MRT_ColumnDef,
+  } from 'material-react-table';
 
 export default function OrderDetail() {
     const dispatch = useAppDispatch()
@@ -178,6 +183,167 @@ export default function OrderDetail() {
             })
     }
 
+    const columns = useMemo<MRT_ColumnDef<any>[]>(
+        //column definitions...
+        () => [
+          {
+            header: 'Part Name',
+            accessorKey: 'part_name',
+          },
+          {
+            header: 'Qty',
+            accessorKey: 'order_qty',
+          },
+          {
+            header: 'Process Name',
+            accessorKey: 'process_name',
+          },
+          {
+            header: 'Vendor Name',
+            accessorKey: 'vendor_name',
+            Cell: (row: any) => (
+                <Box>
+                    {row?.row?.original?.vendor_name ? row?.row?.original?.vendor_name : <div style={{
+                    backgroundColor: 'teal', textAlign: 'center', color: 'white',
+                    borderRadius: '4px', cursor: 'pointer'
+                }} onClick={() => {
+                    setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, 
+                        process_name: row?.row?.original?.process_name })
+                    const processVendors = orderDetail?.parts?.partVendors?.filter((pv: any) =>
+                        pv.part.id == row?.row?.original?.part_id && pv.process.id == row?.row?.original?.process_id
+                    )
+                    if (processVendors?.length > 0) {
+                        setVendorList(processVendors[0].part_process_vendor_list)
+                        setEditDialog(true)
+                    }
+                }}>Add Vendor</div>}
+                </Box>   
+            )
+          },
+          {
+            header: 'Delivery Date',
+            accessorKey: 'delivery_date',
+            Cell: (row:any) => (<>{row?.row?.original?.delivery_date ? moment(row?.row?.original?.delivery_date).format('DD-MM-YYYY') : ''}</>)
+          },
+          {
+            header: 'Reminder Date',
+            accessorKey: 'reminder_date',
+            Cell: (row:any) => (<>{row?.row?.original?.reminder_date ? moment(row?.row?.original?.reminder_date).format('DD-MM-YYYY') : ''}</>)
+          },
+          {
+            header: 'Status',
+            accessorKey: 'status',
+            Cell: ( row:any ) => (
+                <Box 
+                sx={{
+                    borderColor: row?.row?.original?.status.includes('Pending') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
+                    color: row?.row?.original?.status.includes('Pending') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
+                    borderStyle: 'solid', borderWidth: 'thin',
+                    textAlign: 'center',
+                    borderRadius: '4px', cursor: row?.row?.original?.status.includes('Progress') ? 'pointer' : 'default',
+                    ":hover": {
+                        backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : 'white',
+                        color: row?.row?.original?.status.includes('Progress') ? 'white' :
+                        row?.row?.original?.status.includes('Pending') ? '#F95454' : '#347928'
+                    }
+                }} 
+                onClick={() => {
+                    if (state?.type === "order") {
+                        if (row?.row?.original?.status.includes('Progress')) {
+                            // setDeliveredDialog(true)
+                            setCompleteDialog(true)
+                            setCompleteData({ id: row?.row?.original?.id, delivery_date: row?.row?.original?.delivery_date, 
+                                reminder_date: row?.row?.original?.reminder_date, part_name: row?.row?.original?.part_name, 
+                                process_name: row?.row?.original?.process_name })
+                            // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                        } else if (row?.row?.original?.status.toLowerCase() == 'move to vendor') {
+                            const processVendors = orderDetail.parts?.partVendors.filter((pv: any) =>
+                                pv.part.id == row.part_id && pv.process.id == row?.row?.original?.process_id
+                            )
+                            if (processVendors.length > 0) {
+                                const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
+                                const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
+                                const reminderDate = deliveryDate.add(-1, 'day')
+                                setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, 
+                                    process_name: row?.row?.original?.process_name })
+                                setSelectedVendor({
+                                    id: row?.row?.original?.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
+                                    delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
+                                    delivery_date: deliveryDate, reminder_date: reminderDate
+                                })
+                                setMoveToVendorData({
+                                    id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, process_name: row?.row?.original?.process_name,
+                                    vendor_id: row?.row?.original?.vendor_id
+                                })
+                                setMoveToVendorDialog(true)
+                            }
+
+                        }
+                    } else {
+                        if(row.status.includes('Assembly In-Progress')){
+                            setAssemblyCloseDialog(true)
+                            setAssemblyPart({ ...row?.row?.original, type: 'part' })
+                        }
+                    }
+                }}>{row?.row?.original?.status}</Box>
+            ) 
+          },
+          {
+            header: '',
+            accessorKey: 'id',
+            size: 25,
+            Cell: (row: any) => (
+                <FaWhatsapp color='green' onClick={() => {
+                    if (row?.row?.original?.vendor_id) {
+                        dispatch(fetchVendorAttachment({ vendor_id: row?.row?.original?.vendor_id, 
+                            part_id: row?.row?.original?.part_id })).unwrap().then((res: any) => {
+                            if (res.attachments?.length > 0) {
+                                const link = res.attachments.map((att: any) => `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`).join(',')
+                                const text = `Hi ${res.vendor.vendor_name}
+                                Accept the order using following link ${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row?.row?.original?.id} 
+                                Get the drawings from following link ${link}`
+                                console.log("-----------", text)
+                                window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${text}`, '_blank')?.focus()
+                            } else {
+                                DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)
+                            }
+                        })
+                    }
+                }} />
+            )
+          }
+        ],
+        [],
+        //end
+      );
+
+      const table = useMaterialReactTable({
+        columns,
+        data: orderDetailList && orderDetailList.length > 0 ? orderDetailList : [],
+        enableGrouping: true,
+        groupedColumnMode: 'remove',
+        initialState: {
+          grouping: ['part_name']
+        },
+        muiTableContainerProps: { sx: { maxHeight: '800px' } },
+        enablePagination: false,
+        enableBottomToolbar: false,
+        enableTopToolbar: false,
+        muiTableHeadCellProps: {
+            sx: {
+                backgroundColor:'#fadbda'
+            }
+        },
+        muiTableBodyRowProps: ({ row }) => ({
+            sx: {
+            //   backgroundColor: row.index % 2 == 0 ? 'white' : '#F2F2F2',
+              '&:hover': {
+                    backgroundColor: 'lightskyblue',
+                }
+            },
+          }),
+      });
+
     useEffect(() => {
         if (orderDetail?.parts?.orderDetail) {
             setHeaderDetail({
@@ -249,8 +415,12 @@ export default function OrderDetail() {
                     }}>{headerDetail?.status == "Assembly Completed" ? "Assembly Completed" : "Complete Assembly"}</Button>
                 </Grid2>}
 
+                <Grid2 size={12}>
+                    <MaterialReactTable table={table} />
+                </Grid2>
+
                 <Grid2 size={{ xs: 6, md: 12 }}>
-                    <TableContainer component={Paper}>
+                    {/* <TableContainer component={Paper}>
                         <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
                             <TableHead>
                                 <TableRow>
@@ -347,6 +517,7 @@ export default function OrderDetail() {
                                                         const text = `Hi ${res.vendor.vendor_name}
                                                         Accept the order using following link ${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row.id} 
                                                         Get the drawings from following link ${link}`
+                                                        console.log("-----------", text)
                                                         window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${text}`, '_blank')?.focus()
                                                         console.log(res)
                                                     } else {
@@ -363,7 +534,7 @@ export default function OrderDetail() {
                                 </TableRow>}
                             </TableBody>
                         </Table>
-                    </TableContainer>
+                    </TableContainer> */}
                 </Grid2>
 
                 {/* Boughtout supplier */}

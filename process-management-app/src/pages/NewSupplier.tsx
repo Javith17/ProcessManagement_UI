@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createSupplier, fetchSupplierDetail, fetchSupplierHistory, updateSupplier } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Pagination } from '@mui/material';
+import { createSupplier, fetchSupplierBOs, fetchSupplierDetail, fetchSupplierHistory, updateSupplier } from '../slices/adminSlice';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Dialog, CircularProgress, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Pagination, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowBackIos } from '@mui/icons-material';
+import { Add, ArrowBackIos, Save } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { nav_subassembly, nav_suppliers, TableRowStyled } from '../constants';
+import Autocomplete from '@mui/material/Autocomplete';
+import { fetchBoughtOutList, updateBoughtout, updateBoughtoutS } from '../slices/machineSlice';
 
 export default function NewSupplier() {
   const dispatch = useAppDispatch()
@@ -33,10 +35,69 @@ export default function NewSupplier() {
   });
   const [errors, setErrors] = useState<any>();
   const [loadingDialog, setLoadingDialog] = useState(false)
+  const [supplierBOList, setSupplierBOList] = useState<any[]>([])
+  const [BOList, setBOList] = useState<any[]>([])
+  const [addBoData, setAddBoData] = useState<any>({
+    dialog: false,
+    bo_id: '',
+    bo_name: '',
+    cost: 0,
+    delivery_time: ''
+  })
+  const [boOpen, setBoOpen] = useState(false)
 
   const { status } = useAppSelector(
     (state) => state.admin
   );
+
+  const { machineStatus } = useAppSelector(
+    (state) => state.machine
+  );
+
+  const handleBoughoutSearch = (value: string) => {
+    if(value.length > 2){
+      dispatch(fetchBoughtOutList({searchText: value, type: 'map', type_id: state?.supplier_id})).unwrap().then((res:any)=>{
+        setBOList(res)
+      })
+    }
+  }
+
+  const handleAddBoughtout = () => {
+    if (addBoData.bo_id?.length == 0) {
+      DisplaySnackbar('Select Boughtout', 'error', enqueueSnackbar)
+    } else if (addBoData.cost?.toString().length == 0 || addBoData.cost == 0) {
+      DisplaySnackbar('Add cost', 'error', enqueueSnackbar)
+    } else if (addBoData.delivery_time?.toString().length == 0) {
+      DisplaySnackbar('Add Delivery time', 'error', enqueueSnackbar)
+    } else {
+      console.log({
+        boughtout_id: addBoData?.bo_id,
+        id: state?.supplier_id,
+        update_type: 'edit',
+        update_type_entity: 'boughtout_supplier',
+        cost: addBoData.cost,
+        delivery_time: addBoData.delivery_time
+      })
+      dispatch(updateBoughtoutS({
+        boughtout_id: addBoData?.bo_id,
+        id: state?.supplier_id,
+        update_type: 'add',
+        update_type_entity: 'boughtout_supplier',
+        cost: addBoData.cost,
+        delivery_time: addBoData.delivery_time
+      })).unwrap().then((res:any) => {
+          if(res.message.includes('success')){
+            DisplaySnackbar('Boughtout Added Successfully', 'success', enqueueSnackbar) 
+            setAddBoData({dialog:'', bo_id:'', bo_name: '', cost: 0, delivery_time: ''})
+            dispatch(fetchSupplierBOs({ id: state?.supplier_id })).unwrap().then((res: any) => {
+              setSupplierBOList(res?.supplierBoughtouts)
+            })
+          }else{
+            DisplaySnackbar('Unable to add Boughtout to supplier', 'success', enqueueSnackbar) 
+          }
+      })
+    }
+  }
 
   useEffect(() => {
     if (state?.supplier_id) {
@@ -63,6 +124,10 @@ export default function NewSupplier() {
         limit: 10
       })).unwrap().then((res: any) => {
         setSupplierHistory(res)
+      })
+
+      dispatch(fetchSupplierBOs({ id: state?.supplier_id })).unwrap().then((res: any) => {
+        setSupplierBOList(res?.supplierBoughtouts)
       })
     }
   }, [state?.supplier_id])
@@ -338,11 +403,61 @@ export default function NewSupplier() {
             </Grid2>
           </Grid2>
 
-          <Typography sx={{fontWeight:'bold', fontSize:'18px', mt: 1}}>Supplier History</Typography>
-          <Grid2 container sx={{mt:1}}>
-            <Grid2 size={{ xs: 6, md: 12 }}>
-              <TableContainer component={Paper}>
-                <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
+          <Grid2 container sx={{ mt: 1 }}>
+            <Grid2 size={{ xs: 2, md: 4 }} sx={{ paddingRight: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                <Typography sx={{ fontWeight: 'bold', fontSize: '18px', mt: 1 }}>Supplier Boughtouts</Typography>
+                <Button variant="text" startIcon={<Add />} size="small" sx={{ marginLeft: 'auto' }} onClick={() => {
+                  setAddBoData({
+                    dialog: true,
+                    bo_id: '', bo_name: '', cost: 0, delivery_time: ''
+                  })
+                }}>
+                  Add New
+                </Button>
+              </Box>
+              <TableContainer component={Paper} sx={{ mt: 1 }}>
+                <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Boughtout Name</TableCell>
+                      <TableCell>Cost</TableCell>
+                      <TableCell>Delivery Time(in Days)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {supplierBOList?.length > 0 ? supplierBOList?.map((row: any) => (
+                      <TableRowStyled key={row.id}>
+                        <TableCell>{row.bought_out.bought_out_name}</TableCell>
+                        <TableCell>{row.cost}</TableCell>
+                        <TableCell>{row.delivery_time}</TableCell>
+                      </TableRowStyled>
+                    )) : <TableRow key={0}>
+                      <TableCell colSpan={5} align='center'>No Data</TableCell>
+                    </TableRow>}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Pagination count={Math.ceil(supplierHistory?.count / 10)} shape="rounded" sx={{
+                '& > .MuiPagination-ul': {
+                  justifyContent: 'center',
+                }, mt: 2
+              }} onChange={(e: any, value: number) => {
+                dispatch(fetchSupplierHistory({
+                  searchText: state?.supplier_id,
+                  page: value,
+                  limit: 10
+                })).unwrap().then((res: any) => {
+                  setSupplierHistory(res)
+                })
+              }} />
+
+            </Grid2>
+            <Grid2 size={{ xs: 4, md: 8 }}>
+              <Typography sx={{ fontWeight: 'bold', fontSize: '18px', mt: 1 }}>Supplier History</Typography>
+              <TableContainer component={Paper} sx={{ mt: 1 }}>
+                <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Boughtout Name</TableCell>
@@ -353,7 +468,7 @@ export default function NewSupplier() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {supplierHistory?.list?.length > 0 ? supplierHistory?.list?.map((row:any) => (
+                    {supplierHistory?.list?.length > 0 ? supplierHistory?.list?.map((row: any) => (
                       <TableRowStyled key={row.id}>
                         <TableCell>{row.bought_out_name}</TableCell>
                         <TableCell>{row.order.machine_name}</TableCell>
@@ -362,25 +477,25 @@ export default function NewSupplier() {
                         <TableCell>{row.order.status}</TableCell>
                       </TableRowStyled>
                     )) : <TableRow key={0}>
-                          <TableCell colSpan={5} align='center'>No Data</TableCell>
-                        </TableRow>}
+                      <TableCell colSpan={5} align='center'>No Data</TableCell>
+                    </TableRow>}
                   </TableBody>
                 </Table>
               </TableContainer>
 
-              <Pagination count={Math.ceil(supplierHistory?.count/10)} shape="rounded" sx={{
+              <Pagination count={Math.ceil(supplierHistory?.count / 10)} shape="rounded" sx={{
                 '& > .MuiPagination-ul': {
                   justifyContent: 'center',
-                }, mt:2
-              }} onChange={(e:any, value:number)=>{
+                }, mt: 2
+              }} onChange={(e: any, value: number) => {
                 dispatch(fetchSupplierHistory({
                   searchText: state?.supplier_id,
                   page: value,
                   limit: 10
-                })).unwrap().then((res:any) => {
+                })).unwrap().then((res: any) => {
                   setSupplierHistory(res)
                 })
-              }}/>
+              }} />
 
             </Grid2>
           </Grid2>
@@ -390,6 +505,96 @@ export default function NewSupplier() {
       <Dialog maxWidth={'md'}
         open={loadingDialog}>
         <CircularProgress color='success' sx={{ m: 3 }} />
+      </Dialog>
+
+      {/* Add Boughtout supplier */}
+
+      <Dialog
+        maxWidth={'md'}
+        open={addBoData.dialog}>
+        <DialogTitle>Add Boughtout</DialogTitle>
+        <DialogContent>
+          <Autocomplete
+            fullWidth
+            size={'small'}
+            sx={{ mt: 2 }}
+            open={boOpen}
+            onInputChange={(e: any) => {
+              setBoOpen(true)
+              handleBoughoutSearch(e.target.value)
+            }
+            }
+            onChange={(e: any, value: any) => {
+              setBoOpen(false)
+              if(value){
+                setAddBoData({ ...addBoData, bo_id: value.id, bo_name: value.bought_out_name })
+              }
+            }}
+            isOptionEqualToValue={(boughtout, value) => boughtout.bought_out_name === value.bought_out_name}
+            getOptionLabel={(boughtout) => boughtout.bought_out_name}
+            options={BOList}
+            loading={machineStatus == "loading"}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Boughtout"
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {machineStatus == "loading" ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </React.Fragment>
+                    ),
+                  },
+                }}
+              />
+            )}
+          />
+
+          <TextField
+            size={'small'}
+            fullWidth
+            required
+            sx={{ mt: 2 }}
+            id="email"
+            label="Cost"
+            name="email"
+            error={!!errors?.delivery_cost}
+            helperText={errors?.delivery_cost}
+            value={addBoData.cost}
+            onChange={(e) => {
+              setAddBoData({ ...addBoData, cost: e.target.value })
+            }} />
+
+          <TextField
+            size={'small'}
+            fullWidth
+            required
+            sx={{ mt: 1 }}
+            id="email"
+            label="Delivery Time"
+            name="email"
+            type='number'
+            error={!!errors?.delivery_time}
+            helperText={errors?.delivery_time}
+            value={addBoData.delivery_time}
+            onChange={(e) => {
+              setAddBoData({ ...addBoData, delivery_time: e.target.value })
+            }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setAddBoData({ dialog: false })
+          }} sx={{ color: '#bb0037' }}>Cancel</Button>
+          <Button variant="contained" startIcon={<Save />} size="small" color='secondary'
+            onClick={() => {
+              handleAddBoughtout()
+            }}>
+            Save
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

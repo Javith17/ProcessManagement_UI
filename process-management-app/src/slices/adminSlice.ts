@@ -105,14 +105,15 @@ export const createNewUser = createAsyncThunk('createUser', async (data: any) =>
     return resData
 })
 
-export const fetchVendors = createAsyncThunk('vendors', async (data: { searchText?: String, limit?: number, page?: number } | undefined, { rejectWithValue }) => {
+export const fetchVendors = createAsyncThunk('vendors', async (data: { searchText?: String, limit?: number, page?: number, type?:string } | undefined, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get('admin/vendorsList',
             {
                 params: {
                     search: data?.searchText,
                     limit: data?.limit,
-                    page: data?.page
+                    page: data?.page,
+                    type: data?.type
                 },
                 headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
             })
@@ -280,6 +281,20 @@ export const fetchSupplierHistory = createAsyncThunk('supplierHistory', async (d
                     limit: data?.limit,
                     page: data?.page
                 },
+                headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+            })
+        const resData = response.data
+        return resData
+    } catch (error) {
+        return []
+    }
+})
+
+export const fetchSupplierBOs = createAsyncThunk('supplierBoughtouts', async (data?: { id: String, searchText?: String, 
+    limit?: number, page?: number }) => {
+    try {
+        const response = await axiosInstance.get(`machine/supplierBoughtouts/${data?.id}`,
+            {
                 headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
             })
         const resData = response.data

@@ -47,7 +47,7 @@ export default function Suppliers() {
       <Grid2 container spacing={2} padding={2} sx={{mt:10, flexGrow:1}}>
         <Grid2 size={{ xs: 6, md: 8 }}>
           <TextField
-            placeholder='Search supplier'
+            placeholder='Search by supplier or boughtout'
             variant="outlined"
             size='small'
             value={searchText}

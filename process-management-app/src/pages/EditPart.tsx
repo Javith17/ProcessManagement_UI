@@ -3,20 +3,25 @@ import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { createVendor, fetchProcessList, fetchVendors } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent } from '@mui/material';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent, Typography } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
 import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createPart, fetchPartDetail, updatePart } from '../slices/machineSlice';
+import { createAttachment, createPart, fetchMachineList, fetchPartDetail, updatePart } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
 import { MdDeleteOutline } from "react-icons/md";
 import { nav_parts, VisuallyHiddenInput } from '../constants';
 import { removeAttachment } from '../slices/assemblySlice';
+import { FaUserShield } from "react-icons/fa";
+import { FaBusinessTime } from "react-icons/fa6";
+import { RiMoneyRupeeCircleFill } from "react-icons/ri";
+import { IoMdCloseCircle } from "react-icons/io";
+import { IoEyeSharp } from "react-icons/io5";
 
 export default function EditPart() {
     const dispatch = useAppDispatch()
@@ -28,7 +33,7 @@ export default function EditPart() {
         (state) => state.admin
     );
 
-    const { partDetail } = useAppSelector(
+    const { partDetail, machines } = useAppSelector(
         (state) => state.machine
     );
 
@@ -36,6 +41,7 @@ export default function EditPart() {
     const [partVendor, setPartVendor] = useState<Array<{ part_vendor_id?: string, process_id: string, vendor_id: string, vendor_name: string, cost: string, delivery_time: number }>>([]);
     const [selectedProcess, setSelectedProcess] = useState("")
     const [selectedProcessName, setSelectedProcessName] = useState("")
+    const [selectedProcessPartId,setSelectedProcessPartId] = useState("")
     const [selectedVendor, setSelectedVendor] = useState({
         vendor_id: "",
         vendor_name: "",
@@ -47,6 +53,12 @@ export default function EditPart() {
     const [showProcessDialog, setShowProcessDialog] = useState(false)
     const [showVendorDialog, setShowVendorDialog] = useState(false)
     const [editVendor, setEditVendor] = useState(false)
+    const [showMachineDialog, setMachineDialog] = useState(false)
+    const [removeMachineDialog, setRemoveMachineDialog] = useState({
+        dialog: false,
+        machineId: '',
+        machineName: ''
+    })
 
     const [deleteDialog, setDeleteDialog] = useState({
         dialog: false,
@@ -66,13 +78,30 @@ export default function EditPart() {
     const [partFiles, setPartFiles] = useState<Array<any>>([])
     const [partFileNames, setPartFileNames] = useState<Array<string>>([])
     const [fileAdded, setFileAdded] = useState("")
+    const [selectedType, setSelectedType] = useState<Array<any>>([])
+    const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
 
-    const handleMultiProcessChange = (event: SelectChangeEvent<typeof formData.category>) => {
+    const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
+        // const {
+        //   target: { value },
+        // } = event;
+        // setFormData({ ...formData, category: event.target.name == 'isMachine' ? 'machine' : event.target.name == 'isSpares' ? 'spare' : 'spm' });
         const {
             target: { value },
         } = event;
-        setFormData({ ...formData, category: event.target.name == 'isMachine' ? 'machine' : event.target.name == 'isSpares' ? 'spare' : 'spm' });
+        setSelectedType(
+            typeof value === 'string' ? value.split(',') : value,
+        );
     };
+
+    const handleMultiMachineChange = (event: SelectChangeEvent<typeof selectedMachines>) => {
+        const {
+          target: { value },
+        } = event;
+        setSelectedMachines(
+          typeof value === 'string' ? value.split(',') : value,
+        );
+      };
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -81,7 +110,7 @@ export default function EditPart() {
 
     useEffect(() => {
         dispatch(fetchProcessList()).unwrap()
-        dispatch(fetchVendors())
+        dispatch(fetchMachineList())
     }, [dispatch])
 
     useEffect(() => {
@@ -97,6 +126,19 @@ export default function EditPart() {
 
                     const processList: any = []
                     const processVendors: any = []
+                    const typeList: any = []
+                    const machineList: any = []
+
+                    if (res.part_detail.is_spm) typeList.push('SPM')
+                    if (res.part_detail.is_spare) typeList.push('Spares')
+                    if (res.part_detail.is_machine) typeList.push('Machine')
+
+                    setSelectedType(typeList)
+
+                    res.machines?.map((machine:any) => {
+                        machineList.push(machine.machine.machine_name)
+                    })
+                    setSelectedMachines(machineList)
 
                     res.part_detail.part_process_list?.map((process: any) => {
                         processList.push({
@@ -134,7 +176,6 @@ export default function EditPart() {
         if (!formData.name) newErrors.name = 'Name is required';
         if (!formData.minimum_stock_qty) newErrors.minimum_stock_qty = 'Minimum stock quantity required';
         if (!formData.available_qty) newErrors.available_qty = 'Available quantity is required';
-        if (!formData.category) newErrors.category = 'Category is required';
 
         return newErrors;
     };
@@ -144,51 +185,28 @@ export default function EditPart() {
         const validationErrors = validate();
 
         if (Object.keys(validationErrors).length === 0) {
-            if (partProcess.length == 0) {
-                DisplaySnackbar('Process is required', 'error', enqueueSnackbar)
+            if(selectedType.length == 0){
+                DisplaySnackbar('Category is required', 'error', enqueueSnackbar)
+            }else if(selectedMachines.length == 0){
+                DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
             } else {
                 let vendorCheck = partProcess.filter((p) => !partVendor.some((v) => p.id == v.process_id))
                 if (vendorCheck.length > 0) {
                     DisplaySnackbar('Vendor is required for Process', 'error', enqueueSnackbar)
                 } else {
-                    const createPartObj: any = {}
-                    createPartObj.part_name = formData.name
-                    createPartObj.minimum_stock_qty = formData.minimum_stock_qty
-                    createPartObj.available_qty = formData.available_qty
-
-                    const process_list: any = []
-                    partProcess.forEach((process) => {
-                        const processObj: any = {}
-                        processObj.process_id = process.id
-                        processObj.process_cost = "0"
-                        processObj.process_time = Math.min(...partVendor.filter((f) => f.process_id == process.id).map((m) => m.delivery_time))
-
-                        const partVendors: any = []
-
-                        partVendor.forEach((vendor) => {
-                            const processVendorObj: any = {}
-                            if (vendor.process_id == process.id) {
-                                processVendorObj.vendor_id = vendor.vendor_id
-                                processVendorObj.part_process_vendor_price = vendor.cost
-                                processVendorObj.part_process_vendor_delivery_time = vendor.delivery_time
-                                partVendors.push(processVendorObj)
-                            }
-                        })
-                        processObj.part_process_vendor_list = partVendors
-                        process_list.push(processObj)
-                    })
-                    createPartObj.part_process_list = process_list
-
-                    dispatch(createPart(createPartObj)).unwrap().then((res) => {
+                    dispatch(updatePart({
+                        update_type: 'edit',
+                        update_type_entity: 'part_detail',
+                        part_id: state?.id,
+                        part_name: formData.name,
+                        available_qty: formData.available_qty,
+                        minimum_stock_qty: formData.minimum_stock_qty,
+                        is_machine: selectedType.includes('Machine'),
+                        is_spare: selectedType.includes('Spares'),
+                        is_spm: selectedType.includes('SPM'),
+                        machines: selectedMachines.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)
+                    })).unwrap().then((res) => {
                         DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
-                        if (res.message.includes('success')) {
-                            if (partFiles.length > 0) {
-                                DisplaySnackbar('Uploading attachments', "success", enqueueSnackbar)
-                                uploadAttachments(res.id)
-                            } else {
-                                navigate(-1)
-                            }
-                        }
                     }).catch((err) => {
                         DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                     })
@@ -335,124 +353,217 @@ export default function EditPart() {
                                 helperText={errors?.available_qty}
                             />
                         </Grid2>
-                        <Grid2 size={4}>
-                            <FormControl
-                                required
-                                error={!!errors?.category}
-                                sx={{ ml: 3 }}
-                                component="fieldset"
-                                variant="standard">
-                                <FormGroup row>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox checked={formData.category == 'machine'} onChange={handleMultiProcessChange} name="isMachine" />
-                                        }
-                                        label="Machine"
-                                    />
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox checked={formData.category == 'spare'} onChange={handleMultiProcessChange} name="isSpares" />
-                                        }
-                                        label="Spares"
-                                    />
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox checked={formData.category == 'spm'} onChange={handleMultiProcessChange} name="isSPM" />
-                                        }
-                                        label="SPM"
-                                    />
-                                </FormGroup>
-                                <FormHelperText>{errors?.category}</FormHelperText>
+                        
+                        <Grid2 size={3}>
+                            <FormControl fullWidth>
+                                <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
+                                <Select
+                                    labelId="demo-multiple-checkbox-label"
+                                    id="demo-multiple-checkbox"
+                                    size='small'
+                                    multiple
+                                    required
+                                    value={selectedType}
+                                    onChange={handleMultiProcessChange}
+                                    input={<OutlinedInput label="Tag" />}
+                                    renderValue={(selected) => (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {selected.map((value: any) => (
+                                                value.length > 0 ?
+                                                    <Chip key={value} label={value} /> : <></>
+                                            ))}
+                                        </Box>
+                                    )}
+                                // MenuProps={MenuProps}
+                                >
+                                    {['Machine', 'Spares', 'SPM'].map((type) => (
+                                        <MenuItem key={type} value={type}>
+                                            <Checkbox checked={selectedType.includes(type)} />
+                                            <ListItemText primary={type} />
+                                        </MenuItem>
+                                    ))}
+                                </Select>
                             </FormControl>
                         </Grid2>
 
-                        {partProcess && partProcess.length > 0 && partProcess.map((process: any) => {
-                            return (<Grid2 size={4}>
-                                <Card sx={{ padding: 3 }}>
-                                    <Card sx={{ textAlign: 'center', p: 0.5, fontWeight: 'bold', backgroundColor: 'lightskyblue' }}>Process Name: {process.name}</Card>
-                                    {partVendor.filter((pv: any) => pv.process_id == process.id)?.length > 0 &&
-                                        <CTable small striped>
-                                            <CTableHead color='info'>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Vendor Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Cost</CTableHeaderCell>
-                                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Time</CTableHeaderCell>
-                                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
-                                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {partVendor.filter((pv: any) => pv.process_id == process.id)?.map((vendor: any) => {
-                                                    return (<CTableRow>
-                                                        <CTableDataCell style={{ fontWeight: 'initial' }}>{vendor.vendor_name}</CTableDataCell>
-                                                        <CTableDataCell>{vendor.cost}</CTableDataCell>
-                                                        <CTableDataCell>{vendor.delivery_time}</CTableDataCell>
-                                                        <CTableDataCell><MdOutlineEdit onClick={() => {
-                                                            setEditVendor(true)
-                                                            setShowVendorDialog(true)
-                                                            setSelectedProcess(process.id)
-                                                            setSelectedProcessName(process.name)
-                                                            setSelectedVendor({
-                                                                part_vendor_id: vendor.part_vendor_id,
-                                                                vendor_id: vendor.vendor_id,
-                                                                vendor_name: vendor.vendor_name,
-                                                                delivery_cost: vendor.cost,
-                                                                delivery_time: vendor.delivery_time,
-                                                                part_process_id: process.part_process_id
-                                                            })
-                                                            setErrors({})
-                                                        }} /></CTableDataCell>
-                                                        <CTableDataCell><MdDeleteOutline onClick={() => {
-                                                            setDeleteDialog({id: vendor.part_vendor_id, type: 'Vendor', name: vendor.vendor_name, dialog: true})
+                        <Grid2 size={3} sx={{minHeight:'60vh'}}>
+                                <Card sx={{ minHeight:'60vh', backgroundColor:'#F0F8FF' }}>
+                                    <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#003262' }}>Machines</Card>
+                                    {selectedMachines.map((map:any) => {
+                                        return <Card sx={{ p: 1, m: 1, display:'flex', flexDirection:'row' }}>
+                                            {map}
+                                            <MdDeleteOutline style={{width: '25px', height:'25px', color:'red', cursor:'pointer', marginLeft:'auto'}} onClick={() => {
+                                                setRemoveMachineDialog({
+                                                    dialog: true,
+                                                    machineId: machines.find((mac:any) => mac.machine_name == map),
+                                                    machineName: map
+                                                })
+                                            }} />
+                                        </Card>
+                                    })}
+                                    <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor:'#003262' }}
+                                        onClick={() => {
+                                            setMachineDialog(true)
+                                        }}>
+                                        Add Machine
+                                    </Button>
+                                </Card>
+                            </Grid2>
+
+                            <Grid2 size={3}  sx={{minHeight:'60vh'}}>
+                                <Card sx={{ minHeight:'60vh', backgroundColor: '#D0F0C0' }}>
+                                    <Card sx={{ p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#138808' }}>Process</Card>
+                                    {partProcess && partProcess.length > 0 && partProcess.map((process: any) => {
+                                        return <Card sx={{ p: 1, m: 1, cursor:'pointer', 
+                                            backgroundColor: process.name == selectedProcessName ? '#138808' : 'white',
+                                            color: process.name == selectedProcessName ? 'white' : 'black' }} onClick={() => {
+                                            setSelectedProcess(process.id)
+                                            setSelectedProcessName(process.name)
+                                            setSelectedProcessPartId(process.part_process_id)
+                                        }}>{process.name}</Card>
+                                    })}
+                                    <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor:'#138808' }}
+                                        onClick={() => {
+                                            setShowProcessDialog(true)
+                                        }}>
+                                        Add Process
+                                    </Button>
+                                </Card>
+                            </Grid2>
+
+                            {selectedProcess.length > 0 && <Grid2 size={3}  sx={{minHeight:'60vh'}}>
+                                <Card sx={{ minHeight:'60vh', backgroundColor:'#EFDECD' }}>
+                                    <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color:'white', textAlign:'center' }}>Vendors</Card>
+                                    {partVendor.filter((pv: any) => pv.process_id == selectedProcess)?.map((vendor:any) => {
+                                        return <Card sx={{m:1}}>
+                                            <div style={{display:'flex', alignItems:'bottom', paddingLeft:'10px', paddingRight:'10px', marginTop:'10px'}}><FaUserShield style={{width:'20px', height:'20px', color:'gray'}} /> 
+                                                <Typography style={{marginLeft:'10px', fontWeight:'bold'}}>{vendor.vendor_name}</Typography>
+                                            </div> 
+                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><RiMoneyRupeeCircleFill style={{width:'20px', height:'20px', color:'gray'}} /> 
+                                                <Typography style={{marginLeft:'10px'}}>Rs.{vendor.cost}</Typography>
+                                            </div> 
+                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><FaBusinessTime style={{width:'20px', height:'20px', color:'gray'}} /> 
+                                                <Typography style={{marginLeft:'10px'}}>{vendor.delivery_time} Days</Typography>
+                                            </div> 
+                                            <div style={{display:'flex', justifyContent:'end', background:'#800020', padding:'5px', marginTop:'10px'}}>
+                                            <Card
+                                                style={{marginLeft:'auto', width: '30px', height:'30px', color:'gray', display: 'flex',
+                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
+                                                    <MdOutlineEdit
+                                                    style={{width: '25px', height:'25px', color:'black', cursor:'pointer'}} onClick={() => {
+                                                                setEditVendor(true)
+                                                                setShowVendorDialog(true)
+                                                                setSelectedVendor({
+                                                                    part_vendor_id: vendor.part_vendor_id,
+                                                                    vendor_id: vendor.vendor_id,
+                                                                    vendor_name: vendor.vendor_name,
+                                                                    delivery_cost: vendor.cost,
+                                                                    delivery_time: vendor.delivery_time,
+                                                                    part_process_id: selectedProcessPartId
+                                                                })
+                                                                setErrors({})
+                                                            }} />
+                                                </Card>
+                                                <Card
+                                                style={{marginLeft:'15px', width: '30px', height:'30px', color:'gray', display: 'flex',
+                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
+                                                    	<MdDeleteOutline style={{width: '25px', height:'25px', color:'red', cursor:'pointer'}} onClick={() => {
+                                                            setDeleteDialog({ id: vendor.part_vendor_id, type: 'Vendor', name: vendor.vendor_name, dialog: true })
                                                             // setPartVendor(partVendor.filter((p) => p.process_id !== process.id || p.vendor_id !== vendor.vendor_id))
-                                                        }} /></CTableDataCell>
-                                                    </CTableRow>)
-                                                })}
-                                            </CTableBody>
-                                        </CTable>}
-                                    <CardActions
-                                        disableSpacing
-                                        sx={{
-                                            mt: 1,
-                                            alignSelf: "stretch",
-                                            display: "flex",
-                                            justifyContent: "flex-end",
-                                            alignItems: "flex-start",
-                                            // 👇 Edit padding to further adjust position
-                                            p: 0,
-                                        }}
-                                    >
-                                        <Button variant="contained" startIcon={<Store />} size="small" color='primary'
+                                                        }} />
+                                                 </Card>
+                                                </div>
+                                        </Card>
+                                    })}
+                                    <Button variant="contained" startIcon={<Store />} size="small" color='primary' sx={{m:1, backgroundColor:'#800020'}}
                                             onClick={() => {
                                                 setEditVendor(false)
                                                 setShowVendorDialog(true)
-                                                setSelectedProcess(process.id)
-                                                setSelectedProcessName(process.name)
+                                                dispatch(fetchVendors({searchText: selectedProcessName}))
                                                 setSelectedVendor({
                                                     part_vendor_id: '',
                                                     vendor_id: "",
                                                     vendor_name: "",
                                                     delivery_cost: "",
                                                     delivery_time: 0,
-                                                    part_process_id: process.part_process_id
+                                                    part_process_id: selectedProcessPartId
                                                 })
                                                 setErrors({})
                                             }}>
                                             Add New Vendor
-                                        </Button>
-                                    </CardActions>
+                                    </Button>
                                 </Card>
-                            </Grid2>)
-                        })}
-                    </Grid2>
-                    <Button variant="contained" startIcon={<Settings />} size="small" sx={{ mt: 1 }}
-                        onClick={() => {
-                            setShowProcessDialog(true)
-                        }}>
-                        Add New Process
-                    </Button>
+                            </Grid2>}
 
-                    <Card sx={{ padding: 2, mt: 2 }}>
+                            <Grid2 size={3} sx={{minHeight:'60vh'}}>
+                                <Card sx={{ minHeight:'60vh', backgroundColor:'#F0F8FF' }}>
+                                    <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#007FFF' }}>Attachments</Card>
+                                    {partFileNames.map((map:any) => {
+                                        return <Card sx={{ p: 1, m: 1, display:'flex', flexDirection:'row' }}>
+                                            {map}
+                                            {/* ${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name} */}
+                                            <IoEyeSharp style={{width: '25px', height:'25px', color:'blue', cursor:'pointer', marginLeft:'auto'}} onClick={()=>{
+                                                window.open(`${process.env.REACT_APP_API_URL}/machine/loadAttachment/${map}`, '_blank')
+                                            }}/>
+                                            <IoMdCloseCircle style={{width: '25px', height:'25px', color:'gray', cursor:'pointer', marginLeft:'5px'}} onClick={() => {
+                                                setDeleteDialog({
+                                                    dialog: true,
+                                                    type: 'attachment',
+                                                    name: map,
+                                                    id: ''
+                                                })
+                                            }} />
+                                        </Card>
+                                    })}
+                                    <Button
+                                        size={'small'}
+                                        component="label"
+                                        role={undefined}
+                                        variant="contained"
+                                        sx={{ mt: 1, backgroundColor:'#007FFF' }}
+                                        tabIndex={-1}
+                                        startIcon={<Add />}
+                                    >
+                                        Upload files
+                                        <VisuallyHiddenInput
+                                            type="file"
+                                            onChange={(event: any) => {
+                                                event.preventDefault()
+                                                const files: any = partFiles
+                                                const chosenFiles = Array.prototype.slice.call(event.target.files)
+                                                chosenFiles.map((file) => {
+                                                    files.push(file)
+                                                })
+
+                                                dispatch(createAttachment({
+                                                    files: chosenFiles, type: 'part',
+                                                    type_id: state?.id
+                                                })).unwrap()
+                                                    .then((res: any) => {
+                                                        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+
+                                                        setPartFiles(files)
+                                                        setFileAdded(`${files.length} files added`)
+
+                                                        let fileNames = partFileNames
+                                                        chosenFiles.map((f: any) => {
+                                                            fileNames.push(f.name)
+                                                        })
+                                                        setPartFileNames(fileNames)
+
+                                                    })
+                                                    .catch((err: any) => {
+                                                        DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                                                    })
+                                            }}
+                                            multiple
+                                        />
+                                    </Button>
+                                </Card>
+                            </Grid2>
+                    </Grid2>
+
+                    {/* <Card sx={{ padding: 2, mt: 2 }}>
                         {partFileNames.map((file: any) => {
                             return <Chip label={file} variant='outlined' sx={{ mr: 1 }} onDelete={() => {
                                 setDeleteDialog({
@@ -507,7 +618,7 @@ export default function EditPart() {
                                 multiple
                             />
                         </Button>
-                    </Card>
+                    </Card> */}
 
                     <Grid2 container justifyContent={'flex-end'} sx={{ mt: 1 }}>
                         <Grid2 size={2}>
@@ -602,9 +713,9 @@ export default function EditPart() {
                         >
 
                             {!editVendor && vendors && vendors.list?.length > 0 && vendors.list?.map((vendor) => {
-                                const vendor_process = vendor.process_list.filter((p: any) => p.process_id == selectedProcess)
+                                const vendor_process = vendor.process_list?.filter((p: any) => p.process_id == selectedProcess)
                                 const existing_vendor = partVendor.filter((v: any) => v.vendor_id == vendor.id && v.process_id == selectedProcess)
-                                if (vendor_process?.length > 0 && existing_vendor.length == 0) {
+                                if (existing_vendor.length == 0) {
                                     return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
                                 }
                             })}
@@ -696,8 +807,8 @@ export default function EditPart() {
                                 })).unwrap().then((res: any) => {
                                     DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
                                     if (res.message.includes('success')) {
-                                        setDeleteDialog({id:'', dialog: false, name: '', type: ''})
-                                        setPartVendor(partVendor.filter((pv:any) => pv.part_vendor_id != deleteDialog.id))
+                                        setDeleteDialog({ id: '', dialog: false, name: '', type: '' })
+                                        setPartVendor(partVendor.filter((pv: any) => pv.part_vendor_id != deleteDialog.id))
                                     }
                                 }).catch((err: any) => {
                                     DisplaySnackbar(err.message, 'error', enqueueSnackbar)
@@ -706,6 +817,89 @@ export default function EditPart() {
                         }}>
                         Yes
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Machine Dialog */}
+
+            <Dialog
+                maxWidth={'md'}
+                open={showMachineDialog}>
+                <DialogTitle>Select Machine</DialogTitle>
+                <DialogContent>
+                    <List sx={{ bgcolor: 'background.paper' }}>
+                        {machines.map((value) => {
+                            if (selectedMachines.filter((f) => f == value.machine_name).length == 0) {
+                                const labelId = `checkbox-list-label-${value.id}`;
+                                return (
+                                    <ListItem
+                                        key={value}
+                                        disablePadding
+                                        onClick={() => {
+                                            setMachineDialog(false)
+                                            dispatch(updatePart({
+                                                update_type: 'edit',
+                                                update_type_entity: 'part_machine_add',
+                                                part_id: state?.id,
+                                                id: value.id
+                                            })).unwrap().then((res) => {
+                                                DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
+                                                setSelectedMachines([...selectedMachines, value.machine_name])
+                                            }).catch((err) => {
+                                                DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                                            })
+                                        }}>
+                                        <ListItemButton role={undefined} dense>
+                                            <ListItemText id={labelId} primary={value.machine_name} />
+                                        </ListItemButton>
+                                    </ListItem>
+                                );
+                            }
+                        })}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setMachineDialog(false)
+                    }} sx={{ color: '#bb0037' }}>Cancel</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Remove Machine Dialog */}
+
+            <Dialog
+                maxWidth={'md'}
+                open={removeMachineDialog.dialog}>
+                <DialogTitle>Confirmation</DialogTitle>
+                <DialogContent>
+                    Are you sure, do you want to remove {removeMachineDialog.machineName}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setRemoveMachineDialog({
+                            dialog: false,
+                            machineId: '',
+                            machineName: ''
+                        })
+                    }} sx={{ color: '#bb0037' }}>No</Button>
+                    <Button onClick={() => {
+                        dispatch(updatePart({
+                            update_type: 'edit',
+                            update_type_entity: 'part_machine_delete',
+                            part_id: state?.id,
+                            id: removeMachineDialog.machineId
+                        })).unwrap().then((res) => {
+                            DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
+                            setRemoveMachineDialog({
+                                dialog: false,
+                                machineId: '',
+                                machineName: ''
+                            })
+                            setSelectedMachines(selectedMachines.filter((mac:any) => mac != removeMachineDialog.machineName))
+                        }).catch((err) => {
+                            DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                        })
+                    }} sx={{ color: '#bb0037' }}>Yes</Button>
                 </DialogActions>
             </Dialog>
         </Box>

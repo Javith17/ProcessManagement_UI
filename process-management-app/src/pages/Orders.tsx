@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -34,6 +34,8 @@ export default function Orders() {
     data: []
   })
   const [items, setItems] = useState<any[]>()
+
+  const [table, setTable] = useState<any>()
 
   const { ordersList } = useAppSelector(
     (state) => state.quotation

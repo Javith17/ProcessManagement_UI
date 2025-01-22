@@ -31,7 +31,7 @@ export default function BoughtOuts() {
   },[])
 
   const handleSearch = () => {
-    dispatch(fetchBoughtOutList(searchText)).unwrap()
+    dispatch(fetchBoughtOutList({searchText})).unwrap()
   }
 
   return (
@@ -41,7 +41,7 @@ export default function BoughtOuts() {
       <Grid2 container spacing={2} padding={2} sx={{mt:10, flexGrow:1}}>
         <Grid2 size={{ xs: 6, md: 8 }}>
           <TextField
-            placeholder='Search bought outs'
+            placeholder='boughtouts or supplier'
             variant="outlined"
             size='small'
             value={searchText}

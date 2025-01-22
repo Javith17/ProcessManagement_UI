@@ -37,14 +37,15 @@ const VendorAcceptance = () => {
     }, [queryParams.get('id')])
 
 
-    const handleClick = (vendorStatus:string) => {
+    const handleClick = (vendorStatus: string) => {
         dispatch(vendorAcceptStatus({
-            id: queryParams.get('id'),
+            id: productionPart?.productionPart?.map((prod:any) => prod.id),
             status: vendorStatus,
             remarks: remarks
-        })).unwrap().then((res:any)=>{
-            DisplaySnackbar(`Order ${vendorStatus}`, 'success', enqueueSnackbar)
-            setStatus(vendorStatus)
+        })).unwrap().then((res: any) => {
+            const stat = vendorStatus.charAt(0).toUpperCase() + vendorStatus.slice(1).toLowerCase()
+            DisplaySnackbar(`Order ${stat}`, 'success', enqueueSnackbar)
+            setStatus(stat)
         }).catch(err => {
             DisplaySnackbar(err.message, 'error', enqueueSnackbar)
         })
@@ -57,7 +58,7 @@ const VendorAcceptance = () => {
                 <Card sx={{
                     mt: 20,
                 }}>
-                    <CardContent>
+                    <CardContent sx={{background:'#F5F5F5'}}>
                         <Box
                             sx={{
                                 display: 'flex',
@@ -78,106 +79,111 @@ const VendorAcceptance = () => {
                                 <Typography variant="h6">Verify and accept the order</Typography>
                                 <Box sx={{ mt: 1 }}>
 
-                                    <Grid2 container sx={{ width: '40vw' }}>
-                                        <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Vendor</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{productionPart?.productionPart?.vendor_name}</Typography>
-                                        </Grid2>
+                                    {productionPart?.productionPart?.map((partProcess: any) =>
+                                        <Card sx={{ padding: 2, mt: 1 }}>
+                                            <Grid2 container sx={{ width: '40vw' }}>
+                                                <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Vendor</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.vendor_name}</Typography>
+                                                </Grid2>
 
-                                        <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Part</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{productionPart?.productionPart?.part_name}</Typography>
-                                        </Grid2>
+                                                <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Part</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.part_name}</Typography>
+                                                </Grid2>
 
-                                        <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Process</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{productionPart?.productionPart?.process_name}</Typography>
-                                        </Grid2>
+                                                <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Process</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.process_name}</Typography>
+                                                </Grid2>
 
-                                        <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Quantity</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{productionPart?.productionPart?.order_qty}</Typography>
-                                        </Grid2>
+                                                <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Quantity</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.order_qty}</Typography>
+                                                </Grid2>
 
-                                        <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Delivery Date</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{productionPart?.productionPart?.delivery_date ? 
-                                            moment(productionPart?.productionPart?.delivery_date).format('DD-MMM-YYYY') : "" }</Typography>
-                                        </Grid2>
+                                                <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Delivery Date</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.delivery_date ?
+                                                        moment(partProcess?.delivery_date).format('DD-MMM-YYYY') : ""}</Typography>
+                                                </Grid2>
 
+                                            </Grid2>
+                                        </Card>
+                                    )}
+
+                                    {(productionPart?.productionPart?.length > 0 && !productionPart?.productionPart[0]?.vendor_accept_status && status.length == 0) ? <Grid2 container><Grid2 size={12}>
+                                        <TextField
+                                            size='small'
+                                            variant="outlined"
+                                            fullWidth
+                                            label="Remarks"
+                                            multiline
+                                            rows={4}
+                                            name="remarks"
+                                            value={remarks}
+                                            sx={{ mt: 1, background:'white' }}
+                                            onChange={(e: any) => {
+                                                setRemarks(e.target.value)
+                                            }}
+                                        />
                                     </Grid2>
-
-                                    {(!productionPart?.productionPart?.vendor_accept_status && status.length == 0) ? <Grid2 container><Grid2 size={12}>
-                                            <TextField
-                                                size='small'
-                                                variant="outlined"
-                                                fullWidth
-                                                label="Remarks"
-                                                multiline
-                                                rows={4}
-                                                name="remarks"
-                                                value={remarks}
-                                                sx={{ mt: 1 }}
-                                                onChange={(e: any) => {
-                                                    setRemarks(e.target.value)
-                                                }}
-                                            />
-                                        </Grid2>
 
                                         <Grid2 size={5}>
                                             <Button
                                                 variant="contained"
                                                 sx={{ mt: 3, mb: 2 }}
-                                                onClick={()=> handleClick('accepted')}
+                                                onClick={() => handleClick('accepted')}
                                             >
                                                 Accept Order
                                             </Button>
                                         </Grid2>
                                         <Grid2 size={2}>
-                                            
+
                                         </Grid2>
                                         <Grid2 size={5}>
                                             <Button
-                                            variant='outlined' color="primary"
+                                                variant='outlined' color="primary"
                                                 sx={{ mt: 3, mb: 2 }}
-                                                onClick={()=> handleClick('rejected')}
+                                                onClick={() => handleClick('rejected')}
                                             >
                                                 Reject Order
                                             </Button>
-                                        </Grid2></Grid2> : <Grid2 container>
+                                        </Grid2></Grid2> : <Grid2 container sx={{mt:3}}>
                                         <Grid2 size={5}>
-                                            <Typography variant='subtitle2' color={'grey'}>Status</Typography>
+                                            <Typography variant='h5' color={'grey'}>Status</Typography>
                                         </Grid2>
                                         <Grid2 size={1}>
-                                            <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                            <Typography variant='h5' color={'grey'}>:</Typography>
                                         </Grid2>
                                         <Grid2 size={6}>
-                                            <Typography variant='subtitle1'>{status.length > 0 ? status : productionPart?.productionPart?.vendor_accept_status}</Typography>
+                                            <Typography variant='h5'>{status.length > 0 ? status :
+                                             productionPart?.productionPart?.length > 0 ? productionPart?.productionPart[0]?.vendor_accept_status.charAt(0).toUpperCase() + productionPart?.productionPart[0]?.vendor_accept_status.slice(1).toLowerCase() : ''} </Typography>
                                         </Grid2></Grid2>}
                                 </Box>
                             </Box>

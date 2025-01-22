@@ -129,7 +129,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 export default function SidebarNav(props: {currentPage?: string}) {
   const theme = useTheme();
   const dispatch = useAppDispatch()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [menuData, setMenuData] = useState(props.currentPage ? props.currentPage : 'Dashboard')
   const navigate = useNavigate()
   const [screens, setScreens] = useState<string[]>()
@@ -179,7 +179,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
       icon: <PiHandArrowDownBold />
     },
     {
-      name: 'subAssembly',
+      name: 'assemblySettings',
       icon: <VscTypeHierarchySub />
     },
     {
@@ -206,7 +206,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
   };
 
   const handleDrawerClose = () => {
-    setOpen(false);
+    // setOpen(false);
   };
 
   useEffect(()=>{
@@ -373,7 +373,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
                     navigate("/parts")
                 }else if(hs.screen == "boughtouts"){
                     navigate("/boughtout")
-                }else if(hs.screen == 'subAssembly'){
+                }else if(hs.screen == 'assemblySettings'){
                   navigate("/subAssembly")
                 }else if(hs.screen == 'machines'){
                     navigate("/machines")

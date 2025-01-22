@@ -14,14 +14,32 @@ export const fetchPartsList = createAsyncThunk("partsList", async (data?: { sear
     return resData
 })
 
-export const fetchBoughtOutList = createAsyncThunk("fetchBoughtOutList", async (searchText?:string) => {
+export const fetchPartsListByMachine = createAsyncThunk("partsListByMachine", async (data:any) => {
+    const response = await axiosInstance.post('machine/partsListByMachine', data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchBoughtOutList = createAsyncThunk("fetchBoughtOutList", async (data?: {searchText?:string, type?:string, type_id?:string}) => {
     const response = await axiosInstance.get('machine/boughtOutList', {
         params: {
-            search: searchText
+            search: data?.searchText,
+            type: data?.type,
+            type_id: data?.type_id
         },
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
     })
     const resData = response.data.list
+    return resData
+})
+
+export const fetchBOListByMachine = createAsyncThunk("boListByMachine", async (data:any) => {
+    const response = await axiosInstance.post('machine/boughtOutListByMachine', data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
+    })
+    const resData = response.data
     return resData
 })
 
@@ -138,6 +156,14 @@ export const updateBoughtout = createAsyncThunk('updateBoughtout', async (data:a
     return resData
 })
 
+export const updateBoughtoutS = createAsyncThunk('updateBoughtout', async (data:any) => {
+    const response = await axiosInstance.post('machine/updateBoughtout', data, {
+        headers: {'Authorization': `Bearer ${JSON.parse(localStorage.getItem("userDetail") as string).accessToken}`}
+    })
+    const resData = response.data
+    return resData
+})
+
 export const fetchVendorAttachment = createAsyncThunk("fetchVendorAttachment", async (data:any) => {
     const response = await axiosInstance.post(`machine/vendorAttachment`, data, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
@@ -153,6 +179,12 @@ type MachineApiState = {
     };
     boughtOuts: Array<any>;
     machines: Array<any>;
+    partsByMachines: {
+        list: Array<any>
+    },
+    boughtoutByMachines: {
+        list: Array<any>
+    },
     vendorAttachment: {
         vendor: any,
         attachment: Array<any>
@@ -171,7 +203,7 @@ type MachineApiState = {
         attachments: Array<any>
     };
     addSubAssemblyToMachineRes: any | null;
-    status: 'loading' | 'idle' | 'error';
+    machineStatus: 'loading' | 'idle' | 'error';
     message: string | null;
     error: string | null;
 }
@@ -183,6 +215,12 @@ const initialState: MachineApiState = {
     },
     boughtOuts: [],
     machines: [],
+    partsByMachines: {
+        list: []
+    },
+    boughtoutByMachines: {
+        list: []
+    },
     vendorAttachment: {
         vendor: {},
         attachment: []
@@ -201,7 +239,7 @@ const initialState: MachineApiState = {
         id: ''
     },
     addSubAssemblyToMachineRes: null,
-    status: 'idle',
+    machineStatus: 'idle',
     message: null,
     error: null
 }
@@ -213,182 +251,206 @@ const machineSlice = createSlice({
     extraReducers: (builder) => {
         builder
         .addCase(fetchPartsList.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchPartsList.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.parts = action.payload
         })
         .addCase(fetchPartsList.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to fetch parts'
         })
 
+        .addCase(fetchPartsListByMachine.pending, (state) => {
+            state.machineStatus = 'loading'
+        })
+        .addCase(fetchPartsListByMachine.fulfilled, (state, action) => {
+            state.machineStatus = 'idle'
+            state.partsByMachines = action.payload
+        })
+        .addCase(fetchPartsListByMachine.rejected, (state, action) => {
+            state.machineStatus = 'error'
+            state.error = action.error.message || 'Unable to fetch machines'
+        })
+
         .addCase(fetchBoughtOutList.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchBoughtOutList.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.boughtOuts = action.payload
         })
         .addCase(fetchBoughtOutList.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to fetch bought outs'
         })
 
+        .addCase(fetchBOListByMachine.pending, (state) => {
+            state.machineStatus = 'loading'
+        })
+        .addCase(fetchBOListByMachine.fulfilled, (state, action) => {
+            state.machineStatus = 'idle'
+            state.boughtoutByMachines = action.payload
+        })
+        .addCase(fetchBOListByMachine.rejected, (state, action) => {
+            state.machineStatus = 'error'
+            state.error = action.error.message || 'Unable to fetch machines'
+        })
+
         .addCase(createPart.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(createPart.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.createMessage = action.payload
         })
         .addCase(createPart.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to create part'
         })
 
         .addCase(createBoughtout.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(createBoughtout.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.createMessage = action.payload
         })
         .addCase(createBoughtout.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to create boughtout'
         })
 
         .addCase(fetchMachineList.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchMachineList.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.machines = action.payload
         })
         .addCase(fetchMachineList.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to fetch machines'
         })
 
         .addCase(createMachine.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(createMachine.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.message = action.payload
         })
         .addCase(createMachine.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to create machine'
         })
 
         .addCase(createNewMachine.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(createNewMachine.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.message = action.payload
         })
         .addCase(createNewMachine.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to create new machine'
         })
 
         .addCase(getMachineDetails.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(getMachineDetails.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.data = action.payload
         })
         .addCase(getMachineDetails.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to check assembly name'
         })
 
         .addCase(addSubAssemblyToMachine.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(addSubAssemblyToMachine.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.addSubAssemblyToMachineRes = action.payload
         })
         .addCase(addSubAssemblyToMachine.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to add sub assembly to machine'
         })
 
         .addCase(createAttachment.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(createAttachment.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.message = action.payload
         })
         .addCase(createAttachment.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to add sub assembly to machine'
         })
 
         .addCase(fetchPartDetail.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchPartDetail.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.partDetail = action.payload
         })
         .addCase(fetchPartDetail.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to get part detail'
         })
 
         .addCase(updatePart.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(updatePart.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.createMessage = action.payload
         })
         .addCase(updatePart.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to udpate part'
         })
 
         .addCase(fetchBoughtoutDetail.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchBoughtoutDetail.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.boughtoutDetail = action.payload
         })
         .addCase(fetchBoughtoutDetail.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to get boughtout detail'
         })
 
         .addCase(updateBoughtout.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(updateBoughtout.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.createMessage = action.payload
         })
         .addCase(updateBoughtout.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to udpate boughtout'
         })
 
         .addCase(fetchVendorAttachment.pending, (state) => {
-            state.status = 'loading'
+            state.machineStatus = 'loading'
         })
         .addCase(fetchVendorAttachment.fulfilled, (state, action) => {
-            state.status = 'idle'
+            state.machineStatus = 'idle'
             state.vendorAttachment = action.payload
         })
         .addCase(fetchVendorAttachment.rejected, (state, action) => {
-            state.status = 'error'
+            state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to get attachments'
         })
     }

@@ -3,20 +3,24 @@ import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { createVendor, fetchProcessList, fetchSuppliers, fetchVendors } from '../slices/adminSlice';
-import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent } from '@mui/material';
+import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
 import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createBoughtout, createPart } from '../slices/machineSlice';
+import { createAttachment, createBoughtout, createPart, fetchMachineList } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
 import { MdDeleteOutline } from "react-icons/md";
 import { BsPersonFillAdd } from "react-icons/bs";
 import { nav_boughtouts, VisuallyHiddenInput } from '../constants';
+import { FaUserShield } from "react-icons/fa";
+import { FaBusinessTime } from "react-icons/fa6";
+import { RiMoneyRupeeCircleFill } from "react-icons/ri";
+import { IoMdCloseCircle } from "react-icons/io";
 
 export default function NewBoughtout() {
   const dispatch = useAppDispatch()
@@ -25,6 +29,9 @@ export default function NewBoughtout() {
 
   const { suppliers } = useAppSelector(
     (state) => state.admin
+  );
+  const { machines } = useAppSelector(
+    (state) => state.machine
   );
 
   const [boughoutSupplier, setBoughtoutSupplier] = useState<Array<{ supplier_id: string, supplier_name: string, cost: string, delivery_time: string }>>([]);
@@ -36,6 +43,12 @@ export default function NewBoughtout() {
   })
   const [showSupplierDialog, setShowSupplierDialog] = useState(false)
   const [editSupplier, setEditSupplier] = useState(false)
+  const [showMachineDialog, setMachineDialog] = useState(false)
+  const [removeMachineDialog, setRemoveMachineDialog] = useState({
+    dialog: false,
+    machineId: '',
+    machineName: ''
+  })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -46,12 +59,29 @@ export default function NewBoughtout() {
   const [boughtoutFiles, setBoughtoutFiles] = useState<Array<any>>([])
   const [boughtoutFileNames, setBoughtoutFileNames] = useState<Array<string>>([])
   const [fileAdded, setFileAdded] = useState("")
-  
-  const handleMultiProcessChange = (event: SelectChangeEvent<typeof formData.category>) => {
+  const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
+  const [selectedType, setSelectedType] = useState<Array<any>>([])
+
+  const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
+    // const {
+    //   target: { value },
+    // } = event;
+    // setFormData({ ...formData, category: event.target.name == 'isMachine' ? 'machine' : event.target.name == 'isSpares' ? 'spare' : 'spm' });
     const {
       target: { value },
     } = event;
-    setFormData({ ...formData, category: event.target.name == 'isMachine' ? 'machine' : event.target.name == 'isSpares' ? 'spare' : 'spm' });
+    setSelectedType(
+      typeof value === 'string' ? value.split(',') : value,
+    );
+  };
+
+  const handleMultiMachineChange = (event: SelectChangeEvent<typeof selectedMachines>) => {
+    const {
+      target: { value },
+    } = event;
+    setSelectedMachines(
+      typeof value === 'string' ? value.split(',') : value,
+    );
   };
 
   const handleChange = (e: any) => {
@@ -61,13 +91,13 @@ export default function NewBoughtout() {
 
   useEffect(() => {
     dispatch(fetchSuppliers()).unwrap()
+    dispatch(fetchMachineList())
   }, [dispatch])
 
   const validate = () => {
     const newErrors: any = {};
 
     if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.category) newErrors.category = 'Category is required';
 
     return newErrors;
   };
@@ -78,15 +108,25 @@ export default function NewBoughtout() {
     const validationErrors = validate();
 
     if (Object.keys(validationErrors).length === 0) {
-      if (boughoutSupplier.length == 0) {
-        DisplaySnackbar('Supplier is required', 'error', enqueueSnackbar)
+      // if (boughoutSupplier.length == 0) {
+      //   DisplaySnackbar('Supplier is required', 'error', enqueueSnackbar)
+      // } else {
+      if (selectedType.length == 0) {
+        DisplaySnackbar('Category is required', 'error', enqueueSnackbar)
+      } else if (selectedMachines.length == 0) {
+        DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
       } else {
         const createBoughtoutObj: any = {}
         createBoughtoutObj.bought_out_name = formData.name
         createBoughtoutObj.bought_out_category = formData.category
+        createBoughtoutObj.is_machine = selectedType.includes('Machine')
+        createBoughtoutObj.is_spm = selectedType.includes('SPM')
+        createBoughtoutObj.is_spare = selectedType.includes('Spares')
+
+        createBoughtoutObj.machines = selectedMachines.map((machine: any) => machines.find((m: any) => m.machine_name == machine).id)
 
         const bought_out_supplier_list: any = []
-        boughoutSupplier.forEach((bo) => {
+        boughoutSupplier?.forEach((bo) => {
           const supplierObj: any = {}
           supplierObj.supplier_id = bo.supplier_id
           supplierObj.cost = bo.cost
@@ -110,6 +150,7 @@ export default function NewBoughtout() {
           DisplaySnackbar(err.message, 'error', enqueueSnackbar)
         })
       }
+      // }
     } else {
       setErrors(validationErrors);
     }
@@ -188,7 +229,7 @@ export default function NewBoughtout() {
                 helperText={errors?.name}
               />
             </Grid2>
-            <Grid2 size={6}>
+            {/* <Grid2 size={6}>
               <FormControl
                 required
                 error={!!errors?.category}
@@ -217,114 +258,328 @@ export default function NewBoughtout() {
                 </FormGroup>
                 <FormHelperText>{errors?.category}</FormHelperText>
               </FormControl>
+            </Grid2> */}
+            {/* <Grid2 size={3}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
+                <Select
+                  labelId="demo-multiple-checkbox-label"
+                  id="demo-multiple-checkbox"
+                  size='small'
+                  multiple
+                  required
+                  value={selectedMachines}
+                  onChange={handleMultiMachineChange}
+                  input={<OutlinedInput label="Tag" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value: any) => (
+                        value.length > 0 ?
+                          <Chip key={value} label={value} /> : <></>
+                      ))}
+                    </Box>
+                  )}
+                // MenuProps={MenuProps}
+                >
+                  {machines.map((machine) => (
+                    <MenuItem key={machine.id} value={machine.machine_name}>
+                      <Checkbox checked={selectedMachines.includes(machine.machine_name)} />
+                      <ListItemText primary={machine.machine_name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid2> */}
+            <Grid2 size={4}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
+                <Select
+                  labelId="demo-multiple-checkbox-label"
+                  id="demo-multiple-checkbox"
+                  size='small'
+                  multiple
+                  required
+                  value={selectedType}
+                  onChange={handleMultiProcessChange}
+                  input={<OutlinedInput label="Tag" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value: any) => (
+                        value.length > 0 ?
+                          <Chip key={value} label={value} /> : <></>
+                      ))}
+                    </Box>
+                  )}
+                // MenuProps={MenuProps}
+                >
+                  {['Machine', 'Spares', 'SPM'].map((type) => (
+                    <MenuItem key={type} value={type}>
+                      <Checkbox checked={selectedType.includes(type)} />
+                      <ListItemText primary={type} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {/* <FormControl
+                required
+                error={!!errors?.category}
+                sx={{ ml: 3 }}
+                component="fieldset"
+                variant="standard">
+                <FormGroup row>
+                  <FormControlLabel
+                    control={
+                      <Checkbox checked={formData.category == 'machine'} onChange={handleMultiProcessChange} name="isMachine" />
+                    }
+                    label="Machine"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox checked={formData.category == 'spare'} onChange={handleMultiProcessChange} name="isSpares" />
+                    }
+                    label="Spares"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox checked={formData.category == 'spm'} onChange={handleMultiProcessChange} name="isSPM" />
+                    }
+                    label="SPM"
+                  />
+                </FormGroup>
+                <FormHelperText>{errors?.category}</FormHelperText>
+              </FormControl> */}
             </Grid2>
-            <Grid2 size={2} style={{ paddingLeft: 0, paddingRight: 0 }}>
+            <Grid2 size={4} style={{ paddingLeft: 0, paddingRight: 0 }}>
               <div style={{ width: '180px' }}></div>
             </Grid2>
 
-            {boughoutSupplier.length > 0 &&
-          <CTable small striped style={{ marginTop: '5px' }}>
-            <CTableHead color='danger'>
-              <CTableRow>
-                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Supplier Name</CTableHeaderCell>
-                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Cost</CTableHeaderCell>
-                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Time</CTableHeaderCell>
-                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
-                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {boughoutSupplier.map((supplier: any) => {
-                return <CTableRow>
-                  <CTableDataCell style={{ fontWeight: 'initial' }}>{supplier.supplier_name}</CTableDataCell>
-                  <CTableDataCell>{supplier.cost}</CTableDataCell>
-                  <CTableDataCell>{supplier.delivery_time}</CTableDataCell>
-                  <CTableDataCell><MdOutlineEdit onClick={() => {
-                    setEditSupplier(true)
+            <Grid2 size={4} sx={{ minHeight: '60vh' }}>
+              <Card sx={{ minHeight: '60vh', backgroundColor: '#F0F8FF' }}>
+                <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#003262' }}>Machines</Card>
+                {selectedMachines.map((map: any) => {
+                  return <Card sx={{ p: 1, m: 1, display: 'flex', flexDirection: 'row' }}>
+                    {map}
+                    <MdDeleteOutline style={{ width: '25px', height: '25px', color: 'red', cursor: 'pointer', marginLeft: 'auto' }} onClick={() => {
+                      setRemoveMachineDialog({
+                        dialog: true,
+                        machineId: machines.find((mac: any) => mac.machine_name == map),
+                        machineName: map
+                      })
+                    }} />
+                  </Card>
+                })}
+                <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor: '#003262' }}
+                  onClick={() => {
+                    setMachineDialog(true)
+                  }}>
+                  Add Machine
+                </Button>
+              </Card>
+            </Grid2>
+
+            <Grid2 size={4} sx={{ minHeight: '60vh' }}>
+              <Card sx={{ minHeight: '60vh', backgroundColor: '#EFDECD' }}>
+                <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color: 'white', textAlign: 'center' }}>Suppliers</Card>
+                {boughoutSupplier?.map((supplier: any) => {
+                  return <Card sx={{ m: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'bottom', paddingLeft: '10px', paddingRight: '10px', marginTop: '10px' }}><FaUserShield style={{ width: '20px', height: '20px', color: 'gray' }} />
+                      <Typography style={{ marginLeft: '10px', fontWeight: 'bold' }}>{supplier.supplier_name}</Typography>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><RiMoneyRupeeCircleFill style={{ width: '20px', height: '20px', color: 'gray' }} />
+                      <Typography style={{ marginLeft: '10px' }}>Rs.{supplier.cost}</Typography>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><FaBusinessTime style={{ width: '20px', height: '20px', color: 'gray' }} />
+                      <Typography style={{ marginLeft: '10px' }}>{supplier.delivery_time} Days</Typography>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'end', background: '#800020', padding: '5px', marginTop: '10px' }}>
+                      <Card
+                        style={{
+                          marginLeft: 'auto', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                          borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                        }}>
+                        <MdOutlineEdit
+                          style={{ width: '25px', height: '25px', color: 'black', cursor: 'pointer' }} onClick={() => {
+                            setEditSupplier(true)
+                            setShowSupplierDialog(true)
+                            setSelectedSupplier({
+                              supplier_id: supplier.supplier_id,
+                              supplier_name: supplier.supplier_name,
+                              delivery_cost: supplier.cost,
+                              delivery_time: supplier.delivery_time
+                            })
+                            setErrors({})
+                          }} />
+                      </Card>
+                      <Card
+                        style={{
+                          marginLeft: '15px', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                          borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                        }}>
+                        <MdDeleteOutline style={{ width: '25px', height: '25px', color: 'red', cursor: 'pointer' }} onClick={() => {
+                          setBoughtoutSupplier(boughoutSupplier.filter((b) => b.supplier_id !== supplier.supplier_id))
+                        }} />
+                      </Card>
+                    </div>
+                  </Card>
+                })}
+                <Button variant="contained" startIcon={<Store />} size="small" color='primary' sx={{ m: 1, backgroundColor: '#800020' }}
+                  onClick={() => {
                     setShowSupplierDialog(true)
-                    setSelectedSupplier({
-                      supplier_id: supplier.supplier_id,
-                      supplier_name: supplier.supplier_name,
-                      delivery_cost: supplier.cost,
-                      delivery_time: supplier.delivery_time
-                    })
-                    setErrors({})
-                  }} /></CTableDataCell>
-                  <CTableDataCell><MdDeleteOutline onClick={() => {
-                    setBoughtoutSupplier(boughoutSupplier.filter((b) => b.supplier_id !== supplier.supplier_id))
-                  }} /></CTableDataCell>
-                </CTableRow>
-              })}
-            </CTableBody>
-          </CTable>}
+                  }}>
+                  Add New Supplier
+                </Button>
+              </Card>
+            </Grid2>
+
+            <Grid2 size={4} sx={{ minHeight: '60vh' }}>
+              <Card sx={{ minHeight: '60vh', backgroundColor: '#F0F8FF' }}>
+                <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#007FFF' }}>Attachments</Card>
+                {boughtoutFileNames.map((file: any) => {
+                  return <Card sx={{ p: 1, m: 1, display: 'flex', flexDirection: 'row' }}>
+                    {file}
+                    <IoMdCloseCircle style={{ width: '25px', height: '25px', color: 'gray', cursor: 'pointer', marginLeft: 'auto' }} onClick={() => {
+                      setBoughtoutFiles(boughtoutFiles.filter((f) => f.name != file))
+                      setBoughtoutFileNames(boughtoutFileNames.filter((f) => f != file))
+                    }} />
+                  </Card>
+                })}
+                <Button
+                  size={'small'}
+                  component="label"
+                  role={undefined}
+                  variant="contained"
+                  sx={{ m: 1, backgroundColor: '#007FFF' }}
+                  tabIndex={-1}
+                  startIcon={<Add />}
+                >
+                  Upload files
+                  <VisuallyHiddenInput
+                    type="file"
+                    onChange={(event: any) => {
+                      event.preventDefault()
+                      const files: any = boughtoutFiles
+                      const chosenFiles = Array.prototype.slice.call(event.target.files)
+                      chosenFiles.map((file) => {
+                        files.push(file)
+                      })
+                      setBoughtoutFiles(files)
+                      setFileAdded(`${files.length} files added`)
+
+                      let fileNames = boughtoutFileNames
+                      chosenFiles.map((f: any) => {
+                        fileNames.push(f.name)
+                      })
+                      setBoughtoutFileNames(fileNames)
+                    }}
+                    multiple
+                  />
+                </Button>
+              </Card>
+            </Grid2>
+
+            {/* {boughoutSupplier.length > 0 &&
+              <CTable small striped style={{ marginTop: '5px' }}>
+                <CTableHead color='danger'>
+                  <CTableRow>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Supplier Name</CTableHeaderCell>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Cost</CTableHeaderCell>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Time</CTableHeaderCell>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}></CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  {boughoutSupplier.map((supplier: any) => {
+                    return <CTableRow>
+                      <CTableDataCell style={{ fontWeight: 'initial' }}>{supplier.supplier_name}</CTableDataCell>
+                      <CTableDataCell>{supplier.cost}</CTableDataCell>
+                      <CTableDataCell>{supplier.delivery_time}</CTableDataCell>
+                      <CTableDataCell><MdOutlineEdit onClick={() => {
+                        setEditSupplier(true)
+                        setShowSupplierDialog(true)
+                        setSelectedSupplier({
+                          supplier_id: supplier.supplier_id,
+                          supplier_name: supplier.supplier_name,
+                          delivery_cost: supplier.cost,
+                          delivery_time: supplier.delivery_time
+                        })
+                        setErrors({})
+                      }} /></CTableDataCell>
+                      <CTableDataCell><MdDeleteOutline onClick={() => {
+                        setBoughtoutSupplier(boughoutSupplier.filter((b) => b.supplier_id !== supplier.supplier_id))
+                      }} /></CTableDataCell>
+                    </CTableRow>
+                  })}
+                </CTableBody>
+              </CTable>} */}
           </Grid2>
 
-          <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" sx={{ mt: 1 }}
-          onClick={() => {
-            setShowSupplierDialog(true)
-          }}>
-          Add New Supplier
-        </Button>
-
-        <Card sx={{ padding: 2, mt: 2 }}>
-          {boughtoutFileNames.map((file: any) => {
-            return <Chip label={file} variant='outlined' sx={{ mr: 1 }} onDelete={() => {
-              setBoughtoutFiles(boughtoutFiles.filter((f) => f.name != file))
-              setBoughtoutFileNames(boughtoutFileNames.filter((f) => f != file))
-            }} style={{ marginTop: '4px' }} />
-          })}
-          <Button
-            size={'small'}
-            component="label"
-            role={undefined}
-            variant="contained"
-            sx={{ mt: 1 }}
-            tabIndex={-1}
-            startIcon={<Add />}
-          >
-            Upload files
-            <VisuallyHiddenInput
-              type="file"
-              onChange={(event: any) => {
-                event.preventDefault()
-                const files: any = boughtoutFiles
-                const chosenFiles = Array.prototype.slice.call(event.target.files)
-                chosenFiles.map((file) => {
-                  files.push(file)
-                })
-                setBoughtoutFiles(files)
-                setFileAdded(`${files.length} files added`)
-
-                let fileNames = boughtoutFileNames
-                chosenFiles.map((f: any) => {
-                  fileNames.push(f.name)
-                })
-                setBoughtoutFileNames(fileNames)
-              }}
-              multiple
-            />
-          </Button>
-        </Card>
-
-        <Grid2 container justifyContent={'flex-end'} sx={{ mt: 2 }}>
-          <Grid2 size={2}>
-            <Button variant='outlined' color="primary" fullWidth onClick={(e: any) => {
-              navigate(-1)
+          {/* <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" sx={{ mt: 1 }}
+            onClick={() => {
+              setShowSupplierDialog(true)
             }}>
-              Cancel
+            Add New Supplier
+          </Button> */}
+
+          {/* <Card sx={{ padding: 2, mt: 2 }}>
+            {boughtoutFileNames.map((file: any) => {
+              return <Chip label={file} variant='outlined' sx={{ mr: 1 }} onDelete={() => {
+                setBoughtoutFiles(boughtoutFiles.filter((f) => f.name != file))
+                setBoughtoutFileNames(boughtoutFileNames.filter((f) => f != file))
+              }} style={{ marginTop: '4px' }} />
+            })}
+            <Button
+              size={'small'}
+              component="label"
+              role={undefined}
+              variant="contained"
+              sx={{ mt: 1 }}
+              tabIndex={-1}
+              startIcon={<Add />}
+            >
+              Upload files
+              <VisuallyHiddenInput
+                type="file"
+                onChange={(event: any) => {
+                  event.preventDefault()
+                  const files: any = boughtoutFiles
+                  const chosenFiles = Array.prototype.slice.call(event.target.files)
+                  chosenFiles.map((file) => {
+                    files.push(file)
+                  })
+                  setBoughtoutFiles(files)
+                  setFileAdded(`${files.length} files added`)
+
+                  let fileNames = boughtoutFileNames
+                  chosenFiles.map((f: any) => {
+                    fileNames.push(f.name)
+                  })
+                  setBoughtoutFileNames(fileNames)
+                }}
+                multiple
+              />
             </Button>
+          </Card> */}
+
+          <Grid2 container justifyContent={'flex-end'} sx={{ mt: 2 }}>
+            <Grid2 size={2}>
+              <Button variant='outlined' color="primary" fullWidth onClick={(e: any) => {
+                navigate(-1)
+              }}>
+                Cancel
+              </Button>
+            </Grid2>
+            <Grid2 size={2}>
+              <Button variant="contained" color="secondary" fullWidth sx={{ ml: 2 }} onClick={(e: any) => {
+                handleSubmit(e)
+              }}>
+                Submit
+              </Button>
+            </Grid2>
           </Grid2>
-          <Grid2 size={2}>
-            <Button variant="contained" color="secondary" fullWidth sx={{ ml: 2 }} onClick={(e: any) => {
-              handleSubmit(e)
-            }}>
-              Submit
-            </Button>
-          </Grid2>
-        </Grid2>
         </form>
-        
-       
+
+
       </Box>
 
       {/* Supplier Dialog */}
@@ -379,6 +634,7 @@ export default function NewBoughtout() {
             id="email"
             label="Delivery Time"
             name="email"
+            type='number'
             error={!!errors?.delivery_time}
             helperText={errors?.delivery_time}
             value={selectedSupplier.delivery_time}
@@ -397,6 +653,69 @@ export default function NewBoughtout() {
             }}>
             Save
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Machine Dialog */}
+
+      <Dialog
+        maxWidth={'md'}
+        open={showMachineDialog}>
+        <DialogTitle>Select Machine</DialogTitle>
+        <DialogContent>
+          <List sx={{ bgcolor: 'background.paper' }}>
+            {machines.map((value) => {
+              if (selectedMachines.filter((f) => f == value.machine_name).length == 0) {
+                const labelId = `checkbox-list-label-${value.id}`;
+                return (
+                  <ListItem
+                    key={value}
+                    disablePadding
+                    onClick={() => {
+                      setSelectedMachines([...selectedMachines, value.machine_name])
+                      setMachineDialog(false)
+                    }}>
+                    <ListItemButton role={undefined} dense>
+                      <ListItemText id={labelId} primary={value.machine_name} />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              }
+            })}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setMachineDialog(false)
+          }} sx={{ color: '#bb0037' }}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Remove Machine Dialog */}
+
+      <Dialog
+        maxWidth={'md'}
+        open={removeMachineDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure, do you want to remove {removeMachineDialog.machineName}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setRemoveMachineDialog({
+              dialog: false,
+              machineId: '',
+              machineName: ''
+            })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button onClick={() => {
+            setSelectedMachines(selectedMachines.filter((mac: any) => mac != removeMachineDialog.machineName))
+            setRemoveMachineDialog({
+              dialog: false,
+              machineId: '',
+              machineName: ''
+            })
+          }} sx={{ color: '#bb0037' }}>Yes</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -83,7 +83,8 @@ export default function Quotations() {
         user_name: '',
         cost: '',
         qty: '',
-        remarks: ''
+        remarks: '',
+        type: ''
     });
 
     const [vendorFormData, setVendorFormData] = React.useState({
@@ -143,7 +144,8 @@ export default function Quotations() {
             user_id: '',
             user_name: '',
             cost: '',
-            remarks: ''
+            remarks: '',
+            type: ''
         })
         setApproveData({
             quotation_id: '',
@@ -439,8 +441,8 @@ export default function Quotations() {
                                             <TableCell>{quotation.initial_cost}</TableCell>
                                             <TableCell>{quotation.user?.emp_name}</TableCell>
                                             <TableCell>
-                                                {quotation.status.includes('Pending Approval') ?
-                                                    <Card sx={{ bgcolor: '#006BFF', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+                                                {(quotation.status.includes('Pending Approval') || quotation.status.includes('Pending Verification')) ?
+                                                    <Card sx={{ bgcolor: quotation.status.includes('Pending Approval') ? '#006BFF' : '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
                                                         setFormData({
                                                             quotation_id: quotation.id,
                                                             quotation_no: quotation.quotation_no,
@@ -454,7 +456,8 @@ export default function Quotations() {
                                                             user_id: quotation.user?.id,
                                                             cost: quotation.initial_cost,
                                                             user_name: quotation.user?.emp_name,
-                                                            remarks: quotation.remarks
+                                                            remarks: quotation.remarks,
+                                                            type: quotation.status
                                                         })
                                                         setApproveData({
                                                             quotation_id: quotation.id,
@@ -467,7 +470,7 @@ export default function Quotations() {
                                                         <Card sx={{ bgcolor: 'green', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card> :
                                                         <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card>}
                                             </TableCell>
-                                            {quotation.status.includes('Pending Approval') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setCreateDialog(true)
                                                 setFormData({
@@ -483,7 +486,8 @@ export default function Quotations() {
                                                     user_id: quotation.user?.id,
                                                     cost: quotation.initial_cost,
                                                     user_name: quotation.user?.emp_name,
-                                                    remarks: quotation.remarks
+                                                    remarks: quotation.remarks,
+                                                    type: quotation.status
                                                 })
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
                                         </TableRowStyled>
@@ -865,7 +869,7 @@ export default function Quotations() {
                 }}>
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
+                        <h5 style={{ flexGrow: '1' }}>{formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Quotation'} </h5>
                         <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
                             setApproveDialog(false)
                             clearValues()
@@ -926,7 +930,7 @@ export default function Quotations() {
                         fullWidth
                         multiline
                         rows={2}
-                        label="Approval/Rejection Remarks"
+                        label={formData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
                         name="approva_remarks"
                         onChange={(e: any) => {
                             setApproveData({ ...approveData, remarks: e.target.value })
@@ -951,7 +955,7 @@ export default function Quotations() {
 
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => handleApproveReject('Approved', 'machine')} variant="contained">Approve</Button>
+                    <Button onClick={() => handleApproveReject(formData.type == "Pending Approval" ? "Approved" : "Verified", 'machine')} variant="contained">{formData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
                     <Button onClick={() => handleApproveReject('Rejected', 'machine')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </DialogActions>
             </Dialog>

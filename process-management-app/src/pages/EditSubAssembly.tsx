@@ -16,7 +16,7 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
-import { createAttachment, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
+import { createAttachment, fetchBOListByMachine, fetchBoughtOutList, fetchMachineList, fetchPartsList, fetchPartsListByMachine } from '../slices/machineSlice';
 import { checkAssemblyName, createSubAssembly, fetchSubAssembly, fetchSubAssemblyDetail, updateAssembly, removeAttachment } from '../slices/assemblySlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
@@ -30,7 +30,7 @@ export default function EditSubAssembly() {
   const { enqueueSnackbar } = useSnackbar()
   const { state } = useLocation()
 
-  const { machines, parts, boughtOuts } = useAppSelector(
+  const { machines, boughtoutByMachines, partsByMachines } = useAppSelector(
     (state) => state.machine
   );
 
@@ -79,10 +79,15 @@ export default function EditSubAssembly() {
 
   useEffect(() => {
     dispatch(fetchSubAssembly()).unwrap()
-    dispatch(fetchPartsList()).unwrap()
-    dispatch(fetchBoughtOutList()).unwrap()
     dispatch(fetchMachineList())
   }, [dispatch])
+
+  useEffect(() => {
+      if(selectedMachines.length > 0){
+        dispatch(fetchPartsListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
+        dispatch(fetchBOListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
+      }
+    }, [selectedMachines])
 
   useEffect(() => {
     if (state?.id) {
@@ -108,9 +113,11 @@ export default function EditSubAssembly() {
           setSubAssemblyParts(subParts)
           setSubAssemblyBoughtouts(subBoughtouts)
 
+          const machineList : any[] = []
           res.machine_list?.map((machine: any) => {
-            setSelectedMachines([...selectedMachines, machine.machine_name])
+            machineList.push(machine.machine_name)
           })
+          setSelectedMachines(machineList)
 
           const attachments: any = []
           res.attachments?.map((attachment: any) => {
@@ -124,6 +131,33 @@ export default function EditSubAssembly() {
         })
     }
   }, [state])
+
+  const handleSubmit = () => {
+      if(selectedSubAssembly.name.length == 0){
+        DisplaySnackbar('Enter sub assembly name', 'error', enqueueSnackbar)
+      }else if(selectedSubAssembly.serial_no.length == 0){
+        DisplaySnackbar('Enter sub assembly serial no', 'error', enqueueSnackbar)
+      }else if(selectedMachines.length == 0){
+        DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
+      }else{
+        const machine_list: any = []
+            selectedMachines.forEach((m)=>{
+                machine_list.push(machines.find((f) => m == f.machine_name)?.id)
+            })
+
+        dispatch(updateAssembly({
+          id: '',
+          assembly_type_id: state?.id,
+          assembly_type_name: selectedSubAssembly.name,
+          update_type: 'update',
+          assembly_type: 'sub_detail',
+          assembly_udpate_type: updateDialog.type,
+          machines: machine_list
+        })).unwrap().then((res: any) => {
+          DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
+        })
+      }
+  }
 
   const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedMachines>) => {
     const {
@@ -292,6 +326,40 @@ export default function EditSubAssembly() {
 
         <Grid2 container>
 
+        <Grid2 size={12}>
+            <Card sx={{ padding: 2, mt: 1 }}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
+                <Select
+                  labelId="demo-multiple-checkbox-label"
+                  id="demo-multiple-checkbox"
+                  size='small'
+                  multiple
+                  required
+                  value={selectedMachines}
+                  onChange={handleMultiProcessChange}
+                  input={<OutlinedInput label="Tag" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value: any) => (
+                        value.length > 0 ?
+                          <Chip key={value} label={value} /> : <></>
+                      ))}
+                    </Box>
+                  )}
+                // MenuProps={MenuProps}
+                >
+                  {machines.map((machine) => (
+                    <MenuItem key={machine.id} value={machine.machine_name}>
+                      <Checkbox checked={selectedMachines.includes(machine.machine_name)} />
+                      <ListItemText primary={machine.machine_name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Card>
+          </Grid2>
+
           <Grid2 size={12}>
             <Card sx={{ padding: 2, mt: 1, mr: 2 }}>
 
@@ -386,40 +454,6 @@ export default function EditSubAssembly() {
 
           <Grid2 size={12}>
             <Card sx={{ padding: 2, mt: 1 }}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
-                <Select
-                  labelId="demo-multiple-checkbox-label"
-                  id="demo-multiple-checkbox"
-                  size='small'
-                  multiple
-                  required
-                  value={selectedMachines}
-                  onChange={handleMultiProcessChange}
-                  input={<OutlinedInput label="Tag" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value: any) => (
-                        value.length > 0 ?
-                          <Chip key={value} label={value} /> : <></>
-                      ))}
-                    </Box>
-                  )}
-                // MenuProps={MenuProps}
-                >
-                  {machines.map((machine) => (
-                    <MenuItem key={machine.id} value={machine.machine_name}>
-                      <Checkbox checked={selectedMachines.includes(machine.machine_name)} />
-                      <ListItemText primary={machine.machine_name} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Card>
-          </Grid2>
-
-          <Grid2 size={12}>
-            <Card sx={{ padding: 2, mt: 1 }}>
               {subAssemblyFileNames.map((file: any) => {
                 return <Chip label={file} variant='outlined' sx={{ mr: 1 }} onDelete={() => {
                   setDeleteDialog({dialog: true,
@@ -477,16 +511,16 @@ export default function EditSubAssembly() {
         </Grid2>
 
         <Grid2 size={12} container justifyContent={'flex-end'} sx={{ mt: 2 }}>
-          <Grid2 size={2}>
+          <Grid2 size={6}>
             <Button variant='outlined' color="primary" fullWidth onClick={(e: any) => {
               navigate(-1)
             }}>
               Cancel
             </Button>
           </Grid2>
-          <Grid2 size={2}>
+          <Grid2 size={6}>
             <Button variant="contained" color="secondary" fullWidth sx={{ ml: 2 }} onClick={(e: any) => {
-
+              handleSubmit()
             }}>
               Submit
             </Button>
@@ -595,16 +629,16 @@ export default function EditSubAssembly() {
               value={addDialog.id}
               onChange={(e: any) => {
                 if (addDialog.type.includes('Part')) {
-                  setAddDialog({ ...addDialog, id: e.target.value, name: parts.list.find((p) => p.id == e.target.value).part_name })
+                  setAddDialog({ ...addDialog, id: e.target.value, name: partsByMachines.list.find((p) => p.id == e.target.value).part_name })
                 } else if (addDialog.type.includes('Boughtout')) {
-                  setAddDialog({ ...addDialog, id: e.target.value, name: boughtOuts.find((b) => b.id == e.target.value).bought_out_name })
+                  setAddDialog({ ...addDialog, id: e.target.value, name: boughtoutByMachines.list.find((b) => b.id == e.target.value).bought_out_name })
                 }
               }}
             >
-              {addDialog.type.includes('Part') && parts.list.map((part) => {
+              {addDialog.type.includes('Part') && partsByMachines.list.map((part) => {
                 return <MenuItem value={part.id}>{part.part_name}</MenuItem>
               })}
-              {addDialog.type.includes('Boughtout') && boughtOuts.map((bo) => {
+              {addDialog.type.includes('Boughtout') && boughtoutByMachines.list.map((bo) => {
                 return <MenuItem value={bo.id}>{bo.bought_out_name}</MenuItem>
               })}
             </Select>
