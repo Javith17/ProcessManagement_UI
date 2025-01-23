@@ -31,7 +31,8 @@ export default function NewSupplier() {
     location: '',
     accountNo: '',
     bankName: '',
-    ifsc: ''
+    ifsc: '',
+    gst: ''
   });
   const [errors, setErrors] = useState<any>();
   const [loadingDialog, setLoadingDialog] = useState(false)
@@ -114,7 +115,8 @@ export default function NewSupplier() {
           location: res.supplier.supplier_location,
           accountNo: res.supplier.supplier_account_no,
           bankName: res.supplier.supplier_bank_name,
-          ifsc: res.supplier.supplier_ifsc
+          ifsc: res.supplier.supplier_ifsc,
+          gst: res.supplier.supplier_gst
         })
       })
 
@@ -153,6 +155,7 @@ export default function NewSupplier() {
     if (!formData.accountNo) newErrors.accountNo = 'Account No is required';
     if (!formData.bankName) newErrors.bankName = 'Bank is required';
     if (!formData.ifsc) newErrors.ifsc = 'IFSC Code is required';
+    if (!formData.gst) newErrors.ifsc = 'GST No is required';
 
     return newErrors;
   };
@@ -176,7 +179,8 @@ export default function NewSupplier() {
           supplier_pincode: formData.pincode,
           supplier_location: formData.location,
           supplier_mobile_no1: formData.contactNo1,
-          supplier_mobile_no2: formData.contactNo2
+          supplier_mobile_no2: formData.contactNo2,
+          supplier_gst: formData.gst
         })).unwrap().then((res) => {
           DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
           if (res.includes('success')) {
@@ -198,7 +202,8 @@ export default function NewSupplier() {
           supplier_pincode: formData.pincode,
           supplier_location: formData.location,
           supplier_mobile_no1: formData.contactNo1,
-          supplier_mobile_no2: formData.contactNo2
+          supplier_mobile_no2: formData.contactNo2,
+          supplier_gst:  formData.gst
         })).unwrap().then((res) => {
           DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
           if (res.includes('success')) {
@@ -383,6 +388,20 @@ export default function NewSupplier() {
                 onChange={handleChange}
                 error={!!errors?.ifsc}
                 helperText={errors?.ifsc}
+              />
+            </Grid2>
+            <Grid2 size={3}>
+              <TextField
+                size='small'
+                variant="outlined"
+                fullWidth
+                label="GST"
+                name="gst"
+                required
+                value={formData.gst}
+                onChange={handleChange}
+                error={!!errors?.gst}
+                helperText={errors?.gst}
               />
             </Grid2>
           </Grid2>

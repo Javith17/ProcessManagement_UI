@@ -14,7 +14,8 @@ import { Add, Search } from '@mui/icons-material';
 import { fetchBoughtOutList } from '../slices/machineSlice';
 import { nav_boughtouts, TableRowStyled } from '../constants';
 import { useNavigate } from 'react-router-dom';
-
+import { ImCheckboxChecked } from "react-icons/im";
+import { IoMdClose } from "react-icons/io";
 
 export default function BoughtOuts() {
   const dispatch = useAppDispatch()
@@ -77,7 +78,9 @@ export default function BoughtOuts() {
               <TableHead>
                 <TableRow>
                   <TableCell>Bought Out Name</TableCell>
-                  <TableCell>Bought Out Category</TableCell>
+                  <TableCell>Machine</TableCell>
+                  <TableCell>Spares</TableCell>
+                  <TableCell>SPM</TableCell>
                   <TableCell>Days</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -86,7 +89,9 @@ export default function BoughtOuts() {
                 {boughtOuts.length > 0 ? boughtOuts.map((row) => (
                   <TableRowStyled key={row.id}>
                     <TableCell>{row.bought_out_name}</TableCell>
-                    <TableCell>{row.bought_out_category}</TableCell>
+                    <TableCell>{row.is_machine ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
+                                        <TableCell>{row.is_spare ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
+                                        <TableCell>{row.is_spm ? <ImCheckboxChecked color='green' /> : <IoMdClose color='red' />}</TableCell>
                     <TableCell>{row.days}</TableCell>
                     <TableCell><MdOutlineEdit style={{cursor:'pointer'}} onClick={()=>{
                       navigate('/boughtout/editBoughtout', {
