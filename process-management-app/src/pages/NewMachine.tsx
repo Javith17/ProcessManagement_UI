@@ -94,14 +94,16 @@ export default function NewMachine() {
           res.machine_sub_assembly?.map((sub: any)=>{
             setSubAssemblyList([...subAssemblyList, { id:sub.id, sub_assembly_id: sub.sub_assembly.id, qty: sub.qty, name: sub.sub_assembly.sub_assembly_name }])
           })
+          const ma_list: any =[]
+          const ma_maps: any = []
+          const ma_bos: any = []
+          const ma_subs: any= []
+
           res.main_assembly?.map((main: any)=>{
-            setMainAssemblyList([...mainAssemblyList, {id: main.id, name: main.main_assembly_name, serial_no: main.serial_no}])
-            const maps: any = []
-            const bos: any = []
-            const subs: any= []
+            ma_list.push({id: main.id, name: main.main_assembly_name, serial_no: main.serial_no})
             main.main_assembly_detail?.map((detail: any) => {
               if(detail.part){
-                maps.push({
+                ma_maps.push({
                   id: detail.id,
                   main_assembly_id: main.id,
                   part_id: detail.part.id,
@@ -109,7 +111,7 @@ export default function NewMachine() {
                   qty: detail.qty
                 })
               }else if(detail.bought_out){
-                bos.push({
+                ma_bos.push({
                   id: detail.id,
                   main_assembly_id: main.id,
                   bought_out_id: detail.bought_out.id,
@@ -117,7 +119,7 @@ export default function NewMachine() {
                   qty: detail.qty
                 })
               }else if(detail.sub_assembly){
-                subs.push({
+                ma_subs.push({
                   id: detail.id,
                   main_assembly_id: main.id,
                   sub_assembly_id: detail.sub_assembly.id,
@@ -126,10 +128,11 @@ export default function NewMachine() {
                 })
               }
             })
-            setMainAssemblyParts(maps)
-            setMainAssemblyBoughtouts(bos)
-            setMainAssemblySub(subs)
           })
+          setMainAssemblyList(ma_list)
+          setMainAssemblyParts(ma_maps)
+          setMainAssemblyBoughtouts(ma_bos)
+          setMainAssemblySub(ma_subs)
 
           res.section_assembly?.map((section: any)=>{
             setSectionAssemblyList([...sectionAssemblyList, {id: section.id, name: section.section_assembly_name, serial_no: section.serial_no}])
@@ -192,7 +195,7 @@ export default function NewMachine() {
   const [isEdit, setIsEdit] = useState(false)
 
   const [errors, setErrors] = useState<any>();
-  const [currentTab, setCurrentTab] = useState(0)
+  const [currentTab, setCurrentTab] = useState(1)
 
   useEffect(() => {
     dispatch(fetchPartsList())
@@ -634,7 +637,7 @@ export default function NewMachine() {
           <Tabs value={currentTab} sx={{width:'90vw'}} onChange={(e, newValue) => {
             setCurrentTab(newValue)
           }} variant='fullWidth'>
-            <Tab label="Sub Assembly" value={0} />
+            {/* <Tab label="Sub Assembly" value={0} /> */}
             <Tab label="Main Assembly" value={1} />
             <Tab label="Section Assembly" value={2} />
           </Tabs>

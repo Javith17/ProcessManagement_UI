@@ -451,8 +451,8 @@ const Dashboard = () => {
                                             <TableCell>{row?.o_machine_name}</TableCell>
                                             <TableCell>{row?.q_quotation_no}</TableCell>
                                             <TableCell>{row?.pm_part_name}</TableCell>
-                                            <TableCell>{row?.pm_order_qty}</TableCell>
-                                            <TableCell>{row?.pm_vendor_name}</TableCell>
+                                            <TableCell>{row?.pm_required_qty}</TableCell>
+                                            <TableCell>{row?.pm_vendor_name || 'From Stores' }</TableCell>
                                             <TableCell onClick={(e: any) => {
                                                 setUpdateAssemblyDialog(true)
                                                 setAssemblyItem(row)

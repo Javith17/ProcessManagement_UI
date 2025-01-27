@@ -34,6 +34,7 @@ import OrderDetail from './pages/OrderDetail';
 import EditBoughtout from './pages/EditBoughtout';
 import VendorAcceptance from './pages/VendorAcceptance';
 import Stores from './pages/Stores';
+import Assembly from './pages/Assembly';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
           <Route path="/subAssembly/newSectionAssembly" element={<NewSectionAssembly />} />
           <Route path="/subAssembly/editSectionAssembly" element={<EditSectionAssembly />} />
           <Route path="/quotations" element={<Quotations />} />
+          <Route path="/assembly" element={<Assembly />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orderDetail" element={<OrderDetail />} />
         </Route>

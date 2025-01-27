@@ -802,7 +802,7 @@ export default function EditMainAssembly() {
                                 } else if (addDialog.type.includes('Boughtout')) {
                                     setAddDialog({ ...addDialog, id: e.target.value, name: boughtOuts.find((b) => b.id == e.target.value).bought_out_name })
                                 } else if (addDialog.type.includes('Sub Assembly')) {
-                                    setAddDialog({ ...addDialog, id: e.target.value, name: machineSubAssemblies.find((b) => b.id == e.target.value).sub_assembly_name })
+                                    setAddDialog({ ...addDialog, id: e.target.value, name: machineSubAssemblies.find((b) => b.sub_assembly_id == e.target.value).sub_assembly_name })
                                 }
                             }}
                         >
@@ -813,7 +813,7 @@ export default function EditMainAssembly() {
                                 return <MenuItem value={bo.id}>{bo.bought_out_name}</MenuItem>
                             })}
                             {addDialog.type.includes('Sub Assembly') && machineSubAssemblies.map((bo) => {
-                                return <MenuItem value={bo.id}>{bo.sub_assembly_name}</MenuItem>
+                                return <MenuItem value={bo.sub_assembly_id}>{bo.sub_assembly_name}</MenuItem>
                             })}
                         </Select>
                     </FormControl>

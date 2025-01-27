@@ -462,7 +462,7 @@ export default function Quotations() {
                                                         setApproveData({
                                                             quotation_id: quotation.id,
                                                             remarks: '',
-                                                            cost: quotation.initial_cost
+                                                            cost: quotation.approved_cost
                                                         })
                                                         setApproveDialog(true)
                                                     }}>{quotation.status}</Card>

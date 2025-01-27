@@ -122,6 +122,46 @@ export const removeAttachment = createAsyncThunk('removeAttachment', async (data
     return resData
 })
 
+export const configureAssembly = createAsyncThunk('configureMachineAssemblies', async (data: any) => {
+    const response = await axiosInstance.get(`assembly/configureMachineAssemblies/${data.machineId}/${data.orderId}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
+export const getMachineSubAssembly = createAsyncThunk('getMachineSubAssemblies', async (data: any) => {
+    const response = await axiosInstance.get(`assembly/getMachineSubAssemblies/${data.machineId}/${data.orderId}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
+export const getMachineMainAssembly = createAsyncThunk('getMachineMainAssemblies', async (data: any) => {
+    const response = await axiosInstance.get(`assembly/getMachineMainAssemblies/${data.machineId}/${data.orderId}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
+export const getMachineSectionAssembly = createAsyncThunk('getMachineSectionAssemblies', async (data: any) => {
+    const response = await axiosInstance.get(`assembly/getMachineSectionAssemblies/${data.machineId}/${data.orderId}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
+export const getOrderDetail = createAsyncThunk('getOrderDetails', async (data: any) => {
+    const response = await axiosInstance.get(`order/orderDetail/${data}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
 type AssemblyApiState = {
     subAssemblies: Array<any>;
     subAssemblyDetail: {

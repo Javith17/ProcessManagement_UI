@@ -737,14 +737,15 @@ export default function EditSectionAssembly() {
                             labelId="role-select-label"
                             id="role-select"
                             label="Vendor"
-                            value={addDialog.id}
+                            value={addDialog.id || null}
                             onChange={(e: any) => {
+                                console.log("----------", e.target.value)
                                 if (addDialog.type.includes('Part')) {
                                     setAddDialog({ ...addDialog, id: e.target.value, name: parts.list.find((p) => p.id == e.target.value).part_name })
                                 } else if (addDialog.type.includes('Boughtout')) {
                                     setAddDialog({ ...addDialog, id: e.target.value, name: boughtOuts.find((b) => b.id == e.target.value).bought_out_name })
                                 } else if (addDialog.type.includes('Sub Assembly')) {
-                                    setAddDialog({ ...addDialog, id: e.target.value, name: machineSubAssemblies.find((b) => b.id == e.target.value).sub_assembly_name })
+                                    setAddDialog({ ...addDialog, id: e.target.value, name: machineSubAssemblies.find((b) => b.sub_assembly_id == e.target.value).sub_assembly_name })
                                 } else if (addDialog.type.includes('Main Assembly')) {
                                     setAddDialog({ ...addDialog, id: e.target.value, name: machineMainAssemblies.find((b) => b.id == e.target.value).main_assembly_name })
                                 }
@@ -756,11 +757,11 @@ export default function EditSectionAssembly() {
                             {addDialog.type.includes('Boughtout') && boughtOuts.map((bo) => {
                                 return <MenuItem value={bo.id}>{bo.bought_out_name}</MenuItem>
                             })}
-                            {addDialog.type.includes('Sub Assembly') && machineSubAssemblies.map((bo) => {
-                                return <MenuItem value={bo.id}>{bo.sub_assembly_name}</MenuItem>
+                            {addDialog.type.includes('Sub Assembly') && machineSubAssemblies.map((sa) => {
+                                return <MenuItem value={sa.sub_assembly_id}>{sa.sub_assembly_name}</MenuItem>
                             })}
-                            {addDialog.type.includes('Main Assembly') && machineMainAssemblies.map((bo) => {
-                                return <MenuItem value={bo.id}>{bo.main_assembly_name}</MenuItem>
+                            {addDialog.type.includes('Main Assembly') && machineMainAssemblies.map((ma) => {
+                                return <MenuItem value={ma.id}>{ma.main_assembly_name}</MenuItem>
                             })}
                         </Select>
                     </FormControl>

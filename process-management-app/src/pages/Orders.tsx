@@ -21,6 +21,7 @@ import { fetchOrdersList, orderHistory } from '../slices/quotationSlice';
 import { MdHistory } from "react-icons/md";
 import { Chrono } from "react-chrono";
 import moment from 'moment';
+import { configureAssembly } from '../slices/assemblySlice';
 
 export default function Orders() {
   const dispatch = useAppDispatch()
@@ -97,6 +98,7 @@ export default function Orders() {
                   <TableCell>Machine Name</TableCell>
                   <TableCell>Customer Name</TableCell>
                   <TableCell>Cost</TableCell>
+                  <TableCell>Status</TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -108,15 +110,37 @@ export default function Orders() {
                     <TableCell>{row.machine_name}</TableCell>
                     <TableCell>{row.customer.customer_name}</TableCell>
                     <TableCell>{row.quotation.approved_cost}</TableCell>
-                    <TableCell style={{ cursor: 'pointer' }} onClick={() => {
-
-                    }}><MdOutlineRemoveRedEye onClick={() => {
-                      navigate('/orderDetail', {
-                        state: {
-                          order_id: row.id,
-                          type
-                        }
-                      })
+                    {row.status == 'Initiated' ? <TableCell>
+                      <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor:'pointer' }}
+                      onClick={() => {
+                        dispatch(configureAssembly({
+                          machineId: row.machine.id,
+                          orderId: row.id
+                        })).unwrap().then((res:any)=>{
+                          if(res.message.includes('success')){
+                            dispatch(fetchOrdersList()).unwrap()
+                          }else{
+                            DisplaySnackbar('Unable to configure assembly', 'error', enqueueSnackbar)
+                          }
+                        })
+                      }} >Configure Assembly</Card>
+                    </TableCell> : <TableCell>{row.status}</TableCell>}
+                    <TableCell style={{ cursor: 'pointer' }}><MdOutlineRemoveRedEye onClick={() => {
+                      if(type == 'assembly'){
+                        navigate('/assembly', {
+                          state: {
+                            order_id: row.id,
+                            machine_id: row.machine.id
+                          }
+                        })
+                      }else{
+                        navigate('/orderDetail', {
+                          state: {
+                            order_id: row.id,
+                            type
+                          }
+                        })
+                      }                      
                     }} /></TableCell>
                     <TableCell><MdHistory style={{ cursor: 'pointer' }} onClick={() => {
                       dispatch(orderHistory(row.id))
