@@ -51,11 +51,11 @@ export default function Orders() {
   }, [state])
 
   useEffect(() => {
-    dispatch(fetchOrdersList()).unwrap()
+    dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed']})).unwrap()
   }, [dispatch])
 
   const handleSearch = () => {
-    dispatch(fetchOrdersList(searchText)).unwrap()
+    dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed'], searchText })).unwrap()
   }
 
   return (
@@ -118,7 +118,7 @@ export default function Orders() {
                           orderId: row.id
                         })).unwrap().then((res:any)=>{
                           if(res.message.includes('success')){
-                            dispatch(fetchOrdersList()).unwrap()
+                            dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed']})).unwrap()
                           }else{
                             DisplaySnackbar('Unable to configure assembly', 'error', enqueueSnackbar)
                           }

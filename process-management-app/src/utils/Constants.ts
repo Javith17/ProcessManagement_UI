@@ -1,0 +1,13 @@
+export const quotation_terms = ["GST at 18% will be applicable.",
+    "The price provided is Ex-Mill price hence loading & Transportation charges at buyer scope.",
+    "Delivery time 4-5 weeks from the date advance payment received.",
+    "Payment Terms: 70% advance along with Purchase order and 30% before dispatch against Performa-invoice.",
+    "* Warranty for the above-mentioned machine is for one year.",
+    "* Warranty will not be applicable for electronics and easily breakable parts.",
+    "Transport, food & accommodation to the service engineer should be provided by the customer.",
+    "Transit & Insurance from Factory to customer place is extra.",
+    "Packing and erection charges free.",
+    "Unloading charges at the customer factory should be paid by the customer.",
+    "Advance payment once received is not refundable.",
+    "This quotation is valid for 15 days from the date mentioned above.",
+    "Anything legally related to this is determined at the court in Coimbatore and no other courts"]

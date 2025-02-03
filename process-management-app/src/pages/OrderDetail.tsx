@@ -17,7 +17,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaWhatsapp } from "react-icons/fa6";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
-import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchOrdersDetail, fetchOrdersList, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart } from '../slices/quotationSlice';
+import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchOrdersDetail, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart } from '../slices/quotationSlice';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';

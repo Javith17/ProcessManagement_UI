@@ -3,6 +3,7 @@ import axiosInstance from "../api/axiosInstance"
 
 type QuotationStateApi = {
     machineQuotationList: any,
+    sparesQuotationList: any,
     vendorQuotationList: {
         list: Array<any>,
         count: 0
@@ -23,6 +24,7 @@ type QuotationStateApi = {
 
 const initialState: QuotationStateApi =  {
     machineQuotationList: [],
+    sparesQuotationList: [],
     vendorQuotationList: {
         list: [],
         count: 0
@@ -44,6 +46,22 @@ const initialState: QuotationStateApi =  {
 export const fetchMachineQuotationList = createAsyncThunk('machineQuotationList', async (data?: String) => {
     try{
         const response = await axiosInstance.get('quotation/machineQuotationList',
+        {
+            params: {
+                search: data
+            },
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data.list
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchSparesQuotationList = createAsyncThunk('fetchSparesQuotationList', async (data?: String) => {
+    try{
+        const response = await axiosInstance.get('quotation/sparesQuotationList',
         {
             params: {
                 search: data
@@ -101,6 +119,18 @@ export const createMachineQuotation = createAsyncThunk('createMachineQuotation',
     }
 })
 
+export const createSparesQuotation = createAsyncThunk('createSparesQoutation', async (data: any) => {
+    try{
+        const response = await axiosInstance.post('quotation/createSparesQoutation', data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data.message
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
 export const createVendorQuotation = createAsyncThunk('createVendorQuotation', async (data: any) => {
     try{
         const response = await axiosInstance.post('quotation/createVendorQuotation', data, {
@@ -149,12 +179,13 @@ export const approveRejectQuotation = createAsyncThunk('approveRejectQuotation',
     }
 })
 
-export const fetchOrdersList = createAsyncThunk('getOrdersList', async (data?: String) => {
+export const fetchOrdersList = createAsyncThunk('getOrdersList', async (data?: any) => {
     try{
         const response = await axiosInstance.get('order/ordersList',
         {
             params: {
-                search: data
+                search: data?.search,
+                search_list: data?.search_list
             },
             headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
         })
@@ -321,6 +352,19 @@ export const closeAssembly = createAsyncThunk('closeAssembly', async (data: any)
     }
 })
 
+export const fetchQuotationDoc = createAsyncThunk('fetchQuotationDoc', async (data: { type: string, id: string}) => {
+    try{
+        const response = await axiosInstance.get(`quotation/quotation_doc/${data.id}/${data.type}`,{
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
+
 export const orderHistory = createAsyncThunk('orderHistory', async (data: string) => {
     try{
         const response = await axiosInstance.get(`order/orderHistory/${data}`, {
@@ -351,6 +395,19 @@ const quotationSlice = createSlice({
         .addCase(fetchMachineQuotationList.rejected, (state, action) => {
             state.status = 'error'
             state.error = action.error.message || 'unable to fetch machine quotation list'
+        })
+
+        .addCase(fetchSparesQuotationList.pending, (state) => {
+            state.status = 'loading'
+            state.error = null
+        })
+        .addCase(fetchSparesQuotationList.fulfilled, (state, action) => {
+            state.status = 'idle'
+            state.sparesQuotationList = action.payload
+        })
+        .addCase(fetchSparesQuotationList.rejected, (state, action) => {
+            state.status = 'error'
+            state.error = action.error.message || 'unable to fetch spares quotation list'
         })
 
         .addCase(fetchVendorQuotationList.pending, (state) => {

@@ -33,6 +33,7 @@ export default function NewCustomer() {
     accountNo: '',
     bankName: '',
     ifsc: '',
+    gst: '',
     isMachine: false,
     isSpares: false,
     isSPM: false
@@ -58,6 +59,7 @@ export default function NewCustomer() {
           pincode: res.customer.customer_pincode,
           accountNo: res.customer.customer_account_no,
           bankName: res.customer.customer_bank_name,
+          gst: res.customer.customer_gst,
           ifsc: res.customer.customer_ifsc,
           isMachine: res.customer.is_machine,
           isSpares: res.customer.is_spares,
@@ -96,6 +98,7 @@ export default function NewCustomer() {
     if (!formData.accountNo) newErrors.accountNo = 'Account No is required';
     if (!formData.bankName) newErrors.bankName = 'Bank is required';
     if (!formData.ifsc) newErrors.ifsc = 'IFSC Code is required';
+    if (!formData.gst) newErrors.ifsc = 'GST No is required';
     if (!formData.isMachine && !formData.isSpares && !formData.isSPM) newErrors.category = 'Select any one category'
     return newErrors;
   };
@@ -119,6 +122,7 @@ export default function NewCustomer() {
           customer_pincode: formData.pincode,
           customer_mobile_no1: formData.contactNo1,
           customer_mobile_no2: formData.contactNo2,
+          customer_gst: formData.gst,
           is_machine: formData.isMachine,
           is_spares: formData.isSpares,
           is_spm: formData.isSPM
@@ -143,6 +147,7 @@ export default function NewCustomer() {
           customer_pincode: formData.pincode,
           customer_mobile_no1: formData.contactNo1,
           customer_mobile_no2: formData.contactNo2,
+          customer_gst: formData.gst,
           is_machine: formData.isMachine,
           is_spares: formData.isSpares,
           is_spm: formData.isSPM
@@ -317,6 +322,20 @@ export default function NewCustomer() {
                 onChange={handleChange}
                 error={!!errors?.ifsc}
                 helperText={errors?.ifsc}
+              />
+            </Grid2>
+            <Grid2 size={3}>
+              <TextField
+                size='small'
+                variant="outlined"
+                fullWidth
+                label="GST Number"
+                name="gst"
+                required
+                value={formData.gst}
+                onChange={handleChange}
+                error={!!errors?.gst}
+                helperText={errors?.gst}
               />
             </Grid2>
             <Grid2 size={3}>

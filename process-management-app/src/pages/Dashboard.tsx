@@ -179,7 +179,7 @@ const Dashboard = () => {
             dispatch(fetchPendingPaymentBOs()).unwrap().then((res: any) => {
                 setPendingPaymentsList(res?.list)
             })
-            dispatch(fetchOrdersList(ordersFilter)).unwrap().then((res:any) => {
+            dispatch(fetchOrdersList({search_list: ['In-Progress']})).unwrap().then((res:any) => {
                 setOrdersCloseList(res)
             })
         }
@@ -599,7 +599,7 @@ const Dashboard = () => {
                                 }
                             }} onClick={() => {
                                 setOrdersFilter('Assembly Completed')
-                                dispatch(fetchOrdersList('Assembly Completed')).unwrap().then((res:any) => {
+                                dispatch(fetchOrdersList({search_list: ['Assembly Completed']})).unwrap().then((res:any) => {
                                     setOrdersCloseList(res)
                                 })
                             }}>Orders to Close</Box>
@@ -619,7 +619,7 @@ const Dashboard = () => {
                                 }
                             }} onClick={() => {
                                 setOrdersFilter('In-Progress')
-                                dispatch(fetchOrdersList('In-Progress')).unwrap().then((res:any) => {
+                                dispatch(fetchOrdersList({ search_list: ['In-Progress']})).unwrap().then((res:any) => {
                                     setOrdersCloseList(res)
                                 })
                             }}>In-Progress</Box>
@@ -639,7 +639,7 @@ const Dashboard = () => {
                                 }
                             }} onClick={() => {
                                 setOrdersFilter('Closed')
-                                dispatch(fetchOrdersList('Closed')).unwrap().then((res:any) => {
+                                dispatch(fetchOrdersList({search_list: ['Order Closed']})).unwrap().then((res:any) => {
                                     setOrdersCloseList(res)
                                 })
                             }}>Closed Orders</Box>
@@ -1533,7 +1533,7 @@ const Dashboard = () => {
                                     DisplaySnackbar(res.message, 'success', enqueueSnackbar)
                                     setAssemblyItem({})
                                     setCloseOrderDialog(false)
-                                    dispatch(fetchOrdersList('Assembly Completed')).unwrap().then((res:any) => {
+                                    dispatch(fetchOrdersList({ search_list: ['Assembly Completed'] })).unwrap().then((res:any) => {
                                         setOrdersCloseList(res)
                                     })
                                 }else{

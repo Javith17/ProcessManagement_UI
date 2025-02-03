@@ -16,7 +16,7 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { nav_assembly, nav_customers, page_limit, TableRowStyled } from '../constants';
-import { getMachineMainAssembly, getMachineSectionAssembly, getMachineSubAssembly, getOrderDetail } from '../slices/assemblySlice';
+import { getMachineMainAssembly, getMachineSectionAssembly, getMachineSubAssembly, getOrderDetail, updateAssemblyStatus } from '../slices/assemblySlice';
 import { MaterialReactTable, MRT_ColumnDef, useMaterialReactTable } from 'material-react-table';
 
 export default function Assembly() {
@@ -28,6 +28,18 @@ export default function Assembly() {
   const [sectionAssemblies, setSectionAssemblies] = useState<any[]>([])
   const [orderDetail, setOrderDetail] = useState<any>()
   const [currentTab, setCurrentTab] = useState(0)
+
+  const statusColor = (status: string) => {
+    if(status == 'Pending'){
+      return '#98817B'
+    }else if(status == 'Assembly In-Progress'){
+      return '#006BFF'
+    }else if(status == 'Ready to Assemble'){
+      return '#993300'
+    }else if(status == 'Assembly Completed'){
+      return '#00563B'
+    }
+  }
 
   useEffect(() => {
     dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
@@ -67,20 +79,49 @@ export default function Assembly() {
         Cell: (row: any) => (
           <Box
             sx={{
-              borderColor: row.status == null ? '#F95454' : '#006BFF',
-              color: row.status == null ? '#F95454' : '#006BFF',
+              borderColor: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending'),
+              color: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending'),
               borderStyle: 'solid', borderWidth: 'thin',
               textAlign: 'center',
-              borderRadius: '4px', cursor: 'pointer',
-              // ":hover": {
-              //     backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : 'white',
-              //     color: row?.row?.original?.status.includes('Progress') ? 'white' :
-              //     row?.row?.original?.status.includes('Pending') ? '#F95454' : '#347928'
-              // }
+              borderRadius: '4px', 
+              cursor: !row?.row?.original?.status ? 'default' : 'pointer',
+              ":hover": {
+                  backgroundColor: !row?.row?.original?.status ? 'transparent' : statusColor(row?.row?.original?.status),
+                  color: !row?.row?.original?.status ? statusColor('Pending') : 'white',
+              }
             }}
-            onClick={() => {
-
-            }}>{row?.status ? row?.status : 'Pending'}</Box>
+            onClick={() => {             
+              if(row?.row?.original?.status == 'Ready to Assembly') {
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'sub_assembly',
+                  status: 'Assembly In-Progress',
+                  assembly_id: row?.row?.original?.sub_assembly_id,
+                  order_id: state?.order_id
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setSubAssemblies(res)
+                    })
+                  }
+                })
+              }else if(row?.row?.original?.status == "Assembly In-Progress"){
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'sub_assembly',
+                  status: 'Assembly Completed',
+                  assembly_id: row?.row?.original?.sub_assembly_id,
+                  order_id: state?.order_id,
+                  name: row?.row?.original?.part_name ? row?.row?.original?.part_name : row?.row?.original?.bought_out_name
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setSubAssemblies(res)
+                    })
+                  }
+                })
+              }
+            }}>{row?.row?.original?.status ? row?.row?.original?.status : 'Pending'}</Box>
         )
       }
     ],
@@ -148,20 +189,55 @@ export default function Assembly() {
         Cell: (row: any) => (
           <Box
             sx={{
-              borderColor: row.status == null ? '#F95454' : '#006BFF',
-              color: row.status == null ? '#F95454' : '#006BFF',
+              borderColor: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending'),
+              color: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending' ),
               borderStyle: 'solid', borderWidth: 'thin',
               textAlign: 'center',
-              borderRadius: '4px', cursor: 'pointer',
-              // ":hover": {
-              //     backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : 'white',
-              //     color: row?.row?.original?.status.includes('Progress') ? 'white' :
-              //     row?.row?.original?.status.includes('Pending') ? '#F95454' : '#347928'
-              // }
+              borderRadius: '4px', 
+              cursor: (!row?.row?.original?.status) ? 
+              'default' : 'pointer',
+              ":hover": {
+                  backgroundColor: 
+                  (!row?.row?.original?.status) ? 'transparent' :
+                   statusColor(row?.row?.original?.status),
+                  color: !row?.row?.original?.status ? 
+                  statusColor('Pending') : 'white'
+              }
             }}
             onClick={() => {
-
-            }}>{row?.status ? row?.status : 'Pending'}</Box>
+              if(row?.row?.original?.status == "Ready to Assemble") {
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'main_assembly',
+                  status: 'Assembly In-Progress',
+                  assembly_id: row?.row?.original?.main_assembly_id,
+                  order_id: state?.order_id
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineMainAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setMainAssemblies(res)
+                    })
+                  }
+                })
+              }else if(row?.row?.original?.status == "Assembly In-Progress"){
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'main_assembly',
+                  status: 'Assembly Completed',
+                  assembly_id: row?.row?.original?.main_assembly_id,
+                  order_id: state?.order_id,
+                  name: row?.row?.original?.part_name ? row?.row?.original?.part_name : 
+                  row?.row?.original?.bought_out_name ? row?.row?.original?.bought_out_name :
+                  row?.row?.original?.sub_assembly_name
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineMainAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setMainAssemblies(res)
+                    })
+                  }
+                })
+              }
+            }}>{row?.row?.original?.status ? row?.row?.original?.status : 'Pending'}</Box>
         )
       }
     ],
@@ -229,20 +305,60 @@ export default function Assembly() {
         Cell: (row: any) => (
           <Box
             sx={{
-              borderColor: row.status == null ? '#F95454' : '#006BFF',
-              color: row.status == null ? '#F95454' : '#006BFF',
+              borderColor: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending'),
+              color: statusColor(row?.row?.original?.status ? row?.row?.original?.status : 'Pending'),
               borderStyle: 'solid', borderWidth: 'thin',
               textAlign: 'center',
-              borderRadius: '4px', cursor: 'pointer',
-              // ":hover": {
-              //     backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : 'white',
-              //     color: row?.row?.original?.status.includes('Progress') ? 'white' :
-              //     row?.row?.original?.status.includes('Pending') ? '#F95454' : '#347928'
-              // }
+              borderRadius: '4px', 
+              cursor: (!row?.row?.original?.status) ? 
+              'default' : 'pointer',
+              ":hover": {
+                  backgroundColor: 
+                  !row?.row?.original?.status ? 'transparent' :
+                   statusColor(row?.row?.original?.status),
+                  color: !row?.row?.original?.status ? 
+                  statusColor('Pending') : 'white'
+              }
             }}
             onClick={() => {
-
-            }}>{row?.status ? row?.status : 'Pending'}</Box>
+              if(row?.row?.original?.status == "Ready to Assemble") {
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'section_assembly',
+                  status: 'Assembly In-Progress',
+                  assembly_id: row?.row?.original?.section_assembly_id,
+                  order_id: state?.order_id,
+                  name: row?.row?.original?.part_name ? row?.row?.original?.part_name : 
+                  row?.row?.original?.bought_out_name ? row?.row?.original?.bought_out_name :
+                  row?.row?.original?.sub_assembly_name ? row?.row?.original?.sub_assembly_name :
+                  row?.row?.original?.main_assembly_name
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineSectionAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setSectionAssemblies(res)
+                    })
+                  }
+                })
+              }else if(row?.row?.original?.status == "Assembly In-Progress"){
+                dispatch(updateAssemblyStatus({
+                  id: row?.row?.original?.id,
+                  assembly_type: 'sectioni_assembly',
+                  status: 'Assembly Completed',
+                  assembly_id: row?.row?.original?.section_assembly_id,
+                  order_id: state?.order_id,
+                  name: row?.row?.original?.part_name ? row?.row?.original?.part_name : 
+                  row?.row?.original?.bought_out_name ? row?.row?.original?.bought_out_name :
+                  row?.row?.original?.sub_assembly_name ? row?.row?.original?.sub_assembly_name :
+                  row?.row?.original?.main_assembly_name
+                })).unwrap().then((res:any)=>{
+                  if(res.message.includes('success')){
+                    dispatch(getMachineSectionAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+                      setSectionAssemblies(res)
+                    })
+                  }
+                })
+              }
+            }}>{row?.row?.original?.status ? row?.row?.original?.status : 'Pending' }</Box>
         )
       }
     ],
@@ -307,9 +423,9 @@ export default function Assembly() {
           <Tabs value={currentTab} onChange={(e, newValue) => {
             setCurrentTab(newValue)
             if(newValue == 0){
-              dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
-                setSubAssemblies(res)
-              })          
+              // dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+              //   setSubAssemblies(res)
+              // })          
             }else if (newValue == 1) {
               dispatch(getMachineMainAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
                 setMainAssemblies(res)

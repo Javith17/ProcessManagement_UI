@@ -23,13 +23,19 @@ import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { DatePicker } from '@mui/x-date-pickers';
+import { useReactToPrint } from "react-to-print";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { fetchBoughtOutList, fetchMachineList, fetchPartDetail, fetchPartsList } from '../slices/machineSlice';
-import { approveRejectQuotation, createMachineQuotation, createSupplierQuotation, createVendorQuotation, deleteQuotation, fetchMachineQuotationList, fetchSupplierQuotationList, fetchVendorQuotationList } from '../slices/quotationSlice';
+import { fetchBoughtOutList, fetchMachineList, fetchPartDetail, fetchPartsList, getMachineDetails } from '../slices/machineSlice';
+import { approveRejectQuotation, createMachineQuotation, createSparesQuotation, createSupplierQuotation, createVendorQuotation, deleteQuotation, fetchMachineQuotationList, fetchQuotationDoc, fetchSparesQuotationList, fetchSupplierQuotationList, fetchVendorQuotationList } from '../slices/quotationSlice';
 import dayjs from 'dayjs';
 import { MdDeleteOutline } from "react-icons/md";
 import moment from 'moment';
+import { IoIosArrowDown } from "react-icons/io";
+import { IoIosArrowUp } from "react-icons/io";
+import { quotation_terms } from '../utils/Constants';
+import { MdLocalPrintshop } from "react-icons/md";
+import { IoMdCloseCircle } from "react-icons/io";
 
 export default function Quotations() {
     const dispatch = useAppDispatch()
@@ -41,12 +47,13 @@ export default function Quotations() {
     const { customers, users, vendors, suppliers } = useAppSelector(
         (state) => state.admin
     );
-    const { machineQuotationList, vendorQuotationList, supplierQuotationList } = useAppSelector(
+    const { machineQuotationList, vendorQuotationList, supplierQuotationList, sparesQuotationList } = useAppSelector(
         (state) => state.quotation
     );
 
     const [searchText, setSearchText] = React.useState("")
     const [createDialog, setCreateDialog] = React.useState(false)
+    const [spareDialog, setSpareDialog] = React.useState(false)
     const [vendorQDialog, setVendorQDialog] = React.useState(false)
     const [supplierQDialog, setSupplierQDialog] = React.useState(false)
     const [approveDialog, setApproveDialog] = React.useState(false)
@@ -56,6 +63,17 @@ export default function Quotations() {
     const [isNew, setIsNew] = React.useState(false)
     const [isApprove, setIsApprove] = React.useState(false)
     const [partProcessList, setPartProcessList] = React.useState<any[]>([])
+    const [quotationTerms, setQuotationTerms] = React.useState(quotation_terms)
+    const [isExpand, setIsExpand] = React.useState(false)
+    const [machineSpares, setMachineSpares] = React.useState<any[]>([])
+    const [spareParts, setSpareParts] = React.useState<Array<{
+        id: number, spare_id: number, spare_name: string, spare_type: string,
+        spare_qty: number, spare_cost: number
+    }>>([])
+    const [quotationDoc, setQuotatioinDoc] = React.useState({
+        dialog: false,
+        html: ''
+    })
     const [selectedMachine, setSelectedMachine] = React.useState<{
         machine_id?: string,
         min_spindles?: number,
@@ -87,12 +105,29 @@ export default function Quotations() {
         type: ''
     });
 
+    const [sparesFormData, setSparesFormData] = React.useState({
+        quotation_id: '',
+        quotation_no: '',
+        quotation_date: '',
+        spares: [],
+        customer_id: '',
+        machine_id: '',
+        customer_name: '',
+        reminder_date: '',
+        user_id: '',
+        user_name: '',
+        cost: '',
+        qty: '',
+        remarks: '',
+        type: ''
+    });
+
     const [vendorFormData, setVendorFormData] = React.useState({
         quotation_id: '',
         quotation_no: '',
         quotation_date: '',
         vendor_id: '',
-        part_id:'',
+        part_id: '',
         remarks: '',
         approvalRemarks: ''
     })
@@ -102,7 +137,7 @@ export default function Quotations() {
         quotation_no: '',
         quotation_date: '',
         supplier_id: '',
-        bought_out_id:'',
+        bought_out_id: '',
         remarks: '',
         approvalRemarks: '',
         cost: 0,
@@ -115,6 +150,9 @@ export default function Quotations() {
         cost: ''
     });
 
+    const contentRef = React.useRef<HTMLDivElement>(null);
+    const reactToPrintFn = useReactToPrint({ contentRef });
+
     useEffect(() => {
         dispatch(fetchMachineList()).unwrap()
         dispatch(fetchCustomers()).unwrap()
@@ -125,6 +163,81 @@ export default function Quotations() {
         dispatch(fetchBoughtOutList())
         dispatch(fetchPartsList())
     }, [dispatch])
+
+    useEffect(() => {
+        if (selectedMachine.machine_id) {
+            dispatch(getMachineDetails(selectedMachine.machine_id)).unwrap().then((res: any) => {
+                const spares: any[] = []
+                res.main_assembly.map((main: any) => {
+                    main.main_assembly_detail.map((md: any) => {
+                        if (md.part) {
+                            if (spares.filter((p: any) => p.id == md.part.id)?.length == 0) {
+                                spares.push({
+                                    type: 'part',
+                                    id: md.part.id,
+                                    name: md.part.part_name
+                                })
+                            }
+                        } else if (md.bought_out) {
+                            if (spares.filter((p: any) => p.id == md.bought_out.id)?.length == 0) {
+                                spares.push({
+                                    type: 'bought_out',
+                                    id: md.bought_out.id,
+                                    name: md.bought_out.bought_out_name
+                                })
+                            }
+                        } else if (md.sub_assembly) {
+                            if (spares.filter((p: any) => p.id == md.sub_assembly.id)?.length == 0) {
+                                spares.push({
+                                    type: 'sub_assembly',
+                                    id: md.sub_assembly.id,
+                                    name: md.sub_assembly.sub_assembly_name
+                                })
+                            }
+                        }
+                    })
+                })
+                res.section_assembly.map((section: any) => {
+                    section.section_assembly_detail.map((md: any) => {
+                        if (md.part) {
+                            if (spares.filter((p: any) => p.id == md.part.id)?.length == 0) {
+                                spares.push({
+                                    type: 'part',
+                                    id: md.part.id,
+                                    name: md.part.part_name
+                                })
+                            }
+                        } else if (md.bought_out) {
+                            if (spares.filter((p: any) => p.id == md.bought_out.id)?.length == 0) {
+                                spares.push({
+                                    type: 'bought_out',
+                                    id: md.bought_out.id,
+                                    name: md.bought_out.bought_out_name
+                                })
+                            }
+                        } else if (md.sub_assembly) {
+                            if (spares.filter((p: any) => p.id == md.sub_assembly.id)?.length == 0) {
+                                spares.push({
+                                    type: 'sub_assembly',
+                                    id: md.sub_assembly.id,
+                                    name: md.sub_assembly.sub_assembly_name
+                                })
+                            }
+                        } else if (md.main_assembly) {
+                            if (spares.filter((p: any) => p.id == md.main_assembly.id)?.length == 0) {
+                                spares.push({
+                                    type: 'main_assembly',
+                                    id: md.main_assembly.id,
+                                    name: md.main_assembly.main_assembly_name
+                                })
+                            }
+                        }
+                    })
+                })
+                setMachineSpares(spares)
+            })
+        }
+    }, [selectedMachine])
 
     const handleSearch = () => {
 
@@ -147,6 +260,22 @@ export default function Quotations() {
             remarks: '',
             type: ''
         })
+        setSparesFormData({
+            quotation_id: '',
+            quotation_no: '',
+            quotation_date: '',
+            spares: [],
+            customer_id: '',
+            machine_id: '',
+            customer_name: '',
+            reminder_date: '',
+            qty: '',
+            user_id: '',
+            user_name: '',
+            cost: '',
+            remarks: '',
+            type: ''
+        })
         setApproveData({
             quotation_id: '',
             remarks: '',
@@ -157,7 +286,7 @@ export default function Quotations() {
             quotation_no: '',
             quotation_date: '',
             vendor_id: '',
-            part_id:'',
+            part_id: '',
             remarks: '',
             approvalRemarks: ''
         })
@@ -167,10 +296,10 @@ export default function Quotations() {
             quotation_no: '',
             quotation_date: '',
             supplier_id: '',
-            bought_out_id:'',
+            bought_out_id: '',
             remarks: '',
             approvalRemarks: '',
-            cost:0,
+            cost: 0,
             delivery_time: 0
         })
         setDeleteDialog({
@@ -209,11 +338,11 @@ export default function Quotations() {
                 setVendorQDialog(false)
                 setSupplierQDialog(false)
                 clearValues()
-                if(type.includes('machine')){
+                if (type.includes('machine')) {
                     dispatch(fetchMachineQuotationList())
-                }else if(type.includes('vendor')){
+                } else if (type.includes('vendor')) {
                     dispatch(fetchVendorQuotationList())
-                }else{
+                } else {
                     dispatch(fetchSupplierQuotationList())
                 }
             }
@@ -225,11 +354,11 @@ export default function Quotations() {
     const handleNewVendorQuotation = () => {
         setErrors({})
         const newErrors: any = {}
-        if(!vendorFormData.part_id || vendorFormData.part_id.length == 0) newErrors.part_id = 'Select part'
-        if(!vendorFormData.vendor_id || vendorFormData.vendor_id.length == 0) newErrors.vendor_id = 'Select vendor'
+        if (!vendorFormData.part_id || vendorFormData.part_id.length == 0) newErrors.part_id = 'Select part'
+        if (!vendorFormData.vendor_id || vendorFormData.vendor_id.length == 0) newErrors.vendor_id = 'Select vendor'
 
-        if(Object.keys(newErrors).length == 0){
-            if(partProcessList.filter((pp: any) => pp.cost == 0 || pp.delivery_time == 0).length > 0){
+        if (Object.keys(newErrors).length == 0) {
+            if (partProcessList.filter((pp: any) => pp.cost == 0 || pp.delivery_time == 0).length > 0) {
                 DisplaySnackbar('Enter valid cost/ delivery time', 'error', enqueueSnackbar)
             }
             const data: any = {
@@ -241,7 +370,7 @@ export default function Quotations() {
                 type: isNew ? 'Add' : 'Update',
                 process_list: partProcessList
             }
-            dispatch(createVendorQuotation(data)).unwrap().then((res:any) => {
+            dispatch(createVendorQuotation(data)).unwrap().then((res: any) => {
                 DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
                 if (res.includes('success')) {
                     setIsNew(false)
@@ -250,24 +379,24 @@ export default function Quotations() {
                     setErrors({})
                     dispatch(fetchVendorQuotationList())
                 }
-            }).catch((err:any)=>{
+            }).catch((err: any) => {
                 DisplaySnackbar(err.message, 'error', enqueueSnackbar)
             })
-        }else{
+        } else {
             setErrors(newErrors)
         }
-        
+
     }
 
     const handleNewSupplierQuotation = () => {
         setErrors({})
         const newErrors: any = {}
-        if(!supplierFormData.supplier_id || supplierFormData.supplier_id.length == 0) newErrors.part_id = 'Select Supplier'
-        if(!supplierFormData.bought_out_id || supplierFormData.bought_out_id.length == 0) newErrors.vendor_id = 'Select Boughtout'
-        if(!supplierFormData.cost || supplierFormData.cost.toString().length == 0 || supplierFormData.cost == 0) newErrors.part_id = 'Enter cost'
-        if(!supplierFormData.cost || supplierFormData.delivery_time.toString().length == 0 || supplierFormData.delivery_time == 0) newErrors.vendor_id = 'Enter delivery time'
+        if (!supplierFormData.supplier_id || supplierFormData.supplier_id.length == 0) newErrors.part_id = 'Select Supplier'
+        if (!supplierFormData.bought_out_id || supplierFormData.bought_out_id.length == 0) newErrors.vendor_id = 'Select Boughtout'
+        if (!supplierFormData.cost || supplierFormData.cost.toString().length == 0 || supplierFormData.cost == 0) newErrors.part_id = 'Enter cost'
+        if (!supplierFormData.cost || supplierFormData.delivery_time.toString().length == 0 || supplierFormData.delivery_time == 0) newErrors.vendor_id = 'Enter delivery time'
 
-        if(Object.keys(newErrors).length == 0){
+        if (Object.keys(newErrors).length == 0) {
             const data: any = {
                 quotation_id: isNew ? '' : supplierFormData.quotation_id,
                 quotation_date: supplierFormData.quotation_date,
@@ -278,7 +407,7 @@ export default function Quotations() {
                 cost: supplierFormData.cost,
                 delivery_time: supplierFormData.delivery_time
             }
-            dispatch(createSupplierQuotation(data)).unwrap().then((res:any) => {
+            dispatch(createSupplierQuotation(data)).unwrap().then((res: any) => {
                 DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
                 if (res.includes('success')) {
                     setIsNew(false)
@@ -287,10 +416,10 @@ export default function Quotations() {
                     setErrors({})
                     dispatch(fetchSupplierQuotationList())
                 }
-            }).catch((err:any)=>{
+            }).catch((err: any) => {
                 DisplaySnackbar(err.message, 'error', enqueueSnackbar)
             })
-        }else{
+        } else {
             setErrors(newErrors)
         }
     }
@@ -308,6 +437,7 @@ export default function Quotations() {
                     user_id: formData.user_id,
                     cost: formData.cost,
                     remarks: formData.remarks,
+                    quotation_terms: quotationTerms,
                     type: 'Add'
                 })).unwrap().then((res: any) => {
                     DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
@@ -315,6 +445,7 @@ export default function Quotations() {
                         setCreateDialog(false)
                         clearValues()
                         dispatch(fetchMachineQuotationList())
+                        setQuotationTerms(quotation_terms)
                     }
                 }).catch((err: any) => {
                     DisplaySnackbar(err.message, 'error', enqueueSnackbar)
@@ -330,10 +461,12 @@ export default function Quotations() {
                     user_id: formData.user_id,
                     cost: formData.cost,
                     remarks: formData.remarks,
+                    quotation_terms: quotationTerms,
                     type: 'Update'
                 })).unwrap().then((res: any) => {
                     DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
                     if (res.includes('success')) {
+                        setQuotationTerms(quotation_terms)
                         setCreateDialog(false)
                         clearValues()
                         dispatch(fetchMachineQuotationList())
@@ -344,6 +477,73 @@ export default function Quotations() {
             }
         } else {
             setErrors(validated)
+        }
+    }
+
+    const handleNewSparesQuotation = () => {
+        setErrors({})
+        const newErrors: any = {}
+        if (!sparesFormData.quotation_date || sparesFormData.quotation_date?.toString().trim().length == 0) newErrors.quotation_date = 'Quotation Date is required'
+        if (!sparesFormData.reminder_date || sparesFormData.reminder_date?.toString().trim().length == 0) newErrors.reminder_date = 'Reminder Date is required'
+        if (!sparesFormData.customer_id) newErrors.customer_id = 'Select Customer'
+        if (!sparesFormData.user_id) newErrors.user_id = 'Select Followup user'
+        console.log("01110--", newErrors)
+        if (Object.keys(newErrors).length == 0) {
+            if (spareParts.length == 0){
+                DisplaySnackbar('Add any one item', 'error', enqueueSnackbar)
+            }else{
+                console.log("0000--")
+                if (sparesFormData.quotation_id.length == 0) {
+                    dispatch(createSparesQuotation({
+                        quotation_date: sparesFormData.quotation_date,
+                        reminder_date: sparesFormData.reminder_date,
+                        qty: sparesFormData.qty,
+                        spares: spareParts,
+                        customer_id: sparesFormData.customer_id,
+                        user_id: sparesFormData.user_id,
+                        cost: sparesFormData.cost,
+                        remarks: sparesFormData.remarks,
+                        quotation_terms: quotationTerms,
+                        type: 'Add'
+                    })).unwrap().then((res: any) => {
+                        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+                        // if (res.includes('success')) {
+                        //     setCreateDialog(false)
+                        //     clearValues()
+                        //     dispatch(fetchMachineQuotationList())
+                        //     setQuotationTerms(quotation_terms)
+                        // }
+                    }).catch((err: any) => {
+                        DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                    })
+                } else {
+                    // dispatch(createMachineQuotation({
+                    //     quotation_id: formData.quotation_id,
+                    //     quotation_date: formData.quotation_date,
+                    //     reminder_date: formData.reminder_date,
+                    //     qty: formData.qty,
+                    //     machine_id: formData.machine_id,
+                    //     customer_id: formData.customer_id,
+                    //     user_id: formData.user_id,
+                    //     cost: formData.cost,
+                    //     remarks: formData.remarks,
+                    //     quotation_terms: quotationTerms,
+                    //     type: 'Update'
+                    // })).unwrap().then((res: any) => {
+                    //     DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+                    //     if (res.includes('success')) {
+                    //         setQuotationTerms(quotation_terms)
+                    //         setCreateDialog(false)
+                    //         clearValues()
+                    //         dispatch(fetchMachineQuotationList())
+                    //     }
+                    // }).catch((err: any) => {
+                    //     DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                    // })
+                }
+            }            
+        }else{
+            setErrors(newErrors)
         }
     }
 
@@ -382,14 +582,17 @@ export default function Quotations() {
                         if (currentTab == 2) {
                             //vendor
                             setVendorQDialog(true)
-                        } else if(currentTab == 3){
+                        } else if (currentTab == 3) {
                             setSupplierQDialog(true)
+                        } else if (currentTab == 1) {
+                            setSpareDialog(true)
                         } else {
                             setCreateDialog(true)
                         }
                         setErrors({})
                         clearValues()
                         setIsNew(true)
+                        setQuotationTerms(quotation_terms)
                     }}>
                         Add New
                     </Button>
@@ -398,10 +601,12 @@ export default function Quotations() {
                 <Grid2 size={12}>
                     <Tabs value={currentTab} onChange={(e, newValue) => {
                         setCurrentTab(newValue)
-                        if(newValue == 2){
+                        if (newValue == 2) {
                             dispatch(fetchVendorQuotationList()).unwrap()
-                        }else if(newValue  == 3){
+                        } else if (newValue == 3) {
                             dispatch(fetchSupplierQuotationList()).unwrap()
+                        } else if(newValue == 1) {
+                            dispatch(fetchSparesQuotationList()).unwrap()
                         }
                     }} variant='fullWidth'>
                         <Tab label="Machine" value={0} />
@@ -414,7 +619,7 @@ export default function Quotations() {
                 <Grid2 size={{ xs: 6, md: 12 }}>
                     {(currentTab == 0) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>
@@ -426,6 +631,7 @@ export default function Quotations() {
                                         <TableCell>Cost</TableCell>
                                         <TableCell>Followup User</TableCell>
                                         <TableCell>Status</TableCell>
+                                        <TableCell></TableCell>
                                         <TableCell></TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -473,6 +679,7 @@ export default function Quotations() {
                                             {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setCreateDialog(true)
+                                                setQuotationTerms(quotation.quotation_terms)
                                                 setFormData({
                                                     quotation_id: quotation.id,
                                                     quotation_no: quotation.quotation_no,
@@ -490,6 +697,111 @@ export default function Quotations() {
                                                     type: quotation.status
                                                 })
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
+                                            <TableCell><MdLocalPrintshop style={{ cursor: 'pointer' }} onClick={() => {
+                                                dispatch(fetchQuotationDoc({id: quotation.id, type: 'machine'})).unwrap().then((res: any) => {
+                                                    setQuotatioinDoc({
+                                                        dialog: true,
+                                                        html: res
+                                                    })
+                                                })
+                                            }} /></TableCell>
+                                        </TableRowStyled>
+                                    )) : <TableRow key={0}>
+                                        <TableCell colSpan={10} align='center'>No Data</TableCell>
+                                    </TableRow>}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>}
+                    
+                        {(currentTab == 1) &&
+                        <TableContainer component={Paper}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Qoutation No</TableCell>
+                                        <TableCell>Quotation Date</TableCell>
+                                        <TableCell>Customer Name</TableCell>
+                                        <TableCell>Machine Name</TableCell>
+                                        <TableCell>Reminder Date</TableCell>
+                                        <TableCell>Qty</TableCell>
+                                        <TableCell>Cost</TableCell>
+                                        <TableCell>Followup User</TableCell>
+                                        <TableCell>Status</TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {sparesQuotationList.length > 0 ? sparesQuotationList.map((quotation: any) => (
+                                        <TableRowStyled key={quotation.id}>
+                                            <TableCell>{quotation.quotation_no}</TableCell>
+                                            <TableCell>{moment(quotation.quotation_date).format('DD-MM-YYYY')}</TableCell>
+                                            <TableCell>{quotation.customer.customer_name}</TableCell>
+                                            <TableCell>{quotation.machine.machine_name}</TableCell>
+                                            <TableCell>{moment(quotation.reminder_date).format('DD-MM-YYYY')}</TableCell>
+                                            <TableCell>{quotation.qty}</TableCell>
+                                            <TableCell>{quotation.initial_cost}</TableCell>
+                                            <TableCell>{quotation.user?.emp_name}</TableCell>
+                                            <TableCell>
+                                                {(quotation.status.includes('Pending Approval') || quotation.status.includes('Pending Verification')) ?
+                                                    <Card sx={{ bgcolor: quotation.status.includes('Pending Approval') ? '#006BFF' : '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+                                                        setFormData({
+                                                            quotation_id: quotation.id,
+                                                            quotation_no: quotation.quotation_no,
+                                                            quotation_date: quotation.quotation_date,
+                                                            machine_id: quotation.machine.id,
+                                                            machine_name: quotation.machine.machine_name,
+                                                            customer_id: quotation.customer.id,
+                                                            customer_name: quotation.customer.customer_name,
+                                                            reminder_date: quotation.reminder_date,
+                                                            qty: quotation.qty,
+                                                            user_id: quotation.user?.id,
+                                                            cost: quotation.initial_cost,
+                                                            user_name: quotation.user?.emp_name,
+                                                            remarks: quotation.remarks,
+                                                            type: quotation.status
+                                                        })
+                                                        setApproveData({
+                                                            quotation_id: quotation.id,
+                                                            remarks: '',
+                                                            cost: quotation.approved_cost
+                                                        })
+                                                        setApproveDialog(true)
+                                                    }}>{quotation.status}</Card>
+                                                    : quotation.status.includes('Approved') ?
+                                                        <Card sx={{ bgcolor: 'green', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card> :
+                                                        <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card>}
+                                            </TableCell>
+                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                                setIsNew(false)
+                                                setSpareDialog(true)
+                                                setQuotationTerms(quotation.quotation_terms)
+                                                setSparesFormData({
+                                                    quotation_id: quotation.id,
+                                                    quotation_no: quotation.quotation_no,
+                                                    quotation_date: quotation.quotation_date,
+                                                    machine_id: quotation.machine.id,
+                                                    customer_id: quotation.customer.id,
+                                                    customer_name: quotation.customer.customer_name,
+                                                    reminder_date: quotation.reminder_date,
+                                                    qty: quotation.qty,
+                                                    user_id: quotation.user?.id,
+                                                    cost: quotation.initial_cost,
+                                                    user_name: quotation.user?.emp_name,
+                                                    remarks: quotation.remarks,
+                                                    type: quotation.status,
+                                                    spares: quotation.spares
+                                                })
+                                                setSpareParts(quotation.spares)
+                                            }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
+                                            <TableCell><MdLocalPrintshop style={{ cursor: 'pointer' }} onClick={() => {
+                                                dispatch(fetchQuotationDoc({id: quotation.id, type: 'spares'})).unwrap().then((res: any) => {
+                                                    setQuotatioinDoc({
+                                                        dialog: true,
+                                                        html: res
+                                                    })
+                                                })
+                                            }} /></TableCell>
                                         </TableRowStyled>
                                     )) : <TableRow key={0}>
                                         <TableCell colSpan={10} align='center'>No Data</TableCell>
@@ -498,9 +810,9 @@ export default function Quotations() {
                             </Table>
                         </TableContainer>}
 
-                        {(currentTab == 2) &&
+                    {(currentTab == 2) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>
@@ -533,7 +845,7 @@ export default function Quotations() {
                                                             approvalRemarks: ''
                                                         })
                                                         const p_process: any = []
-                                                        quotation.data?.map((js:any) => {
+                                                        quotation.data?.map((js: any) => {
                                                             p_process.push({
                                                                 process_id: js['process_id'],
                                                                 process_name: js['process_name'],
@@ -563,7 +875,7 @@ export default function Quotations() {
                                                     approvalRemarks: ''
                                                 })
                                                 const p_process: any = []
-                                                quotation.data?.map((js:any) => {
+                                                quotation.data?.map((js: any) => {
                                                     p_process.push({
                                                         process_id: js['process_id'],
                                                         process_name: js['process_name'],
@@ -575,15 +887,15 @@ export default function Quotations() {
                                                 setIsNew(false)
                                                 setVendorQDialog(true)
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
-                                            {quotation.status.includes('Pending Approval') ? <TableCell><MdDeleteOutline style={{cursor:'pointer'}} 
-                                            onClick={()=>{
-                                                setDeleteDialog({
-                                                    dialog: true,
-                                                    type:'vendor',
-                                                    id: quotation.id,
-                                                    no: quotation.quotation_no
-                                                })
-                                            }} /></TableCell> : <TableCell></TableCell>}
+                                            {quotation.status.includes('Pending Approval') ? <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    setDeleteDialog({
+                                                        dialog: true,
+                                                        type: 'vendor',
+                                                        id: quotation.id,
+                                                        no: quotation.quotation_no
+                                                    })
+                                                }} /></TableCell> : <TableCell></TableCell>}
                                         </TableRowStyled>
                                     )) : <TableRow key={0}>
                                         <TableCell colSpan={10} align='center'>No Data</TableCell>
@@ -592,9 +904,9 @@ export default function Quotations() {
                             </Table>
                         </TableContainer>}
 
-                        {(currentTab == 3) &&
+                    {(currentTab == 3) &&
                         <TableContainer component={Paper}>
-                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight:'bold' } }}>
+                            <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Qoutation No</TableCell>
@@ -653,15 +965,15 @@ export default function Quotations() {
                                                 setIsNew(false)
                                                 setSupplierQDialog(true)
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
-                                            {quotation.status.includes('Pending Approval') ? <TableCell><MdDeleteOutline style={{cursor:'pointer'}} 
-                                            onClick={()=>{
-                                                setDeleteDialog({
-                                                    dialog: true,
-                                                    id: quotation.id,
-                                                    no: quotation.quotation_no,
-                                                    type:'supplier'
-                                                })
-                                            }} /></TableCell> : <TableCell></TableCell>}
+                                            {quotation.status.includes('Pending Approval') ? <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    setDeleteDialog({
+                                                        dialog: true,
+                                                        id: quotation.id,
+                                                        no: quotation.quotation_no,
+                                                        type: 'supplier'
+                                                    })
+                                                }} /></TableCell> : <TableCell></TableCell>}
                                         </TableRowStyled>
                                     )) : <TableRow key={0}>
                                         <TableCell colSpan={10} align='center'>No Data</TableCell>
@@ -673,7 +985,7 @@ export default function Quotations() {
             </Grid2>
 
             <Dialog
-                maxWidth={'sm'}
+                maxWidth={'md'}
                 open={createDialog}
                 onClose={(event, reason) => {
                     if (reason == "backdropClick") {
@@ -847,6 +1159,35 @@ export default function Quotations() {
                         sx={{ mt: 2 }}
                     />
 
+                    <div style={{
+                        display: 'flex', flexDirection: 'row',
+                        marginTop: '10px', color: 'blue', cursor: 'pointer'
+                    }} onClick={() => {
+                        setIsExpand(!isExpand)
+                    }}>
+                        <p><u>Terms and Conditions</u></p>
+                        {isExpand ? <IoIosArrowUp style={{ marginLeft: '5px', marginTop: '5px' }} /> :
+                            <IoIosArrowDown style={{ marginLeft: '5px', marginTop: '5px' }} />}
+                    </div>
+
+                    {isExpand && quotationTerms.map((term: string, index: number) => {
+                        return <TextField
+                            size='small'
+                            variant="outlined"
+                            fullWidth
+                            multiline
+                            name="remarks"
+                            onChange={(e: any) => {
+                                setQuotationTerms([
+                                    ...quotationTerms.slice(0, index),
+                                    e.target.value,
+                                    ...quotationTerms.slice(index + 1)
+                                ])
+                            }}
+                            value={term}
+                            sx={{ mt: 1 }}
+                        />
+                    })}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => {
@@ -970,14 +1311,14 @@ export default function Quotations() {
                     setVendorQDialog(false)
                 }}>
                 <DialogTitle>{isApprove ? <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
-                        <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
-                            setIsApprove(false)
-                            setVendorQDialog(false)
-                            clearValues()
-                        }} />
-                    </Box> 
-                : isNew ? 'New Vendor Quotation' : 'Update Vendor Quotation'}</DialogTitle>
+                    <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
+                    <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
+                        setIsApprove(false)
+                        setVendorQDialog(false)
+                        clearValues()
+                    }} />
+                </Box>
+                    : isNew ? 'New Vendor Quotation' : 'Update Vendor Quotation'}</DialogTitle>
                 <DialogContent>
                     {!isNew && <TextField
                         size='small'
@@ -1022,7 +1363,7 @@ export default function Quotations() {
                                 error={!!errors?.part_id}
                                 disabled={isApprove}
                                 onChange={(e: any) => {
-                                    if(isNew){
+                                    if (isNew) {
                                         setVendorFormData({ ...vendorFormData, part_id: e.target.value })
                                         dispatch(fetchPartDetail(e.target.value)).unwrap().then((res: any) => {
                                             const p_process: any = []
@@ -1048,22 +1389,22 @@ export default function Quotations() {
                     </Box>
 
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                label="Quotation Date"
-                                sx={{ mt: 2, width: '100%' }}
-                                value={dayjs(vendorFormData.quotation_date)}
-                                disabled={isApprove}
-                                onChange={(e: any) => {
-                                    setVendorFormData({ ...vendorFormData, quotation_date: e })
-                                }}
-                                slotProps={{
-                                    textField: {
-                                        error: !!errors?.quotation_date,
-                                        helperText: errors?.quotation_date
-                                    }
-                                }}
-                            />
-                        </LocalizationProvider>
+                        <DatePicker
+                            label="Quotation Date"
+                            sx={{ mt: 2, width: '100%' }}
+                            value={dayjs(vendorFormData.quotation_date)}
+                            disabled={isApprove}
+                            onChange={(e: any) => {
+                                setVendorFormData({ ...vendorFormData, quotation_date: e })
+                            }}
+                            slotProps={{
+                                textField: {
+                                    error: !!errors?.quotation_date,
+                                    helperText: errors?.quotation_date
+                                }
+                            }}
+                        />
+                    </LocalizationProvider>
 
                     {partProcessList && partProcessList.length > 0 && partProcessList.map((pp: any) => {
                         return (
@@ -1080,12 +1421,14 @@ export default function Quotations() {
                                     required
                                     onChange={(e: any) => {
                                         setPartProcessList(
-                                            partProcessList.map((p:any) => {return p.process_name == pp.process_name ? {
-                                                process_name: p.process_name,
-                                                process_id: p.process_id,
-                                                cost: e.target.value,
-                                                delivery_time: p.delivery_time
-                                            } : p} )
+                                            partProcessList.map((p: any) => {
+                                                return p.process_name == pp.process_name ? {
+                                                    process_name: p.process_name,
+                                                    process_id: p.process_id,
+                                                    cost: e.target.value,
+                                                    delivery_time: p.delivery_time
+                                                } : p
+                                            })
                                         )
                                     }}
                                     value={pp?.cost}
@@ -1102,12 +1445,14 @@ export default function Quotations() {
                                     disabled={isApprove}
                                     onChange={(e: any) => {
                                         setPartProcessList(
-                                            partProcessList.map((p:any) => {return p.process_name == pp.process_name ? {
-                                                process_name: p.process_name,
-                                                process_id: p.process_id,
-                                                cost: p.cost,
-                                                delivery_time: e.target.value
-                                            } : p} )
+                                            partProcessList.map((p: any) => {
+                                                return p.process_name == pp.process_name ? {
+                                                    process_name: p.process_name,
+                                                    process_id: p.process_id,
+                                                    cost: p.cost,
+                                                    delivery_time: e.target.value
+                                                } : p
+                                            })
                                         )
                                     }}
                                     value={pp?.delivery_time}
@@ -1133,7 +1478,7 @@ export default function Quotations() {
                         sx={{ mt: 2 }}
                     />
 
-                {isApprove && <TextField
+                    {isApprove && <TextField
                         size='small'
                         variant="outlined"
                         fullWidth
@@ -1179,12 +1524,12 @@ export default function Quotations() {
                     }} sx={{ color: '#bb0037' }}>No</Button>
                     <Button variant="contained" startIcon={<MdDeleteOutline />} size="small" color='secondary'
                         onClick={() => {
-                            dispatch(deleteQuotation({type: deleteDialog.type, id: deleteDialog.id})).unwrap().then((res: any) => {
+                            dispatch(deleteQuotation({ type: deleteDialog.type, id: deleteDialog.id })).unwrap().then((res: any) => {
                                 DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
                                 if (res.includes('success')) {
-                                    if(deleteDialog.type == 'vendor'){
+                                    if (deleteDialog.type == 'vendor') {
                                         dispatch(fetchVendorQuotationList())
-                                    }else{
+                                    } else {
                                         dispatch(fetchSupplierQuotationList())
                                     }
                                     setDeleteDialog({
@@ -1210,14 +1555,14 @@ export default function Quotations() {
                     setSupplierQDialog(false)
                 }}>
                 <DialogTitle>{isApprove ? <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
-                        <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
-                            setIsApprove(false)
-                            setSupplierQDialog(false)
-                            clearValues()
-                        }} />
-                    </Box> 
-                : isNew ? 'New Supplier Quotation' : 'Update Supplier Quotation'}</DialogTitle>
+                    <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
+                    <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
+                        setIsApprove(false)
+                        setSupplierQDialog(false)
+                        clearValues()
+                    }} />
+                </Box>
+                    : isNew ? 'New Supplier Quotation' : 'Update Supplier Quotation'}</DialogTitle>
                 <DialogContent>
                     {!isNew && <TextField
                         size='small'
@@ -1262,7 +1607,7 @@ export default function Quotations() {
                                 error={!!errors?.bought_out_id}
                                 disabled={isApprove}
                                 onChange={(e: any) => {
-                                    if(isNew){
+                                    if (isNew) {
                                         setSupplierFormData({ ...supplierFormData, bought_out_id: e.target.value })
                                     }
                                 }}
@@ -1276,57 +1621,57 @@ export default function Quotations() {
                     </Box>
 
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                label="Quotation Date"
-                                sx={{ mt: 2, width: '100%' }}
-                                value={dayjs(supplierFormData.quotation_date)}
-                                disabled={isApprove}
-                                onChange={(e: any) => {
-                                    setSupplierFormData({ ...supplierFormData, quotation_date: e })
-                                }}
-                                slotProps={{
-                                    textField: {
-                                        error: !!errors?.quotation_date,
-                                        helperText: errors?.quotation_date
-                                    }
-                                }}
-                            />
-                        </LocalizationProvider>
+                        <DatePicker
+                            label="Quotation Date"
+                            sx={{ mt: 2, width: '100%' }}
+                            value={dayjs(supplierFormData.quotation_date)}
+                            disabled={isApprove}
+                            onChange={(e: any) => {
+                                setSupplierFormData({ ...supplierFormData, quotation_date: e })
+                            }}
+                            slotProps={{
+                                textField: {
+                                    error: !!errors?.quotation_date,
+                                    helperText: errors?.quotation_date
+                                }
+                            }}
+                        />
+                    </LocalizationProvider>
 
-                        <TextField
-                                    size='small'
-                                    variant="outlined"
-                                    fullWidth
-                                    label="Cost"
-                                    name="name"
-                                    type='number'
-                                    disabled={isApprove}
-                                    error={!!errors?.cost}
-                                    helperText={errors?.cost}
-                                    required
-                                    onChange={(e: any) => {
-                                        setSupplierFormData({...supplierFormData, cost: e.target.value})
-                                    }}
-                                    value={supplierFormData.cost}
-                                    sx={{ mt: 2 }}
-                                />
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Cost"
+                        name="name"
+                        type='number'
+                        disabled={isApprove}
+                        error={!!errors?.cost}
+                        helperText={errors?.cost}
+                        required
+                        onChange={(e: any) => {
+                            setSupplierFormData({ ...supplierFormData, cost: e.target.value })
+                        }}
+                        value={supplierFormData.cost}
+                        sx={{ mt: 2 }}
+                    />
 
-                                <TextField
-                                    size='small'
-                                    variant="outlined"
-                                    fullWidth
-                                    label="Delivery Time"
-                                    name="name"
-                                    required
-                                    disabled={isApprove}
-                                    value={supplierFormData.delivery_time}
-                                    error={!!errors?.delivery_time}
-                                    helperText={errors?.delivery_time}
-                                    onChange={(e: any) => {
-                                        setSupplierFormData({...supplierFormData, delivery_time: e.target.value})
-                                    }}
-                                    sx={{ mt: 2 }}
-                                />
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Delivery Time"
+                        name="name"
+                        required
+                        disabled={isApprove}
+                        value={supplierFormData.delivery_time}
+                        error={!!errors?.delivery_time}
+                        helperText={errors?.delivery_time}
+                        onChange={(e: any) => {
+                            setSupplierFormData({ ...supplierFormData, delivery_time: e.target.value })
+                        }}
+                        sx={{ mt: 2 }}
+                    />
 
                     <TextField
                         size='small'
@@ -1344,7 +1689,7 @@ export default function Quotations() {
                         sx={{ mt: 2 }}
                     />
 
-                {isApprove && <TextField
+                    {isApprove && <TextField
                         size='small'
                         variant="outlined"
                         fullWidth
@@ -1373,6 +1718,313 @@ export default function Quotations() {
                     }} sx={{ color: '#bb0037' }}>Cancel</Button>
                     <Button onClick={handleNewSupplierQuotation} variant="contained">{supplierFormData.quotation_id.length == 0 ? 'Save' : 'Update'}</Button>
                 </DialogActions>}
+            </Dialog>
+
+            <Dialog
+                maxWidth={'md'}
+                open={quotationDoc.dialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setQuotatioinDoc({
+                        dialog: false,
+                        html: ''
+                    })
+                }}>
+                <DialogTitle>Quotation</DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <div ref={contentRef} dangerouslySetInnerHTML={{ __html: quotationDoc.html }} />
+                    </Box>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setQuotatioinDoc({
+                            dialog: false, html: ''
+                        })
+                    }} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button variant="contained" onClick={() => reactToPrintFn()}>Print</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog for spares quotation */}
+
+            <Dialog
+                maxWidth={'xl'}
+                open={spareDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setSpareDialog(false)
+                }}>
+                <DialogTitle>{isNew ? 'New Spares Quotation' : 'Update Spares Quotation'}</DialogTitle>
+                <DialogContent>
+                    {!isNew && <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Quotation No"
+                        name="name"
+                        sx={{ mt: 1 }}
+                        value={sparesFormData?.quotation_no}
+                    />}
+
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel id="role-select-label">Customer</InputLabel>
+                            <Select
+                                size={'small'}
+                                labelId="role-select-label"
+                                id="role-select"
+                                label="Customer"
+                                value={sparesFormData.customer_id}
+                                error={!!errors?.customer_id}
+                                onChange={(e: any) => {
+                                    setSparesFormData({ ...sparesFormData, customer_id: e.target.value })
+                                }}
+                            >
+                                {customers && customers.list.length > 0 && customers?.list.map((customer) => {
+                                    return <MenuItem value={customer.id}>{customer.customer_name}</MenuItem>
+                                })}
+                            </Select>
+                            {errors?.customer_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.customer_id}</FormHelperText> : <></>}
+                        </FormControl>
+
+                        <FormControl fullWidth sx={{ mt: 2, ml: 2 }}>
+                            <InputLabel id="role-select-label">Followup User</InputLabel>
+                            <Select
+                                size={'small'}
+                                labelId="role-select-label"
+                                id="role-select"
+                                label="user_id"
+                                value={sparesFormData.user_id}
+                                error={!!errors?.user_id}
+                                onChange={(e: any) => {
+                                    setSparesFormData({ ...sparesFormData, user_id: e.target.value })
+                                }}
+                            >
+                                {users && users.list.length > 0 && users?.list?.map((user: any) => {
+                                    return <MenuItem value={user.id}>{user.emp_name}</MenuItem>
+                                })}
+                            </Select>
+                            {errors?.user_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.user_id}</FormHelperText> : <></>}
+                        </FormControl>
+                    </Box>
+
+
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel id="role-select-label">Machine</InputLabel>
+                        <Select
+                            size={'small'}
+                            labelId="role-select-label"
+                            id="role-select"
+                            label="Machine"
+                            value={sparesFormData.machine_id}
+                            error={!!errors?.machine_id}
+                            onChange={(e: any) => {
+                                const mac = machines.find((m: any) => m.id == e.target.value)
+                                setSparesFormData({ ...sparesFormData, machine_id: e.target.value })
+                                setSelectedMachine({
+                                    machine_id: e.target.value,
+                                    min_spindles: mac.min_spindles,
+                                    max_spindles: mac.max_spindles,
+                                    spindles: mac.spindles
+                                })
+                            }}
+                        >
+                            {machines && machines.length > 0 && machines?.map((machine) => {
+                                return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
+                            })}
+                        </Select>
+                        {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
+                    </FormControl>
+
+                    {spareParts.map((sap, index) => {
+                        return (<Box sx={{ display: 'flex', flexDirection: 'row', mt: 2 }}>
+                            <FormControl fullWidth>
+                                <InputLabel id="role-select-label">Part</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Vendor"
+                                    value={sap.spare_id}
+                                    onChange={(e: any) => {
+                                        setSpareParts(
+                                            spareParts.map((sub) => {
+                                                return (sub.id == sap.id) ? {
+                                                    id: sub.id,
+                                                    spare_id: e.target.value,
+                                                    spare_name: machineSpares.find((p) => p.id == e.target.value).name,
+                                                    spare_type: machineSpares.find((p) => p.id == e.target.value).type,
+                                                    spare_qty: sub.spare_qty,
+                                                    spare_cost: sub.spare_cost
+                                                } : sub
+                                            })
+                                        )                                      
+                                    }}
+                                >
+                                    {machineSpares.map((part) => {
+                                        return <MenuItem value={part.id}>{part.name}</MenuItem>
+                                    })}
+                                </Select>
+                            </FormControl>
+
+                            <TextField
+                                sx={{ ml: 1 }}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                required
+                                inputMode='numeric'
+                                label="Qty"
+                                name="serial_no"
+                                value={sap.spare_qty}
+                                onChange={(e: any) => {
+                                    setSpareParts(
+                                        spareParts.map((sub) => {
+                                            return (sub.id == sap.id) ? {
+                                                id: sub.id,
+                                                spare_id: sub.spare_id,
+                                                spare_name: sub.spare_name,
+                                                spare_type: sub.spare_type,
+                                                spare_qty: e.target.value,
+                                                spare_cost: sub.spare_cost
+                                            } : sub
+                                        })
+                                    )
+                                }}
+                            />
+
+                            <TextField
+                                sx={{ ml: 1 }}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                required
+                                inputMode='numeric'
+                                label="Cost"
+                                name="cost"
+                                value={sap.spare_cost}
+                                onChange={(e: any) => {
+                                    setSpareParts(
+                                        spareParts.map((sub) => {
+                                            return (sub.id == sap.id) ? {
+                                                id: sub.id,
+                                                spare_id: sub.spare_id,
+                                                spare_name: sub.spare_name,
+                                                spare_type: sub.spare_type,
+                                                spare_qty: sub.spare_qty,
+                                                spare_cost: e.target.value
+                                            } : sub
+                                        })
+                                    )
+                                }}
+                            />
+
+                            <IoMdCloseCircle color='red' size={'40px'} style={{ marginLeft: '5px', cursor: 'pointer' }} onClick={() => {
+                                setSpareParts(spareParts.filter((sub) => sub.id != sap.id))
+                            }} />
+                        </Box>)
+
+                    })}
+
+                    <Button onClick={() => {
+                        setSpareParts([...spareParts, {
+                            id: new Date().getTime(),
+                            spare_id: new Date().getTime(), spare_name: '', spare_type: '', spare_qty: 0,
+                            spare_cost: 0
+                        }])
+                    }}>Add Item</Button>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Quotation Date"
+                                sx={{ mt: 2, width: '100%' }}
+                                value={dayjs(sparesFormData.quotation_date)}
+                                onChange={(e: any) => {
+                                    setSparesFormData({ ...sparesFormData, quotation_date: e })
+                                }}
+                                slotProps={{
+                                    textField: {
+                                        error: !!errors?.quotation_date,
+                                        helperText: errors?.quotation_date
+                                    }
+                                }}
+                            />
+                        </LocalizationProvider>
+
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker label="Reminder Date" sx={{ mt: 2, width: '100%', ml: 2 }}
+                                value={dayjs(sparesFormData.reminder_date)}
+                                onChange={(e: any) => {
+                                    setSparesFormData({ ...sparesFormData, reminder_date: e })
+                                }}
+                                slotProps={{
+                                    textField: {
+                                        error: !!errors?.reminder_date,
+                                        helperText: errors?.reminder_date
+                                    }
+                                }} />
+                        </LocalizationProvider>
+                    </Box>
+
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        multiline
+                        rows={2}
+                        label="Remarks"
+                        name="remarks"
+                        onChange={(e: any) => {
+                            setSparesFormData({ ...sparesFormData, remarks: e.target.value })
+                        }}
+                        value={sparesFormData?.remarks}
+                        sx={{ mt: 2 }}
+                    />
+
+                    <div style={{
+                        display: 'flex', flexDirection: 'row',
+                        marginTop: '10px', color: 'blue', cursor: 'pointer'
+                    }} onClick={() => {
+                        setIsExpand(!isExpand)
+                    }}>
+                        <p><u>Terms and Conditions</u></p>
+                        {isExpand ? <IoIosArrowUp style={{ marginLeft: '5px', marginTop: '5px' }} /> :
+                            <IoIosArrowDown style={{ marginLeft: '5px', marginTop: '5px' }} />}
+                    </div>
+
+                    {isExpand && quotationTerms.map((term: string, index: number) => {
+                        return <TextField
+                            size='small'
+                            variant="outlined"
+                            fullWidth
+                            multiline
+                            name="remarks"
+                            onChange={(e: any) => {
+                                setQuotationTerms([
+                                    ...quotationTerms.slice(0, index),
+                                    e.target.value,
+                                    ...quotationTerms.slice(index + 1)
+                                ])
+                            }}
+                            value={term}
+                            sx={{ mt: 1 }}
+                        />
+                    })}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setSpareDialog(false)
+                        clearValues()
+                    }} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button onClick={handleNewSparesQuotation} variant="contained">{sparesFormData.quotation_id.length == 0 ? 'Save' : 'Update'}</Button>
+                </DialogActions>
             </Dialog>
 
         </Box>

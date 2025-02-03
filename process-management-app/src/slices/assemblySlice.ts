@@ -162,6 +162,14 @@ export const getOrderDetail = createAsyncThunk('getOrderDetails', async (data: a
     return resData
 })
 
+export const updateAssemblyStatus = createAsyncThunk('updateAssembly', async (data: any) => {
+    const response = await axiosInstance.post('assembly/updateAssembly', data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
 type AssemblyApiState = {
     subAssemblies: Array<any>;
     subAssemblyDetail: {
