@@ -57,6 +57,7 @@ export default function Quotations() {
     const [vendorQDialog, setVendorQDialog] = React.useState(false)
     const [supplierQDialog, setSupplierQDialog] = React.useState(false)
     const [approveDialog, setApproveDialog] = React.useState(false)
+    const [approveSpareDialog, setApproveSpareDialog] = React.useState(false)
     const [processName, setProcessName] = React.useState("")
     const [currentTab, setCurrentTab] = React.useState(0)
     const [errors, setErrors] = React.useState<any>({})
@@ -112,6 +113,7 @@ export default function Quotations() {
         spares: [],
         customer_id: '',
         machine_id: '',
+        machine_name: '',
         customer_name: '',
         reminder_date: '',
         user_id: '',
@@ -267,6 +269,7 @@ export default function Quotations() {
             spares: [],
             customer_id: '',
             machine_id: '',
+            machine_name: '',
             customer_name: '',
             reminder_date: '',
             qty: '',
@@ -326,10 +329,12 @@ export default function Quotations() {
     const handleApproveReject = (status: string, type: string) => {
         dispatch(approveRejectQuotation({
             status: status,
-            approval_reject_remarks: type.includes('machine') ? approveData?.remarks : type.includes('vendor') ? vendorFormData.approvalRemarks : supplierFormData.approvalRemarks,
-            approved_cost: type.includes('machine') ? approveData?.cost : '',
-            quotation_id: type.includes('machine') ? approveData?.quotation_id : type.includes('vendor') ? vendorFormData.quotation_id : supplierFormData.quotation_id,
-            quotation_type: type
+            approval_reject_remarks: (type.includes('machine') || type.includes('spares')) ? approveData?.remarks : type.includes('vendor') ? vendorFormData.approvalRemarks : supplierFormData.approvalRemarks,
+            approved_cost: type.includes('machine') ? approveData?.cost : type.includes('spares') ? 
+            spareParts.reduce((sum, spare) =>  sum + spare.spare_cost , 0) : '',
+            quotation_id: type.includes('machine') ? approveData?.quotation_id : type.includes('vendor') ? vendorFormData.quotation_id : type.includes('spares') ? sparesFormData.quotation_id : supplierFormData.quotation_id,
+            quotation_type: type,
+            spares: spareParts
         })).unwrap().then((res: any) => {
             DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
             if (res.includes('success')) {
@@ -487,21 +492,20 @@ export default function Quotations() {
         if (!sparesFormData.reminder_date || sparesFormData.reminder_date?.toString().trim().length == 0) newErrors.reminder_date = 'Reminder Date is required'
         if (!sparesFormData.customer_id) newErrors.customer_id = 'Select Customer'
         if (!sparesFormData.user_id) newErrors.user_id = 'Select Followup user'
-        console.log("01110--", newErrors)
+
         if (Object.keys(newErrors).length == 0) {
             if (spareParts.length == 0){
                 DisplaySnackbar('Add any one item', 'error', enqueueSnackbar)
             }else{
-                console.log("0000--")
                 if (sparesFormData.quotation_id.length == 0) {
                     dispatch(createSparesQuotation({
                         quotation_date: sparesFormData.quotation_date,
                         reminder_date: sparesFormData.reminder_date,
-                        qty: sparesFormData.qty,
+                        qty: spareParts.reduce((sum, spare) =>  sum + spare.spare_qty , 0),
                         spares: spareParts,
                         customer_id: sparesFormData.customer_id,
                         user_id: sparesFormData.user_id,
-                        cost: sparesFormData.cost,
+                        cost: spareParts.reduce((sum, spare) =>  sum + spare.spare_cost , 0),
                         remarks: sparesFormData.remarks,
                         quotation_terms: quotationTerms,
                         type: 'Add'
@@ -745,7 +749,7 @@ export default function Quotations() {
                                             <TableCell>
                                                 {(quotation.status.includes('Pending Approval') || quotation.status.includes('Pending Verification')) ?
                                                     <Card sx={{ bgcolor: quotation.status.includes('Pending Approval') ? '#006BFF' : '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
-                                                        setFormData({
+                                                        setSparesFormData({
                                                             quotation_id: quotation.id,
                                                             quotation_no: quotation.quotation_no,
                                                             quotation_date: quotation.quotation_date,
@@ -759,14 +763,17 @@ export default function Quotations() {
                                                             cost: quotation.initial_cost,
                                                             user_name: quotation.user?.emp_name,
                                                             remarks: quotation.remarks,
-                                                            type: quotation.status
+                                                            type: quotation.status,
+                                                            spares: quotation.spares
                                                         })
+                                                        console.log("-----------", quotation)
+                                                        setSpareParts(quotation.spares)
                                                         setApproveData({
                                                             quotation_id: quotation.id,
                                                             remarks: '',
                                                             cost: quotation.approved_cost
                                                         })
-                                                        setApproveDialog(true)
+                                                        setApproveSpareDialog(true)
                                                     }}>{quotation.status}</Card>
                                                     : quotation.status.includes('Approved') ?
                                                         <Card sx={{ bgcolor: 'green', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card> :
@@ -781,6 +788,7 @@ export default function Quotations() {
                                                     quotation_no: quotation.quotation_no,
                                                     quotation_date: quotation.quotation_date,
                                                     machine_id: quotation.machine.id,
+                                                    machine_name: quotation.machine.machine_name,
                                                     customer_id: quotation.customer.id,
                                                     customer_name: quotation.customer.customer_name,
                                                     reminder_date: quotation.reminder_date,
@@ -2024,6 +2032,148 @@ export default function Quotations() {
                         clearValues()
                     }} sx={{ color: '#bb0037' }}>Cancel</Button>
                     <Button onClick={handleNewSparesQuotation} variant="contained">{sparesFormData.quotation_id.length == 0 ? 'Save' : 'Update'}</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Verification Dialog for spares quotation */}
+            
+            <Dialog
+                maxWidth={'md'}
+                open={approveSpareDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setApproveSpareDialog(false)
+                    clearValues()
+                }}>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <h5 style={{ flexGrow: '1' }}>{formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Spares Quotation'} </h5>
+                        <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
+                            setApproveSpareDialog(false)
+                            clearValues()
+                        }} />
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <Box sx={{ width: '50vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Quotation No</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData?.quotation_no}</Typography>
+                        </Box>
+
+                        <Box sx={{ width: '50vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Machine Name</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData?.machine_name}</Typography>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'row', mt: 1 }}>
+                        <Box sx={{ width: '50vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Customer Name</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData?.customer_name}</Typography>
+                        </Box>
+
+                        <Box sx={{ width: '50vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Followup User</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData?.user_name}</Typography>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'row', mt: 1 }}>
+                        <Box sx={{ width: '25vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Quotation Date</Typography>
+                            <Typography variant='subtitle1'>{moment(sparesFormData.quotation_date).format('DD-MM-YYYY')}</Typography>
+                        </Box>
+                        <Box sx={{ width: '25vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Reminder Date</Typography>
+                            <Typography variant='subtitle1'>{moment(sparesFormData.reminder_date).format('DD-MM-YYYY')}</Typography>
+                        </Box>
+                        <Box sx={{ width: '25vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Qty</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData.qty}</Typography>
+                        </Box>
+
+                        <Box sx={{ width: '25vw' }}>
+                            <Typography variant='subtitle2' color={'grey'}>Cost</Typography>
+                            <Typography variant='subtitle1'>{sparesFormData.cost}</Typography>
+                        </Box>
+                    </Box>
+
+                    <Typography variant='subtitle2' color={'grey'}>Remarks</Typography>
+                    <Typography variant='subtitle1'>{sparesFormData.remarks}</Typography>
+
+                    {spareParts.map((sap, index) => {
+                        return (<Box sx={{ display: 'flex', flexDirection: 'row', mt: 2 }}>
+                            <TextField
+                                sx={{ ml: 1 }}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                inputMode='numeric'
+                                label="Spare Name"
+                                name="serial_no"
+                                value={sap.spare_name}
+                            />
+                            <TextField
+                                sx={{ ml: 1 }}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                inputMode='numeric'
+                                label="Qty"
+                                name="serial_no"
+                                value={sap.spare_qty}
+                            />
+                            <TextField
+                                sx={{ ml: 1 }}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                required
+                                inputMode='numeric'
+                                label="Cost"
+                                name="cost"
+                                value={sap.spare_cost}
+                                onChange={(e: any) => {
+                                    setSpareParts(
+                                        spareParts.map((sub) => {
+                                            return (sub.id == sap.id) ? {
+                                                id: sub.id,
+                                                spare_id: sub.spare_id,
+                                                spare_name: sub.spare_name,
+                                                spare_type: sub.spare_type,
+                                                spare_qty: sub.spare_qty,
+                                                spare_cost: e.target.value
+                                            } : sub
+                                        })
+                                    )
+                                }}
+                            />
+                        </Box>)
+
+                    })}
+
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        multiline
+                        rows={2}
+                        label={sparesFormData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
+                        name="approva_remarks"
+                        onChange={(e: any) => {
+                            setApproveData({ ...approveData, remarks: e.target.value })
+                        }}
+                        value={approveData?.remarks}
+                        sx={{ mt: 2 }}
+                    />
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => handleApproveReject(sparesFormData.type == "Pending Approval" ? "Approved" : "Verified", 'spares')} variant="contained">{sparesFormData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
+                    <Button onClick={() => handleApproveReject('Rejected', 'spares')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </DialogActions>
             </Dialog>
 
