@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -10,7 +10,7 @@ import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createBoughtout, createPart, fetchMachineList } from '../slices/machineSlice';
+import { createAttachment, createBoughtout, createImage, createPart, fetchMachineList } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
@@ -21,6 +21,7 @@ import { FaUserShield } from "react-icons/fa";
 import { FaBusinessTime } from "react-icons/fa6";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import { IoMdCloseCircle } from "react-icons/io";
+import { FcAddImage } from "react-icons/fc";
 
 export default function NewBoughtout() {
   const dispatch = useAppDispatch()
@@ -61,6 +62,8 @@ export default function NewBoughtout() {
   const [fileAdded, setFileAdded] = useState("")
   const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
   const [selectedType, setSelectedType] = useState<Array<any>>([])
+  const [boImage, setBOImage] = useState<any>()
+  const [boImageName, setBOImageName] = useState<string>()
 
   const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
     // const {
@@ -139,6 +142,9 @@ export default function NewBoughtout() {
         dispatch(createBoughtout(createBoughtoutObj)).unwrap().then((res) => {
           DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
           if (res.message.includes('success')) {
+            if (boImage) {
+              uploadImage(res.id)
+            }
             if (boughtoutFiles.length > 0) {
               DisplaySnackbar('Uploading attachments', "success", enqueueSnackbar)
               uploadAttachments(res.id)
@@ -155,6 +161,12 @@ export default function NewBoughtout() {
       setErrors(validationErrors);
     }
   };
+
+  const uploadImage = (id: string) => {
+    dispatch(createImage({
+      files: [boImage], type: 'bought_out', type_id: id, image_name: boImageName
+    }))
+  }
 
   const uploadAttachments = (id: string) => {
     dispatch(createAttachment({
@@ -204,6 +216,21 @@ export default function NewBoughtout() {
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleCardClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event: any) => {
+    const file = event.target.files[0];
+    if (file) {
+      setBOImage(file)
+      setBOImageName(file.name)
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
       <SidebarNav currentPage={nav_boughtouts} />
@@ -214,8 +241,24 @@ export default function NewBoughtout() {
           Back
         </Button>
         <form noValidate>
-          <Grid2 container spacing={4} sx={{ mt: 1 }}>
-            <Grid2 size={4} style={{ paddingLeft: 0, paddingRight: 0 }}>
+          <Grid2 container spacing={4} sx={{ mt: 1, alignItems: 'center' }}>
+            <Grid2 size={1}>
+              <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                  onClick={handleCardClick}>
+                  {boImage ? <img src={URL.createObjectURL(boImage)} style={{ height: '80px', width: '80px' }}
+                  /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                  <input
+                    type="file"
+                    accept='image/png, image/jpeg'
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                </Box>
+              </Card>
+            </Grid2>
+            <Grid2 size={3} style={{ marginLeft:'10px', paddingLeft: 0, paddingRight: 0 }}>
               <TextField
                 size='small'
                 variant="outlined"
@@ -290,7 +333,7 @@ export default function NewBoughtout() {
                 </Select>
               </FormControl>
             </Grid2> */}
-            <Grid2 size={4}>
+            <Grid2 size={3}>
               <FormControl fullWidth>
                 <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
                 <Select

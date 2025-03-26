@@ -340,14 +340,17 @@ export default function Quotations() {
             if (res.includes('success')) {
                 setApproveDialog(false)
                 setIsApprove(false)
+                setApproveSpareDialog(false)
                 setVendorQDialog(false)
                 setSupplierQDialog(false)
                 clearValues()
-                if (type.includes('machine')) {
+                if(type.includes('machine')) {
                     dispatch(fetchMachineQuotationList())
-                } else if (type.includes('vendor')) {
+                }else if (type.includes('vendor')) {
                     dispatch(fetchVendorQuotationList())
-                } else {
+                }else if (type.includes('spares')) {
+                    dispatch(fetchSparesQuotationList())
+                }else{
                     dispatch(fetchSupplierQuotationList())
                 }
             }
@@ -511,12 +514,12 @@ export default function Quotations() {
                         type: 'Add'
                     })).unwrap().then((res: any) => {
                         DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
-                        // if (res.includes('success')) {
-                        //     setCreateDialog(false)
-                        //     clearValues()
-                        //     dispatch(fetchMachineQuotationList())
-                        //     setQuotationTerms(quotation_terms)
-                        // }
+                        if (res.includes('success')) {
+                            setSpareDialog(false)
+                            clearValues()
+                            dispatch(fetchSparesQuotationList())
+                            setQuotationTerms(quotation_terms)
+                        }
                     }).catch((err: any) => {
                         DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                     })

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -10,7 +10,7 @@ import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createPart, fetchMachineList, fetchPartDetail, updatePart } from '../slices/machineSlice';
+import { createAttachment, createImage, createPart, fetchMachineList, fetchPartDetail, updatePart } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
@@ -22,6 +22,7 @@ import { FaBusinessTime } from "react-icons/fa6";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import { IoMdCloseCircle } from "react-icons/io";
 import { IoEyeSharp } from "react-icons/io5";
+import { FcAddImage } from 'react-icons/fc';
 
 export default function EditPart() {
     const dispatch = useAppDispatch()
@@ -41,7 +42,7 @@ export default function EditPart() {
     const [partVendor, setPartVendor] = useState<Array<{ part_vendor_id?: string, process_id: string, vendor_id: string, vendor_name: string, cost: string, delivery_time: number }>>([]);
     const [selectedProcess, setSelectedProcess] = useState("")
     const [selectedProcessName, setSelectedProcessName] = useState("")
-    const [selectedProcessPartId,setSelectedProcessPartId] = useState("")
+    const [selectedProcessPartId, setSelectedProcessPartId] = useState("")
     const [selectedVendor, setSelectedVendor] = useState({
         vendor_id: "",
         vendor_name: "",
@@ -80,6 +81,8 @@ export default function EditPart() {
     const [fileAdded, setFileAdded] = useState("")
     const [selectedType, setSelectedType] = useState<Array<any>>([])
     const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
+    const [partImage, setPartImage] = useState<any>()
+    const [partImageName, setPartImageName] = useState<string>()
 
     const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
         // const {
@@ -96,12 +99,12 @@ export default function EditPart() {
 
     const handleMultiMachineChange = (event: SelectChangeEvent<typeof selectedMachines>) => {
         const {
-          target: { value },
+            target: { value },
         } = event;
         setSelectedMachines(
-          typeof value === 'string' ? value.split(',') : value,
+            typeof value === 'string' ? value.split(',') : value,
         );
-      };
+    };
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -117,6 +120,7 @@ export default function EditPart() {
         if (state?.id) {
             dispatch(fetchPartDetail(state?.id)).unwrap()
                 .then((res: any) => {
+                    setPartImageName(res.part_detail.image)
                     setFormData({
                         name: res.part_detail.part_name,
                         minimum_stock_qty: res.part_detail.minimum_stock_qty,
@@ -135,7 +139,7 @@ export default function EditPart() {
 
                     setSelectedType(typeList)
 
-                    res.machines?.map((machine:any) => {
+                    res.machines?.map((machine: any) => {
                         machineList.push(machine.machine.machine_name)
                     })
                     setSelectedMachines(machineList)
@@ -185,9 +189,9 @@ export default function EditPart() {
         const validationErrors = validate();
 
         if (Object.keys(validationErrors).length === 0) {
-            if(selectedType.length == 0){
+            if (selectedType.length == 0) {
                 DisplaySnackbar('Category is required', 'error', enqueueSnackbar)
-            }else if(selectedMachines.length == 0){
+            } else if (selectedMachines.length == 0) {
                 DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
             } else {
                 let vendorCheck = partProcess.filter((p) => !partVendor.some((v) => p.id == v.process_id))
@@ -204,7 +208,7 @@ export default function EditPart() {
                         is_machine: selectedType.includes('Machine'),
                         is_spare: selectedType.includes('Spares'),
                         is_spm: selectedType.includes('SPM'),
-                        machines: selectedMachines.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)
+                        machines: selectedMachines.map((machine: any) => machines.find((m: any) => m.machine_name == machine).id)
                     })).unwrap().then((res) => {
                         DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
                     }).catch((err) => {
@@ -300,6 +304,25 @@ export default function EditPart() {
         }
     }
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const handleCardClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+            setPartImage(file)
+            setPartImageName(file.name)
+
+            dispatch(createImage({
+                files: [file], type: 'part', type_id: state?.id, image_name: file.name
+            }))
+        }
+    };
+
     return (
         <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
             <SidebarNav currentPage={nav_parts} />
@@ -310,7 +333,24 @@ export default function EditPart() {
                     Back
                 </Button>
                 <form noValidate>
-                    <Grid2 container spacing={4} sx={{ mt: 1 }}>
+                    <Grid2 container spacing={4} sx={{ mt: 1, alignItems: 'center' }}>
+                        <Grid2 size={1}>
+                            <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                                    onClick={handleCardClick}>
+                                    {partImage ? <img src={URL.createObjectURL(partImage)} style={{ height: '80px', width: '80px' }}
+                                    /> : partImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${partImageName}`} style={{ height: '80px', width: '80px' }}
+                                    /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                                    <input
+                                        type="file"
+                                        accept='image/png, image/jpeg'
+                                        ref={fileInputRef}
+                                        style={{ display: "none" }}
+                                        onChange={handleFileChange}
+                                    />
+                                </Box>
+                            </Card>
+                        </Grid2>
                         <Grid2 size={3} style={{ paddingLeft: 0, paddingRight: 0 }}>
                             <TextField
                                 size='small'
@@ -353,7 +393,7 @@ export default function EditPart() {
                                 helperText={errors?.available_qty}
                             />
                         </Grid2>
-                        
+
                         <Grid2 size={3}>
                             <FormControl fullWidth>
                                 <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
@@ -386,181 +426,187 @@ export default function EditPart() {
                             </FormControl>
                         </Grid2>
 
-                        <Grid2 size={3} sx={{minHeight:'60vh'}}>
-                                <Card sx={{ minHeight:'60vh', backgroundColor:'#F0F8FF' }}>
-                                    <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#003262' }}>Machines</Card>
-                                    {selectedMachines.map((map:any) => {
-                                        return <Card sx={{ p: 1, m: 1, display:'flex', flexDirection:'row' }}>
-                                            {map}
-                                            <MdDeleteOutline style={{width: '25px', height:'25px', color:'red', cursor:'pointer', marginLeft:'auto'}} onClick={() => {
-                                                setRemoveMachineDialog({
-                                                    dialog: true,
-                                                    machineId: machines.find((mac:any) => mac.machine_name == map),
-                                                    machineName: map
-                                                })
-                                            }} />
-                                        </Card>
-                                    })}
-                                    <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor:'#003262' }}
-                                        onClick={() => {
-                                            setMachineDialog(true)
-                                        }}>
-                                        Add Machine
-                                    </Button>
-                                </Card>
-                            </Grid2>
+                        <Grid2 size={3} sx={{ minHeight: '60vh' }}>
+                            <Card sx={{ minHeight: '60vh', backgroundColor: '#F0F8FF' }}>
+                                <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#003262' }}>Machines</Card>
+                                {selectedMachines.map((map: any) => {
+                                    return <Card sx={{ p: 1, m: 1, display: 'flex', flexDirection: 'row' }}>
+                                        {map}
+                                        <MdDeleteOutline style={{ width: '25px', height: '25px', color: 'red', cursor: 'pointer', marginLeft: 'auto' }} onClick={() => {
+                                            setRemoveMachineDialog({
+                                                dialog: true,
+                                                machineId: machines.find((mac: any) => mac.machine_name == map),
+                                                machineName: map
+                                            })
+                                        }} />
+                                    </Card>
+                                })}
+                                <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor: '#003262' }}
+                                    onClick={() => {
+                                        setMachineDialog(true)
+                                    }}>
+                                    Add Machine
+                                </Button>
+                            </Card>
+                        </Grid2>
 
-                            <Grid2 size={3}  sx={{minHeight:'60vh'}}>
-                                <Card sx={{ minHeight:'60vh', backgroundColor: '#D0F0C0' }}>
-                                    <Card sx={{ p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#138808' }}>Process</Card>
-                                    {partProcess && partProcess.length > 0 && partProcess.map((process: any) => {
-                                        return <Card sx={{ p: 1, m: 1, cursor:'pointer', 
-                                            backgroundColor: process.name == selectedProcessName ? '#138808' : 'white',
-                                            color: process.name == selectedProcessName ? 'white' : 'black' }} onClick={() => {
-                                            setSelectedProcess(process.id)
-                                            setSelectedProcessName(process.name)
-                                            setSelectedProcessPartId(process.part_process_id)
-                                        }}>{process.name}</Card>
-                                    })}
-                                    <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor:'#138808' }}
-                                        onClick={() => {
-                                            setShowProcessDialog(true)
-                                        }}>
-                                        Add Process
-                                    </Button>
-                                </Card>
-                            </Grid2>
+                        <Grid2 size={3} sx={{ minHeight: '60vh' }}>
+                            <Card sx={{ minHeight: '60vh', backgroundColor: '#D0F0C0' }}>
+                                <Card sx={{ p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#138808' }}>Process</Card>
+                                {partProcess && partProcess.length > 0 && partProcess.map((process: any) => {
+                                    return <Card sx={{
+                                        p: 1, m: 1, cursor: 'pointer',
+                                        backgroundColor: process.name == selectedProcessName ? '#138808' : 'white',
+                                        color: process.name == selectedProcessName ? 'white' : 'black'
+                                    }} onClick={() => {
+                                        setSelectedProcess(process.id)
+                                        setSelectedProcessName(process.name)
+                                        setSelectedProcessPartId(process.part_process_id)
+                                    }}>{process.name}</Card>
+                                })}
+                                <Button variant="contained" startIcon={<Settings />} size="small" sx={{ m: 1, backgroundColor: '#138808' }}
+                                    onClick={() => {
+                                        setShowProcessDialog(true)
+                                    }}>
+                                    Add Process
+                                </Button>
+                            </Card>
+                        </Grid2>
 
-                            {selectedProcess.length > 0 && <Grid2 size={3}  sx={{minHeight:'60vh'}}>
-                                <Card sx={{ minHeight:'60vh', backgroundColor:'#EFDECD' }}>
-                                    <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color:'white', textAlign:'center' }}>Vendors</Card>
-                                    {partVendor.filter((pv: any) => pv.process_id == selectedProcess)?.map((vendor:any) => {
-                                        return <Card sx={{m:1}}>
-                                            <div style={{display:'flex', alignItems:'bottom', paddingLeft:'10px', paddingRight:'10px', marginTop:'10px'}}><FaUserShield style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px', fontWeight:'bold'}}>{vendor.vendor_name}</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><RiMoneyRupeeCircleFill style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px'}}>Rs.{vendor.cost}</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><FaBusinessTime style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px'}}>{vendor.delivery_time} Days</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', justifyContent:'end', background:'#800020', padding:'5px', marginTop:'10px'}}>
+                        {selectedProcess.length > 0 && <Grid2 size={3} sx={{ minHeight: '60vh' }}>
+                            <Card sx={{ minHeight: '60vh', backgroundColor: '#EFDECD' }}>
+                                <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color: 'white', textAlign: 'center' }}>Vendors</Card>
+                                {partVendor.filter((pv: any) => pv.process_id == selectedProcess)?.map((vendor: any) => {
+                                    return <Card sx={{ m: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', paddingLeft: '10px', paddingRight: '10px', marginTop: '10px' }}><FaUserShield style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px', fontWeight: 'bold' }}>{vendor.vendor_name}</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><RiMoneyRupeeCircleFill style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px' }}>Rs.{vendor.cost}</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><FaBusinessTime style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px' }}>{vendor.delivery_time} Days</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'end', background: '#800020', padding: '5px', marginTop: '10px' }}>
                                             <Card
-                                                style={{marginLeft:'auto', width: '30px', height:'30px', color:'gray', display: 'flex',
-                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
-                                                    <MdOutlineEdit
-                                                    style={{width: '25px', height:'25px', color:'black', cursor:'pointer'}} onClick={() => {
-                                                                setEditVendor(true)
-                                                                setShowVendorDialog(true)
-                                                                setSelectedVendor({
-                                                                    part_vendor_id: vendor.part_vendor_id,
-                                                                    vendor_id: vendor.vendor_id,
-                                                                    vendor_name: vendor.vendor_name,
-                                                                    delivery_cost: vendor.cost,
-                                                                    delivery_time: vendor.delivery_time,
-                                                                    part_process_id: selectedProcessPartId
-                                                                })
-                                                                setErrors({})
-                                                            }} />
-                                                </Card>
-                                                <Card
-                                                style={{marginLeft:'15px', width: '30px', height:'30px', color:'gray', display: 'flex',
-                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
-                                                    	<MdDeleteOutline style={{width: '25px', height:'25px', color:'red', cursor:'pointer'}} onClick={() => {
-                                                            setDeleteDialog({ id: vendor.part_vendor_id, type: 'Vendor', name: vendor.vendor_name, dialog: true })
-                                                            // setPartVendor(partVendor.filter((p) => p.process_id !== process.id || p.vendor_id !== vendor.vendor_id))
-                                                        }} />
-                                                 </Card>
-                                                </div>
-                                        </Card>
-                                    })}
-                                    <Button variant="contained" startIcon={<Store />} size="small" color='primary' sx={{m:1, backgroundColor:'#800020'}}
-                                            onClick={() => {
-                                                setEditVendor(false)
-                                                setShowVendorDialog(true)
-                                                dispatch(fetchVendors({searchText: selectedProcessName}))
-                                                setSelectedVendor({
-                                                    part_vendor_id: '',
-                                                    vendor_id: "",
-                                                    vendor_name: "",
-                                                    delivery_cost: "",
-                                                    delivery_time: 0,
-                                                    part_process_id: selectedProcessPartId
-                                                })
-                                                setErrors({})
-                                            }}>
-                                            Add New Vendor
-                                    </Button>
-                                </Card>
-                            </Grid2>}
-
-                            <Grid2 size={3} sx={{minHeight:'60vh'}}>
-                                <Card sx={{ minHeight:'60vh', backgroundColor:'#F0F8FF' }}>
-                                    <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#007FFF' }}>Attachments</Card>
-                                    {partFileNames.map((map:any) => {
-                                        return <Card sx={{ p: 1, m: 1, display:'flex', flexDirection:'row' }}>
-                                            {map}
-                                            {/* ${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name} */}
-                                            <IoEyeSharp style={{width: '25px', height:'25px', color:'blue', cursor:'pointer', marginLeft:'auto'}} onClick={()=>{
-                                                window.open(`${process.env.REACT_APP_API_URL}/machine/loadAttachment/${map}`, '_blank')
-                                            }}/>
-                                            <IoMdCloseCircle style={{width: '25px', height:'25px', color:'gray', cursor:'pointer', marginLeft:'5px'}} onClick={() => {
-                                                setDeleteDialog({
-                                                    dialog: true,
-                                                    type: 'attachment',
-                                                    name: map,
-                                                    id: ''
-                                                })
-                                            }} />
-                                        </Card>
-                                    })}
-                                    <Button
-                                        size={'small'}
-                                        component="label"
-                                        role={undefined}
-                                        variant="contained"
-                                        sx={{ mt: 1, backgroundColor:'#007FFF' }}
-                                        tabIndex={-1}
-                                        startIcon={<Add />}
-                                    >
-                                        Upload files
-                                        <VisuallyHiddenInput
-                                            type="file"
-                                            onChange={(event: any) => {
-                                                event.preventDefault()
-                                                const files: any = partFiles
-                                                const chosenFiles = Array.prototype.slice.call(event.target.files)
-                                                chosenFiles.map((file) => {
-                                                    files.push(file)
-                                                })
-
-                                                dispatch(createAttachment({
-                                                    files: chosenFiles, type: 'part',
-                                                    type_id: state?.id
-                                                })).unwrap()
-                                                    .then((res: any) => {
-                                                        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
-
-                                                        setPartFiles(files)
-                                                        setFileAdded(`${files.length} files added`)
-
-                                                        let fileNames = partFileNames
-                                                        chosenFiles.map((f: any) => {
-                                                            fileNames.push(f.name)
+                                                style={{
+                                                    marginLeft: 'auto', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                                                    borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                                                }}>
+                                                <MdOutlineEdit
+                                                    style={{ width: '25px', height: '25px', color: 'black', cursor: 'pointer' }} onClick={() => {
+                                                        setEditVendor(true)
+                                                        setShowVendorDialog(true)
+                                                        setSelectedVendor({
+                                                            part_vendor_id: vendor.part_vendor_id,
+                                                            vendor_id: vendor.vendor_id,
+                                                            vendor_name: vendor.vendor_name,
+                                                            delivery_cost: vendor.cost,
+                                                            delivery_time: vendor.delivery_time,
+                                                            part_process_id: selectedProcessPartId
                                                         })
-                                                        setPartFileNames(fileNames)
+                                                        setErrors({})
+                                                    }} />
+                                            </Card>
+                                            <Card
+                                                style={{
+                                                    marginLeft: '15px', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                                                    borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                                                }}>
+                                                <MdDeleteOutline style={{ width: '25px', height: '25px', color: 'red', cursor: 'pointer' }} onClick={() => {
+                                                    setDeleteDialog({ id: vendor.part_vendor_id, type: 'Vendor', name: vendor.vendor_name, dialog: true })
+                                                    // setPartVendor(partVendor.filter((p) => p.process_id !== process.id || p.vendor_id !== vendor.vendor_id))
+                                                }} />
+                                            </Card>
+                                        </div>
+                                    </Card>
+                                })}
+                                <Button variant="contained" startIcon={<Store />} size="small" color='primary' sx={{ m: 1, backgroundColor: '#800020' }}
+                                    onClick={() => {
+                                        setEditVendor(false)
+                                        setShowVendorDialog(true)
+                                        dispatch(fetchVendors({ searchText: selectedProcessName }))
+                                        setSelectedVendor({
+                                            part_vendor_id: '',
+                                            vendor_id: "",
+                                            vendor_name: "",
+                                            delivery_cost: "",
+                                            delivery_time: 0,
+                                            part_process_id: selectedProcessPartId
+                                        })
+                                        setErrors({})
+                                    }}>
+                                    Add New Vendor
+                                </Button>
+                            </Card>
+                        </Grid2>}
 
+                        <Grid2 size={3} sx={{ minHeight: '60vh' }}>
+                            <Card sx={{ minHeight: '60vh', backgroundColor: '#F0F8FF' }}>
+                                <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#007FFF' }}>Attachments</Card>
+                                {partFileNames.map((map: any) => {
+                                    return <Card sx={{ p: 1, m: 1, display: 'flex', flexDirection: 'row' }}>
+                                        {map}
+                                        {/* ${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name} */}
+                                        <IoEyeSharp style={{ width: '25px', height: '25px', color: 'blue', cursor: 'pointer', marginLeft: 'auto' }} onClick={() => {
+                                            window.open(`${process.env.REACT_APP_API_URL}/machine/loadAttachment/${map}`, '_blank')
+                                        }} />
+                                        <IoMdCloseCircle style={{ width: '25px', height: '25px', color: 'gray', cursor: 'pointer', marginLeft: '5px' }} onClick={() => {
+                                            setDeleteDialog({
+                                                dialog: true,
+                                                type: 'attachment',
+                                                name: map,
+                                                id: ''
+                                            })
+                                        }} />
+                                    </Card>
+                                })}
+                                <Button
+                                    size={'small'}
+                                    component="label"
+                                    role={undefined}
+                                    variant="contained"
+                                    sx={{ mt: 1, backgroundColor: '#007FFF' }}
+                                    tabIndex={-1}
+                                    startIcon={<Add />}
+                                >
+                                    Upload files
+                                    <VisuallyHiddenInput
+                                        type="file"
+                                        onChange={(event: any) => {
+                                            event.preventDefault()
+                                            const files: any = partFiles
+                                            const chosenFiles = Array.prototype.slice.call(event.target.files)
+                                            chosenFiles.map((file) => {
+                                                files.push(file)
+                                            })
+
+                                            dispatch(createAttachment({
+                                                files: chosenFiles, type: 'part',
+                                                type_id: state?.id
+                                            })).unwrap()
+                                                .then((res: any) => {
+                                                    DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+
+                                                    setPartFiles(files)
+                                                    setFileAdded(`${files.length} files added`)
+
+                                                    let fileNames = partFileNames
+                                                    chosenFiles.map((f: any) => {
+                                                        fileNames.push(f.name)
                                                     })
-                                                    .catch((err: any) => {
-                                                        DisplaySnackbar(err.message, 'error', enqueueSnackbar)
-                                                    })
-                                            }}
-                                            multiple
-                                        />
-                                    </Button>
-                                </Card>
-                            </Grid2>
+                                                    setPartFileNames(fileNames)
+
+                                                })
+                                                .catch((err: any) => {
+                                                    DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                                                })
+                                        }}
+                                        multiple
+                                    />
+                                </Button>
+                            </Card>
+                        </Grid2>
                     </Grid2>
 
                     {/* <Card sx={{ padding: 2, mt: 2 }}>
@@ -895,7 +941,7 @@ export default function EditPart() {
                                 machineId: '',
                                 machineName: ''
                             })
-                            setSelectedMachines(selectedMachines.filter((mac:any) => mac != removeMachineDialog.machineName))
+                            setSelectedMachines(selectedMachines.filter((mac: any) => mac != removeMachineDialog.machineName))
                         }).catch((err) => {
                             DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                         })

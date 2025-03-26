@@ -1,27 +1,18 @@
-import { useState } from 'react';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import { MdOutlineEdit } from "react-icons/md";
+import { useRef, useState } from 'react';
 import { Box, Button, Card, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, Grid2, InputAdornment, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { fetchCustomers, fetchRoles } from '../slices/adminSlice';
 import { Add, ArrowBackIos, Save, Search, Settings } from '@mui/icons-material';
-import { ImCheckboxChecked } from "react-icons/im";
-import { IoMdClose } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import { errorTextColor, nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
-import { createAttachment, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
+import { createAttachment, createImage, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import { IoMdCloseCircle } from "react-icons/io";
-import { validateDate } from '@mui/x-date-pickers';
 import { checkAssemblyName, createMainAssembly, fetchSubAssemblByMachine } from '../slices/assemblySlice';
+import { FcAddImage } from "react-icons/fc";
 
 export default function NewMainAssembly() {
     const dispatch = useAppDispatch()
@@ -54,10 +45,12 @@ export default function NewMainAssembly() {
 
     const [errors, setErrors] = useState<any>();
     const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
-    
+
     const [mainAssemblyFiles, setMainAssemblyFiles] = useState<Array<any>>([])
     const [mainAssemblyFileNames, setMainAssemblyFileNames] = useState<Array<string>>([])
     const [fileAdded, setFileAdded] = useState("")
+    const [mainAssemblyImage, setMainAssemblyImage] = useState<any>()
+    const [mainAssemblyImageName, setMainAssemblyImageName] = useState<string>()
 
     useEffect(() => {
         // dispatch(fetchSubAssembly()).unwrap()
@@ -145,12 +138,15 @@ export default function NewMainAssembly() {
                             dispatch(createMainAssembly(main_assembly)).unwrap().then((res) => {
                                 DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
                                 if (res.message.includes('success')) {
-                                    if(mainAssemblyFiles.length > 0){
+                                    if (mainAssemblyImage) {
+                                        uploadImage(res.id)
+                                    }
+                                    if (mainAssemblyFiles.length > 0) {
                                         DisplaySnackbar('Uploading attachments', "success", enqueueSnackbar)
                                         uploadAttachments(res.id)
-                                      }else{
+                                    } else {
                                         navigate(-1)
-                                      }
+                                    }
                                 }
                             }).catch((err) => {
                                 DisplaySnackbar(err.message, 'error', enqueueSnackbar)
@@ -163,18 +159,41 @@ export default function NewMainAssembly() {
         }
     }
 
+    const uploadImage = (id: string) => {
+        dispatch(createImage({
+            files: [mainAssemblyImage], type: 'main_assembly', type_id: id, image_name: mainAssemblyImageName
+        }))
+    }
+
     const uploadAttachments = (id: string) => {
-        dispatch(createAttachment({ files: mainAssemblyFiles, type: 'main_assembly', 
-          type_id: id})).unwrap()
-          .then((res:any) => {
-            DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
-            navigate(-1)
-          })
-          .catch((err:any)=>{
-            DisplaySnackbar(err.message, 'error', enqueueSnackbar)
-            navigate(-1)
-          })
-      }
+        dispatch(createAttachment({
+            files: mainAssemblyFiles, type: 'main_assembly',
+            type_id: id
+        })).unwrap()
+            .then((res: any) => {
+                DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+                navigate(-1)
+            })
+            .catch((err: any) => {
+                DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                navigate(-1)
+            })
+    }
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const handleCardClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+            setMainAssemblyImage(file)
+            setMainAssemblyImageName(file.name)
+        }
+    };
 
     return (
         <Box sx={{ display: 'flex', direction: 'column' }}>
@@ -187,8 +206,25 @@ export default function NewMainAssembly() {
                     Back
                 </Button>
 
-                <Grid2 container sx={{ mt: 1 }} size={12}>
-                    <Grid2 size={4}>
+                <Grid2 container sx={{ mt: 1, alignItems: 'center' }} size={12}>
+                    <Grid2 size={2}>
+                        <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                                onClick={handleCardClick}>
+                                {mainAssemblyImage ? <img src={URL.createObjectURL(mainAssemblyImage)} style={{ height: '80px', width: '80px' }}
+                                /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                                <input
+                                    type="file"
+                                    accept='image/png, image/jpeg'
+                                    ref={fileInputRef}
+                                    style={{ display: "none" }}
+                                    onChange={handleFileChange}
+                                />
+                            </Box>
+                        </Card>
+                    </Grid2>
+
+                    <Grid2 size={3} sx={{ ml: 1 }}>
                         <TextField
                             size='small'
                             variant="outlined"
@@ -492,7 +528,7 @@ export default function NewMainAssembly() {
                                         })
                                         setMainAssemblyFiles(files)
                                         setFileAdded(`${files.length} files added`)
-                                        
+
                                         let fileNames = mainAssemblyFileNames
                                         chosenFiles.map((f: any) => {
                                             fileNames.push(f.name)

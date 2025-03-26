@@ -1,28 +1,18 @@
-import { useState } from 'react';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import { useRef, useState } from 'react';
 import { MdDeleteOutline, MdOutlineEdit } from "react-icons/md";
 import { Box, Button, Card, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, Grid2, InputAdornment, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { fetchCustomers, fetchRoles } from '../slices/adminSlice';
 import { Add, ArrowBackIos, Save, Search, Settings } from '@mui/icons-material';
-import { ImCheckboxChecked } from "react-icons/im";
-import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { errorTextColor, nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
-import { createAttachment, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
+import { errorTextColor, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
+import { createAttachment, createImage, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
-import { IoMdCloseCircle } from "react-icons/io";
-import { validateDate } from '@mui/x-date-pickers';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { checkAssemblyName, createMainAssembly, fetchMainAssemblyDetail, fetchSubAssemblByMachine, removeAttachment, updateAssembly } from '../slices/assemblySlice';
+import { FcAddImage } from "react-icons/fc";
 
 export default function EditMainAssembly() {
     const dispatch = useAppDispatch()
@@ -60,7 +50,8 @@ export default function EditMainAssembly() {
     const [mainAssemblyFiles, setMainAssemblyFiles] = useState<Array<any>>([])
     const [mainAssemblyFileNames, setMainAssemblyFileNames] = useState<Array<string>>([])
     const [fileAdded, setFileAdded] = useState("")
-
+    const [mainAssemblyImage, setMainAssemblyImage] = useState<any>()
+    const [mainAssemblyImageName, setMainAssemblyImageName] = useState<string>()
 
     const [deleteDialog, setDeleteDialog] = useState({
         dialog: false,
@@ -100,6 +91,7 @@ export default function EditMainAssembly() {
         if (state?.id) {
             dispatch(fetchMainAssemblyDetail(state?.id)).unwrap().then((res: any) => {
                 setSelectedMainAssembly({ id: res.main_assembly_detail.id, name: res.main_assembly_detail.main_assembly_name, serial_no: res.main_assembly_detail.serial_no, machine_id: res.main_assembly_detail.machine.id })
+                setMainAssemblyImageName(res.main_assembly_detail.image)
 
                 const mainParts: any = []
                 const mainBoughtouts: any = []
@@ -406,6 +398,25 @@ export default function EditMainAssembly() {
         })
     }
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const handleCardClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+            setMainAssemblyImage(file)
+            setMainAssemblyImageName(file.name)
+
+            dispatch(createImage({
+                files: [file], type: 'main_assembly', type_id: state?.id, image_name: file.name
+            }))
+        }
+    };
+
     return (
         <Box sx={{ display: 'flex', direction: 'column' }}>
             <SidebarNav currentPage={nav_subassembly} />
@@ -422,8 +433,25 @@ export default function EditMainAssembly() {
                     Back
                 </Button>
 
-                <Grid2 container sx={{ mt: 1 }} size={12}>
-                    <Grid2 size={4}>
+                <Grid2 container sx={{ mt: 1, alignItems:'center' }} size={12}>
+                    <Grid2 size={2}>
+                        <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                                onClick={handleCardClick}>
+                                {mainAssemblyImage ? <img src={URL.createObjectURL(mainAssemblyImage)} style={{ height: '80px', width: '80px' }}
+                                /> : mainAssemblyImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${mainAssemblyImageName}`} style={{ height: '80px', width: '80px' }}
+                                /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                                <input
+                                    type="file"
+                                    accept='image/png, image/jpeg'
+                                    ref={fileInputRef}
+                                    style={{ display: "none" }}
+                                    onChange={handleFileChange}
+                                />
+                            </Box>
+                        </Card>
+                    </Grid2>
+                    <Grid2 size={3} sx={{ ml: 1 }}>
                         <TextField
                             size='small'
                             variant="outlined"
@@ -713,25 +741,25 @@ export default function EditMainAssembly() {
                     }} sx={{ color: '#bb0037' }}>No</Button>
                     <Button variant="contained" startIcon={<MdDeleteOutline />} size="small" color='secondary'
                         onClick={() => {
-                            if(deleteDialog.type.includes('attachment')){
+                            if (deleteDialog.type.includes('attachment')) {
                                 dispatch(removeAttachment({
-                                  id: mainAssemblyDetail.attachments.find((f) => f.file_name == deleteDialog.name)?.id,
-                                  file_name: deleteDialog.name
-                                })).unwrap().then((res: any)=>{
-                                  DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
-                                  if (res.message.includes('success')) {
-                                    setMainAssemblyFiles(mainAssemblyFiles.filter((f) => f.name != deleteDialog.name))
-                                    setMainAssemblyFileNames(mainAssemblyFileNames.filter((f) => f != deleteDialog.name))
-                                    setDeleteDialog({
-                                      dialog: false, type: '', name: '', id: ''
-                                    })
-                                  }
+                                    id: mainAssemblyDetail.attachments.find((f) => f.file_name == deleteDialog.name)?.id,
+                                    file_name: deleteDialog.name
+                                })).unwrap().then((res: any) => {
+                                    DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
+                                    if (res.message.includes('success')) {
+                                        setMainAssemblyFiles(mainAssemblyFiles.filter((f) => f.name != deleteDialog.name))
+                                        setMainAssemblyFileNames(mainAssemblyFileNames.filter((f) => f != deleteDialog.name))
+                                        setDeleteDialog({
+                                            dialog: false, type: '', name: '', id: ''
+                                        })
+                                    }
                                 }).catch((err: any) => {
                                     DisplaySnackbar(err.message, "error", enqueueSnackbar)
                                 })
-                              }else{
+                            } else {
                                 handleDelete()
-                              }
+                            }
                         }}>
                         Yes
                     </Button>

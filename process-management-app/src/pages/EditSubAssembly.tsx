@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -16,13 +16,14 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
-import { createAttachment, fetchBOListByMachine, fetchBoughtOutList, fetchMachineList, fetchPartsList, fetchPartsListByMachine } from '../slices/machineSlice';
+import { createAttachment, createImage, fetchBOListByMachine, fetchBoughtOutList, fetchMachineList, fetchPartsList, fetchPartsListByMachine } from '../slices/machineSlice';
 import { checkAssemblyName, createSubAssembly, fetchSubAssembly, fetchSubAssemblyDetail, updateAssembly, removeAttachment } from '../slices/assemblySlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import { IoMdCloseCircle } from "react-icons/io";
 import { MdDeleteOutline } from "react-icons/md";
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
+import { FcAddImage } from "react-icons/fc";
 
 export default function EditSubAssembly() {
   const dispatch = useAppDispatch()
@@ -51,6 +52,8 @@ export default function EditSubAssembly() {
   const [subAssemblyFiles, setSubAssemblyFiles] = useState<Array<any>>([])
   const [subAssemblyFileNames, setSubAssemblyFileNames] = useState<Array<string>>([])
   const [fileAdded, setFileAdded] = useState("")
+  const [subAssemblyImage, setSubAssemblyImage] = useState<any>()
+  const [subAssemblyImageName, setSubAssemblyImageName] = useState<string>()
 
   const [deleteDialog, setDeleteDialog] = useState({
     dialog: false,
@@ -83,17 +86,18 @@ export default function EditSubAssembly() {
   }, [dispatch])
 
   useEffect(() => {
-      if(selectedMachines.length > 0){
-        dispatch(fetchPartsListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
-        dispatch(fetchBOListByMachine({machines: selectedMachines?.map((machine:any) => machines.find((m:any) => m.machine_name == machine).id)})).unwrap()
-      }
-    }, [selectedMachines])
+    if (selectedMachines.length > 0) {
+      dispatch(fetchPartsListByMachine({ machines: selectedMachines?.map((machine: any) => machines.find((m: any) => m.machine_name == machine).id) })).unwrap()
+      dispatch(fetchBOListByMachine({ machines: selectedMachines?.map((machine: any) => machines.find((m: any) => m.machine_name == machine).id) })).unwrap()
+    }
+  }, [selectedMachines])
 
   useEffect(() => {
     if (state?.id) {
       dispatch(fetchSubAssemblyDetail(state?.id)).unwrap()
         .then((res) => {
           setSelectedSubAssembly({ id: res.sub_assembly_detail.id, name: res.sub_assembly_detail.sub_assembly_name, serial_no: res.sub_assembly_detail.serial_no })
+          setSubAssemblyImageName(res.sub_assembly_detail.image)
           const subParts: any = []
           const subBoughtouts: any = []
 
@@ -113,7 +117,7 @@ export default function EditSubAssembly() {
           setSubAssemblyParts(subParts)
           setSubAssemblyBoughtouts(subBoughtouts)
 
-          const machineList : any[] = []
+          const machineList: any[] = []
           res.machine_list?.map((machine: any) => {
             machineList.push(machine.machine_name)
           })
@@ -133,30 +137,30 @@ export default function EditSubAssembly() {
   }, [state])
 
   const handleSubmit = () => {
-      if(selectedSubAssembly.name.length == 0){
-        DisplaySnackbar('Enter sub assembly name', 'error', enqueueSnackbar)
-      }else if(selectedSubAssembly.serial_no.length == 0){
-        DisplaySnackbar('Enter sub assembly serial no', 'error', enqueueSnackbar)
-      }else if(selectedMachines.length == 0){
-        DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
-      }else{
-        const machine_list: any = []
-            selectedMachines.forEach((m)=>{
-                machine_list.push(machines.find((f) => m == f.machine_name)?.id)
-            })
+    if (selectedSubAssembly.name.length == 0) {
+      DisplaySnackbar('Enter sub assembly name', 'error', enqueueSnackbar)
+    } else if (selectedSubAssembly.serial_no.length == 0) {
+      DisplaySnackbar('Enter sub assembly serial no', 'error', enqueueSnackbar)
+    } else if (selectedMachines.length == 0) {
+      DisplaySnackbar('Machine is required', 'error', enqueueSnackbar)
+    } else {
+      const machine_list: any = []
+      selectedMachines.forEach((m) => {
+        machine_list.push(machines.find((f) => m == f.machine_name)?.id)
+      })
 
-        dispatch(updateAssembly({
-          id: '',
-          assembly_type_id: state?.id,
-          assembly_type_name: selectedSubAssembly.name,
-          update_type: 'update',
-          assembly_type: 'sub_detail',
-          assembly_udpate_type: updateDialog.type,
-          machines: machine_list
-        })).unwrap().then((res: any) => {
-          DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
-        })
-      }
+      dispatch(updateAssembly({
+        id: '',
+        assembly_type_id: state?.id,
+        assembly_type_name: selectedSubAssembly.name,
+        update_type: 'update',
+        assembly_type: 'sub_detail',
+        assembly_udpate_type: updateDialog.type,
+        machines: machine_list
+      })).unwrap().then((res: any) => {
+        DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
+      })
+    }
   }
 
   const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedMachines>) => {
@@ -276,6 +280,25 @@ export default function EditSubAssembly() {
     })
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleCardClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event: any) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSubAssemblyImage(file)
+      setSubAssemblyImageName(file.name)
+
+      dispatch(createImage({
+        files: [file], type: 'sub_assembly', type_id: state?.id, image_name: file.name
+      }))
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', direction: 'column' }}>
       <SidebarNav currentPage={nav_subassembly} />
@@ -292,41 +315,62 @@ export default function EditSubAssembly() {
           Back
         </Button>
 
-        <Box sx={{ display: 'flex', flexDirection: 'row', mt: 1 }}>
-          <TextField
-            size='small'
-            variant="outlined"
-            fullWidth
-            required
-            label="Sub Assembly Name"
-            name="sub_assembly_name"
-            value={selectedSubAssembly?.name}
-            error={!!errors?.name}
-            helperText={errors?.name}
-            onChange={(e: any) => {
-              setSelectedSubAssembly({ ...selectedSubAssembly, name: e.target.value })
-            }}
-          />
-          <TextField
-            sx={{ ml: 1 }}
-            size='small'
-            variant="outlined"
-            fullWidth
-            required
-            label="Serial No"
-            name="serial_no"
-            value={selectedSubAssembly?.serial_no}
-            error={!!errors?.serial_no}
-            helperText={errors?.serial_no}
-            onChange={(e: any) => {
-              setSelectedSubAssembly({ ...selectedSubAssembly, serial_no: e.target.value })
-            }}
-          />
-        </Box>
+        <Grid2 container sx={{alignItems:'center'}}>
+          <Grid2 size={2}>
+            <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                onClick={handleCardClick}>
+                {subAssemblyImage ? <img src={URL.createObjectURL(subAssemblyImage)} style={{ height: '80px', width: '80px' }}
+                /> : subAssemblyImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${subAssemblyImageName}`} style={{ height: '80px', width: '80px' }}
+                /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                <input
+                  type="file"
+                  accept='image/png, image/jpeg'
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                />
+              </Box>
+            </Card>
+          </Grid2>
+          <Grid2 size={4} sx={{ ml: 2 }}>
+            <TextField
+              size='small'
+              variant="outlined"
+              fullWidth
+              required
+              label="Sub Assembly Name"
+              name="sub_assembly_name"
+              value={selectedSubAssembly?.name}
+              error={!!errors?.name}
+              helperText={errors?.name}
+              onChange={(e: any) => {
+                setSelectedSubAssembly({ ...selectedSubAssembly, name: e.target.value })
+              }}
+            />
+          </Grid2>
+          <Grid2 size={4} sx={{ ml: 1 }}>
+            <TextField
+              sx={{ ml: 1 }}
+              size='small'
+              variant="outlined"
+              fullWidth
+              required
+              label="Serial No"
+              name="serial_no"
+              value={selectedSubAssembly?.serial_no}
+              error={!!errors?.serial_no}
+              helperText={errors?.serial_no}
+              onChange={(e: any) => {
+                setSelectedSubAssembly({ ...selectedSubAssembly, serial_no: e.target.value })
+              }}
+            />
+          </Grid2>
+        </Grid2>
 
         <Grid2 container>
 
-        <Grid2 size={12}>
+          <Grid2 size={12}>
             <Card sx={{ padding: 2, mt: 1 }}>
               <FormControl fullWidth margin="normal">
                 <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
@@ -456,10 +500,12 @@ export default function EditSubAssembly() {
             <Card sx={{ padding: 2, mt: 1 }}>
               {subAssemblyFileNames.map((file: any) => {
                 return <Chip label={file} variant='outlined' sx={{ mr: 1 }} onDelete={() => {
-                  setDeleteDialog({dialog: true,
+                  setDeleteDialog({
+                    dialog: true,
                     type: 'attachment',
                     name: file,
-                    id: ''})
+                    id: ''
+                  })
                 }} style={{ marginTop: '4px' }} />
               })}
               <Button
@@ -543,11 +589,11 @@ export default function EditSubAssembly() {
           }} sx={{ color: '#bb0037' }}>No</Button>
           <Button variant="contained" startIcon={<MdDeleteOutline />} size="small" color='secondary'
             onClick={() => {
-              if(deleteDialog.type.includes('attachment')){
+              if (deleteDialog.type.includes('attachment')) {
                 dispatch(removeAttachment({
                   id: subAssemblyDetail.attachments.find((f) => f.file_name == deleteDialog.name)?.id,
                   file_name: deleteDialog.name
-                })).unwrap().then((res: any)=>{
+                })).unwrap().then((res: any) => {
                   DisplaySnackbar(res.message, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
                   if (res.message.includes('success')) {
                     setSubAssemblyFiles(subAssemblyFiles.filter((f) => f.name != deleteDialog.name))
@@ -557,9 +603,9 @@ export default function EditSubAssembly() {
                     })
                   }
                 }).catch((err: any) => {
-                    DisplaySnackbar(err.message, "error", enqueueSnackbar)
+                  DisplaySnackbar(err.message, "error", enqueueSnackbar)
                 })
-              }else{
+              } else {
                 setEditType('Delete')
                 handleDelete()
               }

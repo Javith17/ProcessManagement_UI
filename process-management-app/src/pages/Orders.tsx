@@ -51,11 +51,11 @@ export default function Orders() {
   }, [state])
 
   useEffect(() => {
-    dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed']})).unwrap()
+    dispatch(fetchOrdersList({search_list: ['Initiated', 'In-Progress', 'Assembly Completed']})).unwrap()
   }, [dispatch])
 
   const handleSearch = () => {
-    dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed'], searchText })).unwrap()
+    dispatch(fetchOrdersList({search_list: ['Initiated', 'In-Progress', 'Assembly Completed'], searchText })).unwrap()
   }
 
   return (
@@ -106,10 +106,10 @@ export default function Orders() {
               <TableBody>
                 {ordersList.length > 0 ? ordersList.map((row: any) => (
                   <TableRowStyled key={row.id}>
-                    <TableCell>{row.quotation.quotation_no}</TableCell>
+                    <TableCell>{row.quotation? row.quotation.quotation_no : row.spares_quotation ? row.spares_quotation.quotation_no: ''}</TableCell>
                     <TableCell>{row.machine_name}</TableCell>
                     <TableCell>{row.customer.customer_name}</TableCell>
-                    <TableCell>{row.quotation.approved_cost}</TableCell>
+                    <TableCell>{row.quotation? row.quotation.approved_cost : row.spares_quotation ? row.spares_quotation.approved_cost: ''}</TableCell>
                     {row.status == 'Initiated' ? <TableCell>
                       <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor:'pointer' }}
                       onClick={() => {

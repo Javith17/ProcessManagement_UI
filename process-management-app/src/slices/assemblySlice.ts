@@ -130,6 +130,14 @@ export const configureAssembly = createAsyncThunk('configureMachineAssemblies', 
     return resData
 })
 
+export const configureSpareAssembly = createAsyncThunk('configureSpareAssemblies', async (data: any) => {
+    const response = await axiosInstance.get(`assembly/configureSpareAssemblies/${data.machineId}/${data.orderId}`, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
 export const getMachineSubAssembly = createAsyncThunk('getMachineSubAssemblies', async (data: any) => {
     const response = await axiosInstance.get(`assembly/getMachineSubAssemblies/${data.machineId}/${data.orderId}`, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
@@ -164,6 +172,14 @@ export const getOrderDetail = createAsyncThunk('getOrderDetails', async (data: a
 
 export const updateAssemblyStatus = createAsyncThunk('updateAssembly', async (data: any) => {
     const response = await axiosInstance.post('assembly/updateAssembly', data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
+    })
+    const resData = response.data
+    return resData
+})
+
+export const getAssemblyImage = createAsyncThunk('getAssemblyImage', async (data: any) => {
+    const response = await axiosInstance.get(`machine/viewImage/${data.type}/${data.id}`, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}   
     })
     const resData = response.data

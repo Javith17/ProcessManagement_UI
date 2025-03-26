@@ -124,6 +124,22 @@ export const createAttachment = createAsyncThunk('createAttachment' , async (dat
     return resData
 })
 
+export const createImage = createAsyncThunk('createImage' , async (data: any) => {
+    const formData = new FormData()
+    data.files.map((file: any) => {
+        formData.append('files', file)
+        formData.append('image_name', file.name)
+    })
+    formData.append('type_id', data.type_id)
+    formData.append('type', data.type)
+
+    const response = await axiosInstance.post('machine/imageUpload', formData, {
+        headers: {'Authorization': `Bearer ${JSON.parse(localStorage.getItem("userDetail") as string).accessToken}`}
+    })
+    const resData = response.data.message
+    return resData
+})
+
 export const fetchPartDetail = createAsyncThunk("fetchPartDetail", async (data:any) => {
     const response = await axiosInstance.get(`machine/parts/${data}`, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}

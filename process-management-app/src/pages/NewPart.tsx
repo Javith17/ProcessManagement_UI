@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -10,7 +10,7 @@ import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createPart, fetchMachineList } from '../slices/machineSlice';
+import { createAttachment, createImage, createPart, fetchMachineList } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
@@ -20,6 +20,7 @@ import { FaUserShield } from "react-icons/fa";
 import { FaBusinessTime } from "react-icons/fa6";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import { IoMdCloseCircle } from "react-icons/io";
+import { FcAddImage } from "react-icons/fc";
 
 export default function NewPart() {
   const dispatch = useAppDispatch()
@@ -67,6 +68,8 @@ export default function NewPart() {
     machineId: '',
     machineName: ''
   })
+  const [partImage, setPartImage] = useState<any>()
+  const [partImageName, setPartImageName] = useState<string>()
 
   const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
     // const {
@@ -163,6 +166,9 @@ export default function NewPart() {
           dispatch(createPart(createPartObj)).unwrap().then((res) => {
             DisplaySnackbar(res.message, res.message.includes('success') ? 'success' : 'error', enqueueSnackbar)
             if (res.message.includes('success')) {
+              if (partImage){
+                uploadImage(res.id)
+              }
               if (partFiles.length > 0) {
                 DisplaySnackbar('Uploading attachments', "success", enqueueSnackbar)
                 uploadAttachments(res.id)
@@ -180,6 +186,11 @@ export default function NewPart() {
     }
   };
 
+  const uploadImage = (id: string) => {
+    dispatch(createImage({
+      files: [partImage], type: 'part', type_id: id, image_name: partImageName
+    }))
+  }
   const uploadAttachments = (id: string) => {
     dispatch(createAttachment({
       files: partFiles, type: 'part',
@@ -230,6 +241,21 @@ export default function NewPart() {
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleCardClick = () => {
+    if(fileInputRef.current){
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event:any) => {
+    const file = event.target.files[0];
+    if (file) {
+      setPartImage(file)
+      setPartImageName(file.name)
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
       <SidebarNav currentPage={nav_parts} />
@@ -240,7 +266,23 @@ export default function NewPart() {
           Back
         </Button>
         <form noValidate>
-          <Grid2 container spacing={4} sx={{ mt: 1 }}>
+          <Grid2 container spacing={4} sx={{ mt: 1, alignItems:'center' }}>
+            <Grid2 size={1}>
+              <Card sx={{borderRadius:'50%', height:'100px', width:'100px'}}>
+                <Box sx={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100px', width:'100px'}}
+                onClick={handleCardClick}>
+                  {partImage ? <img src={URL.createObjectURL(partImage)} style={{height:'80px', width:'80px'}}
+                   /> : <FcAddImage style={{height:'60px', width:'60px'}}/>}
+                  <input
+                    type="file"
+                    accept='image/png, image/jpeg'
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                </Box>
+              </Card>
+            </Grid2>
             <Grid2 size={3} style={{ paddingLeft: 0, paddingRight: 0 }}>
               <TextField
                 size='small'
@@ -316,7 +358,7 @@ export default function NewPart() {
               </FormControl>
             </Grid2> */}
 
-            <Grid2 size={3}>
+            <Grid2 size={2}>
               <FormControl fullWidth>
                 <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
                 <Select

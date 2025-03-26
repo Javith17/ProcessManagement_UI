@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -10,7 +10,7 @@ import Snackbar, { SnackbarCloseReason } from '@mui/material/Snackbar';
 import { Add, ArrowBackIos, Done, Save, Settings, Store } from '@mui/icons-material';
 import { Table } from 'react-bootstrap';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
-import { createAttachment, createBoughtout, createPart, fetchBoughtoutDetail, fetchMachineList, updateBoughtout } from '../slices/machineSlice';
+import { createAttachment, createBoughtout, createImage, createPart, fetchBoughtoutDetail, fetchMachineList, updateBoughtout } from '../slices/machineSlice';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineEdit } from 'react-icons/md';
@@ -23,6 +23,7 @@ import { FaBusinessTime } from "react-icons/fa6";
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import { IoMdCloseCircle } from "react-icons/io";
 import { IoEyeSharp } from "react-icons/io5";
+import { FcAddImage } from 'react-icons/fc';
 
 export default function EditBoughtout() {
     const dispatch = useAppDispatch()
@@ -75,6 +76,8 @@ export default function EditBoughtout() {
 
     const [selectedType, setSelectedType] = useState<Array<any>>([])
     const [selectedMachines, setSelectedMachines] = useState<Array<any>>([])
+    const [boImage, setBOImage] = useState<any>()
+    const [boImageName, setBOImageName] = useState<string>()
 
     const handleMultiProcessChange = (event: SelectChangeEvent<typeof selectedType>) => {
         const {
@@ -98,6 +101,7 @@ export default function EditBoughtout() {
         if (state?.id) {
             dispatch(fetchBoughtoutDetail(state?.id)).unwrap()
                 .then((res: any) => {
+                    setBOImageName(res.boughtout_detail.image)
                     setFormData({
                         name: res.boughtout_detail.bought_out_name,
                         category: res.boughtout_detail.bought_out_category
@@ -251,6 +255,25 @@ export default function EditBoughtout() {
         }
     };
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const handleCardClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+            setBOImage(file)
+            setBOImageName(file.name)
+
+            dispatch(createImage({
+                files: [file], type: 'bought_out', type_id: state?.id, image_name: file.name
+            }))
+        }
+    };
+
     return (
         <Box sx={{ display: 'flex', direction: 'row', ml: 2, mr: 4 }}>
             <SidebarNav currentPage={nav_boughtouts} />
@@ -261,8 +284,26 @@ export default function EditBoughtout() {
                     Back
                 </Button>
                 <form noValidate>
-                    <Grid2 container spacing={4} sx={{ mt: 1 }}>
-                        <Grid2 size={4} style={{ paddingLeft: 0, paddingRight: 0 }}>
+                    <Grid2 container spacing={4} sx={{ mt: 1, alignItems:'center' }}>
+                        <Grid2 size={1}>
+                            <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                                    onClick={handleCardClick}>
+                                    {boImage ? <img src={URL.createObjectURL(boImage)} style={{ height: '80px', width: '80px' }}
+                                    /> : boImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${boImageName}`} style={{ height: '80px', width: '80px' }}
+                                    /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                                    <input
+                                        type="file"
+                                        accept='image/png, image/jpeg'
+                                        ref={fileInputRef}
+                                        style={{ display: "none" }}
+                                        onChange={handleFileChange}
+                                    />
+                                </Box>
+                            </Card>
+                        </Grid2>
+
+                        <Grid2 size={3} style={{ marginLeft: '10px', paddingLeft: 0, paddingRight: 0 }}>
                             <TextField
                                 size='small'
                                 variant="outlined"
@@ -308,7 +349,7 @@ export default function EditBoughtout() {
                             </FormControl>
                         </Grid2> */}
 
-                        <Grid2 size={4}>
+                        <Grid2 size={3}>
                             <FormControl fullWidth>
                                 <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
                                 <Select
@@ -367,63 +408,67 @@ export default function EditBoughtout() {
                             </Card>
                         </Grid2>
 
-                        <Grid2 size={4}  sx={{minHeight:'60vh'}}>
-                                <Card sx={{ minHeight:'60vh', backgroundColor:'#EFDECD' }}>
-                                    <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color:'white', textAlign:'center' }}>Vendors</Card>
-                                    {boughoutSupplier?.map((supplier:any) => {
-                                        return <Card sx={{m:1}}>
-                                            <div style={{display:'flex', alignItems:'bottom', paddingLeft:'10px', paddingRight:'10px', marginTop:'10px'}}><FaUserShield style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px', fontWeight:'bold'}}>{supplier.supplier_name}</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><RiMoneyRupeeCircleFill style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px'}}>Rs.{supplier.cost}</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', alignItems:'bottom', marginTop:'5px', paddingLeft:'10px', paddingRight:'10px'}}><FaBusinessTime style={{width:'20px', height:'20px', color:'gray'}} /> 
-                                                <Typography style={{marginLeft:'10px'}}>{supplier.delivery_time} Days</Typography>
-                                            </div> 
-                                            <div style={{display:'flex', justifyContent:'end', background:'#800020', padding:'5px', marginTop:'10px'}}>
+                        <Grid2 size={4} sx={{ minHeight: '60vh' }}>
+                            <Card sx={{ minHeight: '60vh', backgroundColor: '#EFDECD' }}>
+                                <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color: 'white', textAlign: 'center' }}>Vendors</Card>
+                                {boughoutSupplier?.map((supplier: any) => {
+                                    return <Card sx={{ m: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', paddingLeft: '10px', paddingRight: '10px', marginTop: '10px' }}><FaUserShield style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px', fontWeight: 'bold' }}>{supplier.supplier_name}</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><RiMoneyRupeeCircleFill style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px' }}>Rs.{supplier.cost}</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'bottom', marginTop: '5px', paddingLeft: '10px', paddingRight: '10px' }}><FaBusinessTime style={{ width: '20px', height: '20px', color: 'gray' }} />
+                                            <Typography style={{ marginLeft: '10px' }}>{supplier.delivery_time} Days</Typography>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'end', background: '#800020', padding: '5px', marginTop: '10px' }}>
                                             <Card
-                                                style={{marginLeft:'auto', width: '30px', height:'30px', color:'gray', display: 'flex',
-                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
-                                                    <MdOutlineEdit
-                                                    style={{width: '25px', height:'25px', color:'black', cursor:'pointer'}} onClick={() => {
-                                                                setEditSupplier(true)
-                                                                setShowSupplierDialog(true)
-                                                                setSelectedSupplier({
-                                                                    id: supplier.id,
-                                                                    supplier_id: supplier.supplier_id,
-                                                                    supplier_name: supplier.supplier_name,
-                                                                    delivery_cost: supplier.cost,
-                                                                    delivery_time: supplier.delivery_time
-                                                                })
-                                                                setErrors({})
-                                                            }} />
-                                                </Card>
-                                                <Card
-                                                style={{marginLeft:'15px', width: '30px', height:'30px', color:'gray', display: 'flex',
-                                                 borderRadius:'15px', background:'white', cursor:'pointer', justifyContent:'center', alignItems:'center'}}>
-                                                    	<MdDeleteOutline style={{width: '25px', height:'25px', color:'red', cursor:'pointer'}} onClick={() => {
-                                                            setDeleteDialog({
-                                                                id: supplier.id,
-                                                                name: supplier.supplier_name,
-                                                                type: 'Supplier',
-                                                                dialog: true
-                                                            })
-                                                        }} />
-                                                 </Card>
-                                                </div>
-                                        </Card>
-                                    })}
-                                    <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" color='primary' sx={{m:1, backgroundColor:'#800020'}}
-                                            onClick={() => {
-                                                setShowSupplierDialog(true)
-                                            }}>
-                                            Add New Supplier
-                                    </Button>
-                                </Card>
-                            </Grid2>
+                                                style={{
+                                                    marginLeft: 'auto', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                                                    borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                                                }}>
+                                                <MdOutlineEdit
+                                                    style={{ width: '25px', height: '25px', color: 'black', cursor: 'pointer' }} onClick={() => {
+                                                        setEditSupplier(true)
+                                                        setShowSupplierDialog(true)
+                                                        setSelectedSupplier({
+                                                            id: supplier.id,
+                                                            supplier_id: supplier.supplier_id,
+                                                            supplier_name: supplier.supplier_name,
+                                                            delivery_cost: supplier.cost,
+                                                            delivery_time: supplier.delivery_time
+                                                        })
+                                                        setErrors({})
+                                                    }} />
+                                            </Card>
+                                            <Card
+                                                style={{
+                                                    marginLeft: '15px', width: '30px', height: '30px', color: 'gray', display: 'flex',
+                                                    borderRadius: '15px', background: 'white', cursor: 'pointer', justifyContent: 'center', alignItems: 'center'
+                                                }}>
+                                                <MdDeleteOutline style={{ width: '25px', height: '25px', color: 'red', cursor: 'pointer' }} onClick={() => {
+                                                    setDeleteDialog({
+                                                        id: supplier.id,
+                                                        name: supplier.supplier_name,
+                                                        type: 'Supplier',
+                                                        dialog: true
+                                                    })
+                                                }} />
+                                            </Card>
+                                        </div>
+                                    </Card>
+                                })}
+                                <Button variant="contained" startIcon={<BsPersonFillAdd />} size="small" color='primary' sx={{ m: 1, backgroundColor: '#800020' }}
+                                    onClick={() => {
+                                        setShowSupplierDialog(true)
+                                    }}>
+                                    Add New Supplier
+                                </Button>
+                            </Card>
+                        </Grid2>
 
-                            <Grid2 size={4} sx={{ minHeight: '60vh' }}>
+                        <Grid2 size={4} sx={{ minHeight: '60vh' }}>
                             <Card sx={{ minHeight: '60vh', backgroundColor: '#F0F8FF' }}>
                                 <Card sx={{ textAlign: 'center', p: 1, fontWeight: 'bold', color: 'white', backgroundColor: '#007FFF' }}>Attachments</Card>
                                 {boughtoutFileNames.map((map: any) => {
