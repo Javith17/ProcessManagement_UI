@@ -410,7 +410,7 @@ export default function EditBoughtout() {
 
                         <Grid2 size={4} sx={{ minHeight: '60vh' }}>
                             <Card sx={{ minHeight: '60vh', backgroundColor: '#EFDECD' }}>
-                                <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color: 'white', textAlign: 'center' }}>Vendors</Card>
+                                <Card sx={{ p: 1, fontWeight: 'bold', backgroundColor: '#800020', color: 'white', textAlign: 'center' }}>Suppliers</Card>
                                 {boughoutSupplier?.map((supplier: any) => {
                                     return <Card sx={{ m: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'bottom', paddingLeft: '10px', paddingRight: '10px', marginTop: '10px' }}><FaUserShield style={{ width: '20px', height: '20px', color: 'gray' }} />
@@ -713,6 +713,7 @@ export default function EditBoughtout() {
                         id="email"
                         label="Delivery Time"
                         name="email"
+                        type='number'
                         error={!!errors?.delivery_time}
                         helperText={errors?.delivery_time}
                         value={selectedSupplier.delivery_time}
