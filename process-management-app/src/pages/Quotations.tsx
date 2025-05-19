@@ -507,6 +507,7 @@ export default function Quotations() {
                         qty: spareParts.reduce((sum, spare) =>  sum + spare.spare_qty , 0),
                         spares: spareParts,
                         customer_id: sparesFormData.customer_id,
+                        machine_id: sparesFormData.machine_id,
                         user_id: sparesFormData.user_id,
                         cost: spareParts.reduce((sum, spare) =>  sum + spare.spare_cost , 0),
                         remarks: sparesFormData.remarks,
@@ -524,29 +525,29 @@ export default function Quotations() {
                         DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                     })
                 } else {
-                    // dispatch(createMachineQuotation({
-                    //     quotation_id: formData.quotation_id,
-                    //     quotation_date: formData.quotation_date,
-                    //     reminder_date: formData.reminder_date,
-                    //     qty: formData.qty,
-                    //     machine_id: formData.machine_id,
-                    //     customer_id: formData.customer_id,
-                    //     user_id: formData.user_id,
-                    //     cost: formData.cost,
-                    //     remarks: formData.remarks,
-                    //     quotation_terms: quotationTerms,
-                    //     type: 'Update'
-                    // })).unwrap().then((res: any) => {
-                    //     DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
-                    //     if (res.includes('success')) {
-                    //         setQuotationTerms(quotation_terms)
-                    //         setCreateDialog(false)
-                    //         clearValues()
-                    //         dispatch(fetchMachineQuotationList())
-                    //     }
-                    // }).catch((err: any) => {
-                    //     DisplaySnackbar(err.message, 'error', enqueueSnackbar)
-                    // })
+                    dispatch(createMachineQuotation({
+                        quotation_id: formData.quotation_id,
+                        quotation_date: formData.quotation_date,
+                        reminder_date: formData.reminder_date,
+                        qty: formData.qty,
+                        machine_id: formData.machine_id,
+                        customer_id: formData.customer_id,
+                        user_id: formData.user_id,
+                        cost: formData.cost,
+                        remarks: formData.remarks,
+                        quotation_terms: quotationTerms,
+                        type: 'Update'
+                    })).unwrap().then((res: any) => {
+                        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+                        if (res.includes('success')) {
+                            setQuotationTerms(quotation_terms)
+                            setCreateDialog(false)
+                            clearValues()
+                            dispatch(fetchMachineQuotationList())
+                        }
+                    }).catch((err: any) => {
+                        DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                    })
                 }
             }            
         }else{

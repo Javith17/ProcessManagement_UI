@@ -17,6 +17,7 @@ export default function Assembly() {
   const [mainAssemblies, setMainAssemblies] = useState<any[]>([])
   const [sectionAssemblies, setSectionAssemblies] = useState<any[]>([])
   const [orderDetail, setOrderDetail] = useState<any>()
+  const [orderType, setOrderType] = useState("")
   const [currentTab, setCurrentTab] = useState(0)
   const [imageDialog, setImageDialog] = useState({
     isOpen: false,
@@ -35,6 +36,12 @@ export default function Assembly() {
       return '#00563B'
     }
   }
+
+  useEffect(() => {
+    if(state?.type){
+      setOrderType(state?.type)
+    }
+  }, [state])
 
   useEffect(() => {
     dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
@@ -303,10 +310,6 @@ export default function Assembly() {
     //column definitions...
     () => [
       {
-        header: 'Section Assembly Name',
-        accessorKey: 'section_assembly_name',
-      },
-      {
         header: 'Main Assembly Name',
         accessorKey: 'main_assembly_name',
       },
@@ -420,9 +423,6 @@ export default function Assembly() {
     data: sectionAssemblies && sectionAssemblies.length > 0 ? sectionAssemblies : [],
     enableGrouping: true,
     groupedColumnMode: 'remove',
-    initialState: {
-      grouping: ['section_assembly_name']
-    },
     muiTableContainerProps: { sx: { maxHeight: '800px' } },
     enablePagination: false,
     enableBottomToolbar: false,
@@ -450,7 +450,7 @@ export default function Assembly() {
 
         <Grid2 size={2}>
           <Typography variant='subtitle2' color={'grey'}>Quotation No</Typography>
-          <Typography variant='subtitle1'>{orderDetail?.quotation?.quotation_no}</Typography>
+          <Typography variant='subtitle1'>{orderDetail?.quotation ? orderDetail?.quotation?.quotation_no : orderDetail?.spares_quotation ? orderDetail?.spares_quotation?.quotation_no : ''}</Typography>
         </Grid2>
 
         <Grid2 size={2}>
@@ -465,7 +465,7 @@ export default function Assembly() {
 
         <Grid2 size={1}>
           <Typography variant='subtitle2' color={'grey'}>Qty</Typography>
-          <Typography variant='subtitle1'>{orderDetail?.quotation?.qty}</Typography>
+          <Typography variant='subtitle1'>{orderDetail?.quotation ? orderDetail?.quotation?.qty : orderDetail?.spares_quotation ? orderDetail?.spares_quotation?.qty : '0'}</Typography>
         </Grid2>
 
         <Grid2 size={12}>
@@ -487,7 +487,7 @@ export default function Assembly() {
           }} variant='fullWidth'>
             <Tab label="Sub Assembly" value={0} />
             <Tab label="Main Assembly" value={1} />
-            <Tab label="Section Assebly" value={2} />
+            <Tab label={orderType == 'spares' ? 'Spares' : 'Section Assembly' } value={2} />
           </Tabs>
         </Grid2>
 

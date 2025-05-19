@@ -130,7 +130,8 @@ export default function Orders() {
                         navigate('/assembly', {
                           state: {
                             order_id: row.id,
-                            machine_id: row.machine.id
+                            machine_id: row.machine.id,
+                            type: row?.spares_quotation ? 'spares' : 'machine'
                           }
                         })
                       }else{

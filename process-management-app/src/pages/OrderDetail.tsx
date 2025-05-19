@@ -346,13 +346,25 @@ export default function OrderDetail() {
 
     useEffect(() => {
         if (orderDetail?.parts?.orderDetail) {
+            let quotation_no = '';
+            let cost = 0;
+            let qty = 0;
+            if(orderDetail.parts?.orderDetail[0]?.order.quotation){
+                quotation_no = orderDetail.parts?.orderDetail[0]?.order.quotation.quotation_no;
+                cost = orderDetail.parts?.orderDetail[0]?.order.quotation.approved_cost;
+                qty = orderDetail.parts?.orderDetail[0]?.order.quotation.qty;
+            }else if(orderDetail.parts?.orderDetail[0]?.order.spares_quotation){
+                quotation_no = orderDetail.parts?.orderDetail[0]?.order.spares_quotation.quotation_no;
+                cost = orderDetail.parts?.orderDetail[0]?.order.spares_quotation.approved_cost;
+                qty = orderDetail.parts?.orderDetail[0]?.order.spares_quotation.qty;
+            }
             setHeaderDetail({
                 status: orderDetail?.parts?.orderDetail[0].order.status,
-                quotationNo: orderDetail.parts?.orderDetail[0]?.order.quotation.quotation_no,
+                quotationNo: quotation_no,
                 machineName: orderDetail.parts?.orderDetail[0]?.order.machine_name,
                 customerName: orderDetail.parts?.orderDetail[0]?.order.customer.customer_name,
-                cost: orderDetail.parts?.orderDetail[0]?.order.quotation.approved_cost,
-                qty: orderDetail.parts?.orderDetail[0]?.order.quotation.qty
+                cost: cost,
+                qty: qty
             })
             setOrderDetailList(orderDetail.parts?.orderDetail)
             setOrderDetailBOList(orderDetail.boughtouts?.orderDetailBoughtout)

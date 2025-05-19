@@ -35,6 +35,7 @@ import EditBoughtout from './pages/EditBoughtout';
 import VendorAcceptance from './pages/VendorAcceptance';
 import Stores from './pages/Stores';
 import Assembly from './pages/Assembly';
+import NewDashboard from './pages/NewDashboard';
 
 function App() {
   return (
@@ -45,7 +46,7 @@ function App() {
           <Route path="/login" element={<Login />} />
          </Route>
         <Route element={<ProtectedLayout />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<NewDashboard />} />
           <Route path="/users" element={<Users />} />
           <Route path="/roles" element={<Roles />} />
           <Route path="/vendors" element={<Vendors />} />
