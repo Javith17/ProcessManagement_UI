@@ -10,6 +10,8 @@ import { ThemeOptions } from '@mui/material/styles';
 import { ThemeProvider } from '@mui/system';
 import theme from './theme'
 import { SnackbarProvider } from 'notistack';
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 // export const themeOptions: ThemeOptions = {
 //   palette: {
@@ -44,7 +46,9 @@ root.render(
       <Provider store={store}>
         <BrowserRouter>
           <ThemeProvider theme={theme}>
-            <App />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <App />
+            </LocalizationProvider>
           </ThemeProvider>
         </BrowserRouter>
       </Provider>

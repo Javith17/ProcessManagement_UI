@@ -36,6 +36,9 @@ import VendorAcceptance from './pages/VendorAcceptance';
 import Stores from './pages/Stores';
 import Assembly from './pages/Assembly';
 import NewDashboard from './pages/NewDashboard';
+import Enquiry from './pages/Enquiry';
+import Attendance from './pages/Attendance';
+import LeaveRequest from './pages/LeaveRequest';
 
 function App() {
   return (
@@ -52,6 +55,8 @@ function App() {
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/stores" element={<Stores />} />
+          <Route path="/attendance" element={<Attendance />} />
+          <Route path="/leave-request" element={<LeaveRequest />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/process" element={<Process />} />
           <Route path="/parts" element={<Parts />} />
@@ -76,6 +81,7 @@ function App() {
           <Route path="/assembly" element={<Assembly />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orderDetail" element={<OrderDetail />} />
+          <Route path="/enquiries" element={<Enquiry />} />
         </Route>
       </Routes>
     </>

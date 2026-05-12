@@ -12,7 +12,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ListItem from '@mui/material/ListItem';
+import { TbCalendarUser } from "react-icons/tb";
 import ListItemButton from '@mui/material/ListItemButton';
+import { TfiHeadphoneAlt } from "react-icons/tfi";
+import { IoCalendarOutline } from "react-icons/io5";
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { HiTruck } from "react-icons/hi";
@@ -155,6 +158,14 @@ export default function SidebarNav(props: {currentPage?: string}) {
       icon: <FaStoreAlt  />
     },
     {
+      name: 'attendance',
+      icon: <IoCalendarOutline  />
+    },
+    {
+      name: 'leave_request',
+      icon: <TbCalendarUser  />
+    },
+    {
       name: 'vendor',
       icon: <HiServer />
     },
@@ -185,6 +196,10 @@ export default function SidebarNav(props: {currentPage?: string}) {
     {
       name: 'machines',
       icon: <SiApplearcade />
+    },
+    {
+      name: 'enquiries',
+      icon: <HiOutlineClipboardDocumentList />
     },
     {
       name: 'quotations',
@@ -251,16 +266,20 @@ export default function SidebarNav(props: {currentPage?: string}) {
           <List>
             {homeScreens?.map((hs:any) => (
               <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{ 
-                setMenuData(hs.screen) 
-                if(hs.screen == "dashboard") {
-                  navigate("/")
-                }else if(hs.screen == "roles") {
-                  navigate("/roles")
-                }else if(hs.screen == "users") {
-                  navigate("/users")
-                }else if(hs.screen == "stores") {
-                  navigate("/stores")
-                }
+                  setMenuData(hs.screen) 
+                  if(hs.screen == "dashboard") {
+                    navigate("/")
+                  }else if(hs.screen == "roles") {
+                    navigate("/roles")
+                  }else if(hs.screen == "users") {
+                    navigate("/users")
+                  }else if(hs.screen == "stores") {
+                    navigate("/stores")
+                  }else if(hs.screen == "attendance") {
+                    navigate("/attendance")
+                  }else if(hs.screen == "leave_request") {
+                    navigate("/leave-request")
+                  }
                 }} >
                     <ListItemButton
                       sx={[
@@ -527,11 +546,15 @@ export default function SidebarNav(props: {currentPage?: string}) {
         <Divider />
         
         <List>
-          {['Logout'].map((text, index) => (
+          {['Enquiry', 'Logout'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
-              localStorage.clear()
-              dispatch(logout())
-              navigate("/login")
+              if (text == 'Logout'){
+                localStorage.clear()
+                dispatch(logout())
+                navigate("/login")
+              } else {
+                navigate("/enquiries");
+              }
             }} >
               {/* <Tooltip title={text}> */}
                 <ListItemButton
@@ -574,7 +597,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
                           },
                     ]}
                   >
-                    <RiLogoutCircleLine />
+                    {text == 'Logout' ? <RiLogoutCircleLine /> : <TfiHeadphoneAlt />}
                   </ListItemIcon>
                   <ListItemText
                     primary={text}

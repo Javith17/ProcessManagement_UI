@@ -119,6 +119,19 @@ export const createMachineQuotation = createAsyncThunk('createMachineQuotation',
     }
 })
 
+export const reviseMachineQuotation = createAsyncThunk('reviseMachineQuotation', async (data: any) => {
+    try{
+        const response = await axiosInstance.post('quotation/reviseMachineQuotation', data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data.message
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+
 export const createSparesQuotation = createAsyncThunk('createSparesQoutation', async (data: any) => {
     try{
         const response = await axiosInstance.post('quotation/createSparesQoutation', data, {

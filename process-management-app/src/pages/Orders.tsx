@@ -117,7 +117,7 @@ export default function Orders() {
                           machineId: row.machine.id,
                           orderId: row.id
                         })).unwrap().then((res:any)=>{
-                          if(res.message.includes('success')){
+                          if(res?.message?.includes('success')){
                             dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed']})).unwrap()
                           }else{
                             DisplaySnackbar('Unable to configure assembly', 'error', enqueueSnackbar)

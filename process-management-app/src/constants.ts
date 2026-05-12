@@ -20,6 +20,8 @@ export const nav_subassembly='assemblySettings'
 export const nav_quotations='quotations'
 export const nav_orders='orders'
 export const nav_assembly='assembly'
+export const nav_attendance='attendance'
+export const nav_leave_request='leave_request'
 export const nav_logout='Logout'
 
 export const primaryColor='#bb0037'

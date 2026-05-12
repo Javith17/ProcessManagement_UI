@@ -6,7 +6,9 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { MdOutlineEdit } from "react-icons/md";
-import { Box, Button, Card, Grid2, InputAdornment, Paper, TextField, FormControl, Alert, Tabs, Tab, InputLabel, FormHelperText, Typography } from '@mui/material';
+import { CgAttachment } from "react-icons/cg";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { Box, Button, Card, CardMedia, CardActionArea, Grid2, InputAdornment, Paper, TextField, FormControl, Alert, Tabs, Tab, InputLabel, FormHelperText, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -26,8 +28,8 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { useReactToPrint } from "react-to-print";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { fetchBoughtOutList, fetchMachineList, fetchPartDetail, fetchPartsList, getMachineDetails } from '../slices/machineSlice';
-import { approveRejectQuotation, createMachineQuotation, createSparesQuotation, createSupplierQuotation, createVendorQuotation, deleteQuotation, fetchMachineQuotationList, fetchQuotationDoc, fetchSparesQuotationList, fetchSupplierQuotationList, fetchVendorQuotationList } from '../slices/quotationSlice';
+import { fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList, fetchPartDetail, fetchPartsList, getMachineDetails } from '../slices/machineSlice';
+import { approveRejectQuotation, createMachineQuotation, createSparesQuotation, createSupplierQuotation, createVendorQuotation, deleteQuotation, fetchMachineQuotationList, fetchQuotationDoc, fetchSparesQuotationList, fetchSupplierQuotationList, fetchVendorQuotationList, reviseMachineQuotation } from '../slices/quotationSlice';
 import dayjs from 'dayjs';
 import { MdDeleteOutline } from "react-icons/md";
 import moment from 'moment';
@@ -53,6 +55,7 @@ export default function Quotations() {
 
     const [searchText, setSearchText] = React.useState("")
     const [createDialog, setCreateDialog] = React.useState(false)
+    const [attachmentDialog, setAttachmentDialog] = React.useState(false)
     const [spareDialog, setSpareDialog] = React.useState(false)
     const [vendorQDialog, setVendorQDialog] = React.useState(false)
     const [supplierQDialog, setSupplierQDialog] = React.useState(false)
@@ -66,6 +69,7 @@ export default function Quotations() {
     const [partProcessList, setPartProcessList] = React.useState<any[]>([])
     const [quotationTerms, setQuotationTerms] = React.useState(quotation_terms)
     const [isExpand, setIsExpand] = React.useState(false)
+    const [selectedCustomer, setSelectedCustomer] = React.useState<any>();
     const [machineSpares, setMachineSpares] = React.useState<any[]>([])
     const [spareParts, setSpareParts] = React.useState<Array<{
         id: number, spare_id: number, spare_name: string, spare_type: string,
@@ -79,7 +83,8 @@ export default function Quotations() {
         machine_id?: string,
         min_spindles?: number,
         max_spindles?: number,
-        spindles?: number
+        spindles?: number,
+        machine_name?: string
     }>({})
 
     const [deleteDialog, setDeleteDialog] = React.useState({
@@ -151,6 +156,8 @@ export default function Quotations() {
         remarks: '',
         cost: ''
     });
+    const [images, setImages] = React.useState<any>([]);
+    const [urls, setUrls] = React.useState([""]);
 
     const contentRef = React.useRef<HTMLDivElement>(null);
     const reactToPrintFn = useReactToPrint({ contentRef });
@@ -245,7 +252,24 @@ export default function Quotations() {
 
     }
 
+    const getYoutubeId = (url: string) => {
+        const regExp =
+            /(?:youtube\.com\/(?:.*v=|.*\/)|youtu\.be\/)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return match && match[1].length === 11 ? match[1] : null;
+    };
+
+    const getThumbnail = (url: string) => {
+        const id = getYoutubeId(url);
+        return id
+            ? `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+            : null;
+    };
+
     const clearValues = () => {
+        setImages(null);
+        setUrls([]);
+        setSelectedCustomer(null);
         setFormData({
             quotation_id: '',
             quotation_no: '',
@@ -311,6 +335,13 @@ export default function Quotations() {
             id: '',
             no: ''
         })
+        setSelectedMachine({
+            machine_id: '',
+            min_spindles: 0,
+            max_spindles: 0,
+            spindles: 0,
+            machine_name: ''
+        })
     }
 
     const validate = () => {
@@ -330,8 +361,8 @@ export default function Quotations() {
         dispatch(approveRejectQuotation({
             status: status,
             approval_reject_remarks: (type.includes('machine') || type.includes('spares')) ? approveData?.remarks : type.includes('vendor') ? vendorFormData.approvalRemarks : supplierFormData.approvalRemarks,
-            approved_cost: type.includes('machine') ? approveData?.cost : type.includes('spares') ? 
-            spareParts.reduce((sum, spare) =>  sum + spare.spare_cost , 0) : '',
+            approved_cost: type.includes('machine') ? approveData?.cost : type.includes('spares') ?
+                spareParts.reduce((sum, spare) => sum + spare.spare_cost, 0) : '',
             quotation_id: type.includes('machine') ? approveData?.quotation_id : type.includes('vendor') ? vendorFormData.quotation_id : type.includes('spares') ? sparesFormData.quotation_id : supplierFormData.quotation_id,
             quotation_type: type,
             spares: spareParts
@@ -344,13 +375,13 @@ export default function Quotations() {
                 setVendorQDialog(false)
                 setSupplierQDialog(false)
                 clearValues()
-                if(type.includes('machine')) {
+                if (type.includes('machine')) {
                     dispatch(fetchMachineQuotationList())
-                }else if (type.includes('vendor')) {
+                } else if (type.includes('vendor')) {
                     dispatch(fetchVendorQuotationList())
-                }else if (type.includes('spares')) {
+                } else if (type.includes('spares')) {
                     dispatch(fetchSparesQuotationList())
-                }else{
+                } else {
                     dispatch(fetchSupplierQuotationList())
                 }
             }
@@ -459,18 +490,14 @@ export default function Quotations() {
                     DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                 })
             } else {
-                dispatch(createMachineQuotation({
+                dispatch(reviseMachineQuotation({
                     quotation_id: formData.quotation_id,
-                    quotation_date: formData.quotation_date,
                     reminder_date: formData.reminder_date,
                     qty: formData.qty,
-                    machine_id: formData.machine_id,
-                    customer_id: formData.customer_id,
-                    user_id: formData.user_id,
                     cost: formData.cost,
                     remarks: formData.remarks,
                     quotation_terms: quotationTerms,
-                    type: 'Update'
+                    user_id: JSON.parse(localStorage.getItem("userDetail") as string).user.userId
                 })).unwrap().then((res: any) => {
                     DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
                     if (res.includes('success')) {
@@ -497,19 +524,19 @@ export default function Quotations() {
         if (!sparesFormData.user_id) newErrors.user_id = 'Select Followup user'
 
         if (Object.keys(newErrors).length == 0) {
-            if (spareParts.length == 0){
+            if (spareParts.length == 0) {
                 DisplaySnackbar('Add any one item', 'error', enqueueSnackbar)
-            }else{
+            } else {
                 if (sparesFormData.quotation_id.length == 0) {
                     dispatch(createSparesQuotation({
                         quotation_date: sparesFormData.quotation_date,
                         reminder_date: sparesFormData.reminder_date,
-                        qty: spareParts.reduce((sum, spare) =>  sum + spare.spare_qty , 0),
+                        qty: spareParts.reduce((sum, spare) => sum + spare.spare_qty, 0),
                         spares: spareParts,
                         customer_id: sparesFormData.customer_id,
                         machine_id: sparesFormData.machine_id,
                         user_id: sparesFormData.user_id,
-                        cost: spareParts.reduce((sum, spare) =>  sum + spare.spare_cost , 0),
+                        cost: spareParts.reduce((sum, spare) => sum + spare.spare_cost, 0),
                         remarks: sparesFormData.remarks,
                         quotation_terms: quotationTerms,
                         type: 'Add'
@@ -549,8 +576,8 @@ export default function Quotations() {
                         DisplaySnackbar(err.message, 'error', enqueueSnackbar)
                     })
                 }
-            }            
-        }else{
+            }
+        } else {
             setErrors(newErrors)
         }
     }
@@ -613,7 +640,7 @@ export default function Quotations() {
                             dispatch(fetchVendorQuotationList()).unwrap()
                         } else if (newValue == 3) {
                             dispatch(fetchSupplierQuotationList()).unwrap()
-                        } else if(newValue == 1) {
+                        } else if (newValue == 1) {
                             dispatch(fetchSparesQuotationList()).unwrap()
                         }
                     }} variant='fullWidth'>
@@ -639,6 +666,7 @@ export default function Quotations() {
                                         <TableCell>Cost</TableCell>
                                         <TableCell>Followup User</TableCell>
                                         <TableCell>Status</TableCell>
+                                        <TableCell></TableCell>
                                         <TableCell></TableCell>
                                         <TableCell></TableCell>
                                     </TableRow>
@@ -706,22 +734,45 @@ export default function Quotations() {
                                                 })
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
                                             <TableCell><MdLocalPrintshop style={{ cursor: 'pointer' }} onClick={() => {
-                                                dispatch(fetchQuotationDoc({id: quotation.id, type: 'machine'})).unwrap().then((res: any) => {
+                                                dispatch(fetchQuotationDoc({ id: quotation.id, type: 'machine' })).unwrap().then((res: any) => {
                                                     setQuotatioinDoc({
                                                         dialog: true,
                                                         html: res
                                                     })
                                                 })
                                             }} /></TableCell>
+                                            <TableCell><CgAttachment style={{ cursor: 'pointer' }} onClick={() => {
+                                                dispatch(fetchMachineAttachmentLinks(quotation?.machine?.id)).unwrap().then((res: any) => {
+                                                    if(res?.links?.length > 0) {
+                                                        setSelectedCustomer(quotation.customer);
+                                                        setSelectedMachine({
+                                                            machine_name: quotation.machine.machine_name
+                                                        });
+                                                        const videoLinks = res?.links?.filter((link: string) => link.includes("youtube.com") || link.includes("youtu.be"));
+                                                        setUrls(videoLinks);
+                                                        const imageUrls: any = [];
+                                                        res?.links?.filter((link: string) => !link.includes("youtube.com") && !link.includes("youtu.be"))?.map((link: any) => {
+                                                            imageUrls.push({
+                                                                type: 'existing',
+                                                                url: link
+                                                            })
+                                                        });
+                                                        setImages(imageUrls);
+                                                        setAttachmentDialog(true);
+                                                    } else {
+                                                        DisplaySnackbar('No Machine Attachments available', "error", enqueueSnackbar)
+                                                    }
+                                                })
+                                            }} /></TableCell>
                                         </TableRowStyled>
                                     )) : <TableRow key={0}>
-                                        <TableCell colSpan={10} align='center'>No Data</TableCell>
+                                        <TableCell colSpan={11} align='center'>No Data</TableCell>
                                     </TableRow>}
                                 </TableBody>
                             </Table>
                         </TableContainer>}
-                    
-                        {(currentTab == 1) &&
+
+                    {(currentTab == 1) &&
                         <TableContainer component={Paper}>
                             <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
                                 <TableHead>
@@ -807,7 +858,7 @@ export default function Quotations() {
                                                 setSpareParts(quotation.spares)
                                             }} /></TableCell> : <TableCell><MdOutlineRemoveRedEye /></TableCell>}
                                             <TableCell><MdLocalPrintshop style={{ cursor: 'pointer' }} onClick={() => {
-                                                dispatch(fetchQuotationDoc({id: quotation.id, type: 'spares'})).unwrap().then((res: any) => {
+                                                dispatch(fetchQuotationDoc({ id: quotation.id, type: 'spares' })).unwrap().then((res: any) => {
                                                     setQuotatioinDoc({
                                                         dialog: true,
                                                         html: res
@@ -1013,6 +1064,7 @@ export default function Quotations() {
                         fullWidth
                         label="Quotation No"
                         name="name"
+                        disabled={!isNew}
                         sx={{ mt: 1 }}
                         value={formData?.quotation_no}
                     />}
@@ -1025,6 +1077,7 @@ export default function Quotations() {
                                 labelId="role-select-label"
                                 id="role-select"
                                 label="Customer"
+                                disabled={!isNew}
                                 value={formData.customer_id}
                                 error={!!errors?.customer_id}
                                 onChange={(e: any) => {
@@ -1067,6 +1120,7 @@ export default function Quotations() {
                             labelId="role-select-label"
                             id="role-select"
                             label="Machine"
+                            disabled={!isNew}
                             value={formData.machine_id}
                             error={!!errors?.machine_id}
                             onChange={(e: any) => {
@@ -1093,6 +1147,7 @@ export default function Quotations() {
                                 label="Quotation Date"
                                 sx={{ mt: 2, width: '100%' }}
                                 value={dayjs(formData.quotation_date)}
+                                disabled={!isNew}
                                 onChange={(e: any) => {
                                     setFormData({ ...formData, quotation_date: e })
                                 }}
@@ -1876,7 +1931,7 @@ export default function Quotations() {
                                                     spare_cost: sub.spare_cost
                                                 } : sub
                                             })
-                                        )                                      
+                                        )
                                     }}
                                 >
                                     {machineSpares.map((part) => {
@@ -2040,7 +2095,7 @@ export default function Quotations() {
             </Dialog>
 
             {/* Verification Dialog for spares quotation */}
-            
+
             <Dialog
                 maxWidth={'md'}
                 open={approveSpareDialog}
@@ -2181,6 +2236,109 @@ export default function Quotations() {
                 </DialogActions>
             </Dialog>
 
+            <Dialog
+                fullWidth
+                maxWidth={'lg'}
+                open={attachmentDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setAttachmentDialog(false)
+                }}>
+                <DialogTitle>Machine Attachments</DialogTitle>
+                <DialogContent>
+                    {/* Images Section */}
+                    <Box sx={{ mt: 2 }}>
+                        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+
+                            {/* Existing Images */}
+                            {images?.map((img: any, index: any) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        width: 160,
+                                        height: 160,
+                                        border: "1px solid #ccc",
+                                        borderRadius: 2,
+                                        position: "relative",
+                                        overflow: "hidden",
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <img
+                                        onClick={() => window.open(img.url, "_blank")}
+                                        src={img.type === "existing" ? img.url : img.preview}
+                                        alt="preview"
+                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    />
+                                </Box>
+                            ))}
+                            {urls?.map((url, index) => {
+                                const thumbnail = getThumbnail(url);
+                                if (!thumbnail) return null;
+                                return (
+                                    <Card key={index} sx={{ width: 200 }}>
+                                        <CardActionArea onClick={() => window.open(url, "_blank")}>
+
+                                            <Box sx={{ position: "relative" }}>
+
+                                                {/* Thumbnail */}
+                                                <CardMedia
+                                                    component="img"
+                                                    height="160"
+                                                    image={thumbnail}
+                                                    alt="YouTube Thumbnail"
+                                                />
+
+                                                {/* ▶ Play Icon Center */}
+                                                <PlayArrowIcon
+                                                    sx={{
+                                                        position: "absolute",
+                                                        top: "50%",
+                                                        left: "50%",
+                                                        transform: "translate(-50%, -50%)",
+                                                        fontSize: 50,
+                                                        color: "white",
+                                                        backgroundColor: "rgba(0,0,0,0.5)",
+                                                        borderRadius: "50%",
+                                                        p: 1
+                                                    }}
+                                                />
+
+                                            </Box>
+
+                                        </CardActionArea>
+                                    </Card>
+                                )
+                            })}
+                        </Box>
+                    </Box>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setAttachmentDialog(false)
+                        clearValues()
+                    }} sx={{ color: '#bb0037' }}>Close</Button>
+                    <Button onClick={() => {
+                        const machineImages = images.map((img: any) => img.url).join('\n');
+                        const machineVideos = urls.join('\n');
+
+                        const link = `${machineImages}\n${machineVideos}`;
+
+                        const text = `Hi ${selectedCustomer?.customer_name},
+
+                        Open the links to view images and videos of machine ${selectedMachine.machine_name}
+
+                        ${link}`;
+                        window.open(
+                        `https://wa.me/${selectedCustomer?.customer_mobile_no1}?text=${encodeURIComponent(text)}`,
+                        '_blank'
+                        )?.focus();
+                    }} variant="contained">Share</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

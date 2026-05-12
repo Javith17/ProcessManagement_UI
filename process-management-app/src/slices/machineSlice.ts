@@ -82,7 +82,7 @@ export const createNewMachine = createAsyncThunk("createNewMachine", async (data
     const response = await axiosInstance.post('machine/createNewMachine', data ,{
         headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
     })
-    const resData = response.data.message
+    const resData = response.data
     return resData
 })
 
@@ -182,6 +182,14 @@ export const updateBoughtoutS = createAsyncThunk('updateBoughtout', async (data:
 
 export const fetchVendorAttachment = createAsyncThunk("fetchVendorAttachment", async (data:any) => {
     const response = await axiosInstance.post(`machine/vendorAttachment`, data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchMachineAttachmentLinks = createAsyncThunk("fetchMachineAttachmentLinks", async (data:any) => {
+    const response = await axiosInstance.get(`machine/machineAttachmentLinks/${data}`, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
     })
     const resData = response.data

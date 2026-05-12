@@ -6,12 +6,12 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { MdOutlineEdit } from "react-icons/md";
-import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, InputAdornment, InputLabel, MenuItem, Paper, Select, TextField } from '@mui/material';
+import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
-import { createNewMachine, fetchBoughtOutList, fetchMachineList } from '../slices/machineSlice';
+import { createAttachment, createNewMachine, fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList } from '../slices/machineSlice';
 import { nav_boughtouts, nav_machines, TableRowStyled } from '../constants';
 import { useNavigate } from 'react-router-dom';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
@@ -41,6 +41,9 @@ export default function Machines() {
     min_spindles: 0
   });
 
+  const [images, setImages] = useState<any>([]);
+  const [urls, setUrls] = useState([""]);
+
   useEffect(() => {
     dispatch(fetchMachineList()).unwrap()
   }, [])
@@ -52,6 +55,43 @@ export default function Machines() {
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleImageChange = (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png"];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Only JPG and PNG images are allowed");
+      return;
+    }
+
+    if (images.length >= 3) return;
+
+    const preview = URL.createObjectURL(file);
+    const name = file.name;
+
+    setImages((prev: any) => [...prev, { type: 'new', file, preview, name }]);
+  };
+
+  const handleRemoveImage = (index: any) => {
+    const updated = [...images];
+    updated.splice(index, 1);
+    setImages(updated);
+  };
+
+  const handleUrlChange = (index: any, value: any) => {
+    const updated = [...urls];
+    updated[index] = value;
+    setUrls(updated);
+  };
+
+  const addUrlField = () => {
+    if (urls.length < 3) {
+      setUrls([...urls, ""]);
+    }
   };
 
   const validate = () => {
@@ -88,10 +128,15 @@ export default function Machines() {
         side_type: formData.side_type,
         spindles: formData.spindles,
         min_spindles: formData.min_spindles,
-        max_spindles: formData.max_spindles
+        max_spindles: formData.max_spindles,
+        video_urls: urls
       })).unwrap().then((res) => {
-        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
-        if (res.includes('success')) {
+        DisplaySnackbar(res, res.message.includes('success') ? "success" : "error", enqueueSnackbar)
+        console.log("--------", res)
+        if (images?.filter((img:any) => img.type == 'new')?.length > 0) {
+          uploadAttachments(res.id)
+        }
+        if (res.message.includes('success')) {
           setCreateDialog(false)
           clearValues()
           dispatch(fetchMachineList())
@@ -102,6 +147,22 @@ export default function Machines() {
      }else{
        setErrors(validated)
      }
+  }
+
+  const uploadAttachments = (id: string) => {
+    const machineImages = images.filter((img:any) => img.type == 'new')?.images.map((img:any) => img.file);
+    dispatch(createAttachment({
+      files: machineImages, type: 'machine',
+      type_id: id
+    })).unwrap()
+      .then((res: any) => {
+        DisplaySnackbar(res, res.includes('success') ? "success" : "error", enqueueSnackbar)
+        navigate(-1)
+      })
+      .catch((err: any) => {
+        DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+        navigate(-1)
+      })
   }
 
   return (
@@ -168,6 +229,18 @@ export default function Machines() {
                     <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={()=>{
                       setCreateDialog(true)
                       setMachineId(row.id)
+                      dispatch(fetchMachineAttachmentLinks(row.id)).unwrap().then((res:any) => {
+                        const videoLinks = res?.links?.filter((link: string) => link.includes("youtube.com") || link.includes("youtu.be"));
+                        setUrls(videoLinks);
+                        const imageUrls: any = [];
+                        res?.links?.filter((link: string) => !link.includes("youtube.com") && !link.includes("youtu.be"))?.map((link: any) => {
+                          imageUrls.push({
+                            type: 'existing',
+                            url: link
+                          })
+                        });
+                        setImages(imageUrls);
+                      })
                       setFormData({
                         model_no: row.model_no,
                         machine_name: row.machine_name,
@@ -203,7 +276,7 @@ export default function Machines() {
           }
           setCreateDialog(false)
         }}>
-        <DialogTitle>New Machine</DialogTitle>
+        <DialogTitle>{machineId.length > 0 ? 'Update Machine' : 'New Machine'}</DialogTitle>
         <DialogContent>
           <TextField
             size='small'
@@ -299,6 +372,105 @@ export default function Machines() {
             value={formData.max_spindles}
             onChange={handleChange}
           />
+
+          {/* Images Section */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Upload Images (Max 3)
+            </Typography>
+
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+
+              {/* Existing Images */}
+              {images.map((img: any, index: any) => (
+                <Box
+                  key={index}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    border: "1px solid #ccc",
+                    borderRadius: 2,
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                >
+                  <img
+                    src={img.type === "existing" ? img.url : img.preview}
+                    alt="preview"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+
+                  {/* Optional Remove */}
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemoveImage(index)}
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      background: "rgba(0,0,0,0.5)",
+                      color: "#fff"
+                    }}
+                  >
+                    ✕
+                  </IconButton>
+                </Box>
+              ))}
+
+              {/* Add Button */}
+              {images.length < 3 && (
+                <label>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg"
+                    hidden
+                    onChange={handleImageChange}
+                  />
+
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      border: "2px dashed #aaa",
+                      borderRadius: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer"
+                    }}
+                  >
+                    +
+                  </Box>
+                </label>
+              )}
+            </Box>
+          </Box>
+
+          {/* URLs Section */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Reference URLs (Max 3)
+            </Typography>
+
+            {urls.map((url, index) => (
+              <TextField
+                key={index}
+                fullWidth
+                size="small"
+                placeholder="Enter URL"
+                value={url}
+                sx={{ mb: 1 }}
+                onChange={(e) => handleUrlChange(index, e.target.value)}
+              />
+            ))}
+
+            {urls.length < 3 && (
+              <Button onClick={addUrlField} size="small">
+                + Add URL
+              </Button>
+            )}
+          </Box>
+
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {

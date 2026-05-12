@@ -26,6 +26,10 @@ type AdminStateApi = {
         list: Array<any>,
         count: number
     },
+    enquiries: {
+        list: Array<any>,
+        count: number
+    },
     status: 'loading' | 'idle' | 'error',
     error: string | null,
     message: string | null
@@ -56,6 +60,10 @@ const initialState: AdminStateApi = {
         list: [],
         count: 0
     },
+    enquiries: {
+        list: [],
+        count: 0
+    },
     status: 'idle',
     error: null,
     message: null
@@ -77,6 +85,14 @@ export const fetchRoles = createAsyncThunk('roles', async (data?: { searchText?:
 
 export const createNewRole = createAsyncThunk('createRole', async (data: any) => {
     const response = await axiosInstance.post('admin/createRole', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const updateRole = createAsyncThunk('updateRole', async (data: any) => {
+    const response = await axiosInstance.put('admin/updateRole', data, {
         headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
     })
     const resData = response.data.message
@@ -322,6 +338,69 @@ export const fetchCustomerHistory = createAsyncThunk('customerHistory', async (d
     }
 })
 
+export const fetchEnquiries = createAsyncThunk('enquiries', async (data?: { searchText?: String, limit?: number, page?: number, status?: string }) => {
+    const response = await axiosInstance.get('admin/enquiries',
+        {
+            params: {
+                search: data?.searchText,
+                limit: data?.limit,
+                page: data?.page,
+                status: data?.status
+            },
+            headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+        })
+    const resData = response.data
+    return resData
+})
+
+export const createNewEnquiry = createAsyncThunk('createEnquiry', async (data: any) => {
+    const response = await axiosInstance.post('admin/createEnquiry', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const updateEnquiryStatus = createAsyncThunk('updateEnquiryStaus', async (data: any) => {
+    const response = await axiosInstance.post('admin/updateEnquiryStatus', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const fetchEmployeeAttendanceList = createAsyncThunk('employee_attendance', async (data?: { attendance_date: String }) => {
+    const response = await axiosInstance.post('user/employee-daily-attendance', { attendance_date: data?.attendance_date }, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data
+    return resData
+})
+
+export const fetchLeaveRequestList = createAsyncThunk('leave_request', async (data?: any) => {
+    const response = await axiosInstance.post('user/leave-request-list', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data
+    return resData
+})
+
+export const updateAttendanceStatus = createAsyncThunk('updateAttendanceStaus', async (data: any) => {
+    const response = await axiosInstance.post('user/attendance-update', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const updateLeaveStatus = createAsyncThunk('updateLeaveStatus', async (data: any) => {
+    const response = await axiosInstance.post('user/update-leave-request', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
 const adminSlice = createSlice({
     name: 'admin',
     initialState,
@@ -481,6 +560,19 @@ const adminSlice = createSlice({
             .addCase(createCustomer.rejected, (state, action) => {
                 state.status = 'error';
                 state.error = action.error.message || "Unable to load vendors"
+            })
+
+            .addCase(fetchEnquiries.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(fetchEnquiries.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.enquiries = action.payload
+            })
+            .addCase(fetchEnquiries.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to load enquiries"
             })
     }
 })
