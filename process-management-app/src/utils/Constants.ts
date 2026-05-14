@@ -166,5 +166,14 @@ export const screens = [
       "view",
       "edit"
     ]
+  },
+  {
+    "name": "Enquiry",
+    "type": "home",
+    "screen": "enquiry",
+    "actions": [
+      "view",
+      "edit"
+    ]
   }
 ]

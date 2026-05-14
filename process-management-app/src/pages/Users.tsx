@@ -42,7 +42,6 @@ export default function Users() {
   const [employeeName, setEmployeeName] = React.useState("")
   const [employeeCode, setEmployeeCode] = React.useState("")
   
-  const [category, setCategory] = React.useState("")
   const [contactNo, setContactNo] = React.useState("")
   const [dob, setDob] = React.useState("")
   const [gender, setGender] = React.useState("")
@@ -70,7 +69,6 @@ export default function Users() {
       emp_name: employeeName,
       password: employeeCode,
       role_id: role,
-      category: category,
       salary: salary,
       details: {
         contact_no: contactNo,
@@ -156,7 +154,6 @@ export default function Users() {
                       setSelectedId(row.id);
                       setEmployeeName(row.emp_name);
                       setEmployeeCode(row.emp_code);
-                      setCategory(row.category);
                       setContactNo(row.details?.contact_no);
                       setDob(row.details?.dob);
                       setGender(row.details?.gender);
@@ -245,28 +242,21 @@ export default function Users() {
               </Grid2>
 
               <Grid2 size={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={category}
-                    label="Category"
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    {[{id: 1, name: 'Admin'}, {id: 1, name: 'Engineer'}]?.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid2>
-
-              <Grid2 size={12}>
                 <TextField
                   fullWidth
                   label="Contact Number"
                   value={contactNo}
                   onChange={(e) => setContactNo(e.target.value)}
+                />
+              </Grid2>
+
+              
+              <Grid2 size={12}>
+                <TextField
+                  fullWidth
+                  label="Aadhar Number"
+                  value={aadhar}
+                  onChange={(e) => setAadhar(e.target.value)}
                 />
               </Grid2>
             </Grid2>
@@ -306,15 +296,6 @@ export default function Users() {
                   label="Address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                />
-              </Grid2>
-
-              <Grid2 size={12}>
-                <TextField
-                  fullWidth
-                  label="Aadhar Number"
-                  value={aadhar}
-                  onChange={(e) => setAadhar(e.target.value)}
                 />
               </Grid2>
 

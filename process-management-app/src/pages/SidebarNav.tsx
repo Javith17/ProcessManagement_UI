@@ -166,6 +166,10 @@ export default function SidebarNav(props: {currentPage?: string}) {
       icon: <TbCalendarUser  />
     },
     {
+      name: 'enquiry',
+      icon: <TfiHeadphoneAlt />
+    },
+    {
       name: 'vendor',
       icon: <HiServer />
     },
@@ -279,6 +283,8 @@ export default function SidebarNav(props: {currentPage?: string}) {
                     navigate("/attendance")
                   }else if(hs.screen == "leave_request") {
                     navigate("/leave-request")
+                  }else if(hs.screen == "enquiry") {
+                    navigate("/enquiries");
                   }
                 }} >
                     <ListItemButton
@@ -546,14 +552,12 @@ export default function SidebarNav(props: {currentPage?: string}) {
         <Divider />
         
         <List>
-          {['Enquiry', 'Logout'].map((text, index) => (
+          {['Logout'].map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: 'block' }} onClick={()=>{
               if (text == 'Logout'){
                 localStorage.clear()
                 dispatch(logout())
                 navigate("/login")
-              } else {
-                navigate("/enquiries");
               }
             }} >
               {/* <Tooltip title={text}> */}
@@ -597,7 +601,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
                           },
                     ]}
                   >
-                    {text == 'Logout' ? <RiLogoutCircleLine /> : <TfiHeadphoneAlt />}
+                    <RiLogoutCircleLine />
                   </ListItemIcon>
                   <ListItemText
                     primary={text}
