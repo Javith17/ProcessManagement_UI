@@ -137,7 +137,7 @@ export default function Users() {
                 <TableRow>
                   <TableCell>Employee Code</TableCell>
                   <TableCell>Employee Name</TableCell>
-                  {/* <TableCell>Category</TableCell> */}
+                  <TableCell>Role</TableCell>
                   <TableCell>Contact No</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -147,21 +147,21 @@ export default function Users() {
                   <TableRowStyled key={row.id}>
                     <TableCell>{row.emp_code}</TableCell>
                     <TableCell>{row.emp_name}</TableCell>
-                    {/* <TableCell>{row.category}</TableCell> */}
-                    <TableCell>{row.details?.contact_no}</TableCell>
+                    <TableCell>{row?.role_name}</TableCell>
+                    <TableCell>{row.details ? JSON.parse(row.details).contact_no : ''}</TableCell>
                     <TableCell><MdOutlineEdit onClick={() => {
                       setCreateDialog(true);
                       setSelectedId(row.id);
                       setEmployeeName(row.emp_name);
                       setEmployeeCode(row.emp_code);
-                      setContactNo(row.details?.contact_no);
-                      setDob(row.details?.dob);
-                      setGender(row.details?.gender);
-                      setAddress(row.details?.address);
-                      setAadhar(row.details?.aadhar);
-                      setBloodGroup(row.details?.blood_group);
-                      setInsuranceNo(row.insurance_details?.insurance_no);
-                      setInsuranceExpiry(row.insurance_details?.insurance_expiry);
+                      setContactNo(row.details ? JSON.parse(row.details).contact_no : '');
+                      setDob(row.details ? JSON.parse(row.details).dob : '');
+                      setGender(row.details ? JSON.parse(row.details).gender : '');
+                      setAddress(row.details ? JSON.parse(row.details).address : '');
+                      setAadhar(row.details ? JSON.parse(row.details).aadhar : '');
+                      setBloodGroup(row.details ? JSON.parse(row.details).blood_group : '');
+                      setInsuranceNo(row.insurance_details ? JSON.parse(row.insurance_details).insurance_no : '');
+                      setInsuranceExpiry(row.insurance_details ? JSON.parse(row.insurance_details).insurance_expiry : '');
                       setSalary(row.salary);
                       setRole(row.role_id);
                     }} /></TableCell>

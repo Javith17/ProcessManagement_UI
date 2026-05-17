@@ -73,10 +73,12 @@ export default function Attendance() {
     };
 
     useEffect(() => {
-        dispatch(fetchEmployeeAttendanceList({ attendance_date: dayjs(new Date()).format("YYYY-MM-DD") })).unwrap().then((res: any) => {
+        dispatch(fetchEmployeeAttendanceList({ attendance_date: 
+            dayjs(selectedDate ? selectedDate : new Date()).format("YYYY-MM-DD") 
+        })).unwrap().then((res: any) => {
             setAttendanceList(res?.list)
         })
-    }, [dispatch])
+    }, [dispatch, selectedDate])
 
     const handleSearch = () => {
         // dispatch(fetchPartsInStores({ searchText })).unwrap()
@@ -154,7 +156,7 @@ export default function Attendance() {
                                                 hour12: false
                                             }) : "-"}</TableCell>
 
-                                            <TableCell>{row.is_leave ? 'Absent' : row.check_in_time ? 'Present' : '-'}</TableCell>
+                                            <TableCell>{row.status}</TableCell>
 
                                             {/* View Location */}
                                             <TableCell>
@@ -178,6 +180,7 @@ export default function Attendance() {
                                                 <Button
                                                     size="small"
                                                     variant="contained"
+                                                    disabled={row.status != 'Present'}
                                                     onClick={() => {
                                                         setSelectedAttendance(row)
                                                         setDetailsDialog(true)
@@ -198,6 +201,7 @@ export default function Attendance() {
                                                         size="small"
                                                         variant="contained"
                                                         color="success"
+                                                        disabled={row.status != 'Present'}
                                                         onClick={() => {
                                                             setSelectedAttendance(row)
                                                             setRemarks("")
