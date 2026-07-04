@@ -103,9 +103,6 @@ export default function NewVendor() {
     if (!formData.city) newErrors.city = 'City is required';
     if (!formData.state) newErrors.state = 'State is required';
     if (!formData.pincode) newErrors.pincode = 'Pincode is required';
-    if (!formData.accountNo) newErrors.accountNo = 'Account No is required';
-    if (!formData.bankName) newErrors.bankName = 'Bank is required';
-    if (!formData.ifsc) newErrors.ifsc = 'IFSC Code is required';
     if (formData.processList.length <= 1) newErrors.processList = 'Process is required';
 
     return newErrors;
@@ -333,7 +330,6 @@ export default function NewVendor() {
                 fullWidth
                 label="Account No"
                 name="accountNo"
-                required
                 value={formData.accountNo}
                 onChange={handleChange}
                 error={!!errors?.accountNo}
@@ -347,7 +343,6 @@ export default function NewVendor() {
                 fullWidth
                 label="Bank Name"
                 name="bankName"
-                required
                 value={formData.bankName}
                 onChange={handleChange}
                 error={!!errors?.bankName}
@@ -361,7 +356,6 @@ export default function NewVendor() {
                 fullWidth
                 label="IFSC Code"
                 name="ifsc"
-                required
                 value={formData.ifsc}
                 onChange={handleChange}
                 error={!!errors?.ifsc}
