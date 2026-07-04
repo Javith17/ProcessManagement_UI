@@ -10,7 +10,7 @@ import { Box, Button, Card, FormControl, Grid2, Input, InputAdornment, InputLabe
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createNewUser, fetchRoles, fetchUsers } from '../slices/adminSlice';
+import { createNewUser, fetchRoles, fetchUsers, updateUser } from '../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
 import { MdOutlineEdit } from 'react-icons/md';
 import Dialog from '@mui/material/Dialog';
@@ -64,34 +64,68 @@ export default function Users() {
   }
 
   const handleNewUser = () => {
-    dispatch(createNewUser({
-      emp_code: employeeCode,
-      emp_name: employeeName,
-      password: employeeCode,
-      role_id: role,
-      salary: salary,
-      details: {
-        contact_no: contactNo,
-        gender: gender,
-        dob: dob,
-        address: address,
-        aadhar_no: aadhar,
-        blood_group: bloodGroup
-      },
-      insurance_details: {
-        insurance_no: insuranceNo,
-        insurance_expiry: insuranceExpiry
-      }
-    })).unwrap().then((res)=>{
-      setCreateDialog(false)
-      DisplaySnackbar('User created successfully', 'success', enqueueSnackbar)
-      setEmployeeCode("")
-      setEmployeeName("")
-      setRole("")
-      dispatch(fetchUsers({limit: page_limit, page: pageNo}))
-    }).catch((err)=>{
-      
-    })
+    // selectedId?.length > 0 ? 'Update' : 'Save'
+    if (selectedId?.length > 0) {
+      dispatch(updateUser({
+        id: selectedId,
+        emp_code: employeeCode,
+        emp_name: employeeName,
+        password: employeeCode,
+        role_id: role,
+        salary: salary,
+        details: {
+          contact_no: contactNo,
+          gender: gender,
+          dob: dob,
+          address: address,
+          aadhar_no: aadhar,
+          blood_group: bloodGroup
+        },
+        insurance_details: {
+          insurance_no: insuranceNo,
+          insurance_expiry: insuranceExpiry
+        }
+      })).unwrap().then((res)=>{
+        setCreateDialog(false)
+        DisplaySnackbar('User updated successfully', 'success', enqueueSnackbar)
+        setEmployeeCode("")
+        setEmployeeName("")
+        setRole("")
+        setSelectedId("")
+        dispatch(fetchUsers({limit: page_limit, page: pageNo}))
+      }).catch((err)=>{
+        enqueueSnackbar('Unable to update user', { variant: 'error' });
+      })
+    } else {
+      dispatch(createNewUser({
+        emp_code: employeeCode,
+        emp_name: employeeName,
+        password: employeeCode,
+        role_id: role,
+        salary: salary,
+        details: {
+          contact_no: contactNo,
+          gender: gender,
+          dob: dob,
+          address: address,
+          aadhar_no: aadhar,
+          blood_group: bloodGroup
+        },
+        insurance_details: {
+          insurance_no: insuranceNo,
+          insurance_expiry: insuranceExpiry
+        }
+      })).unwrap().then((res)=>{
+        setCreateDialog(false)
+        DisplaySnackbar('User created successfully', 'success', enqueueSnackbar)
+        setEmployeeCode("")
+        setEmployeeName("")
+        setRole("")
+        dispatch(fetchUsers({limit: page_limit, page: pageNo}))
+      }).catch((err)=>{
+        enqueueSnackbar('Unable to create user', { variant: 'error' });
+      })
+    }
   }
 
   return (
