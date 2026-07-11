@@ -6,27 +6,31 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import { Box, Button, Card, CircularProgress, Dialog, FormControl, Grid2, Input, InputAdornment, InputLabel, Pagination, TextField } from '@mui/material';
+import { Box, Button, Card, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, Input, InputAdornment, InputLabel, Pagination, TextField } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { fetchRoles, fetchSuppliers, fetchUsers, fetchVendors } from '../slices/adminSlice';
+import { deleteSupplier, fetchRoles, fetchSuppliers, fetchUsers, fetchVendors } from '../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
 import { Stack } from '@mui/system';
-import { MdOutlineEdit } from "react-icons/md";
+import { MdOutlineEdit, MdDeleteOutline } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import { nav_suppliers, page_limit, TableRowStyled } from '../constants';
+import { useSnackbar } from 'notistack';
+import DisplaySnackbar from '../utils/DisplaySnackbar';
 
 export default function Suppliers() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  
+  const { enqueueSnackbar } = useSnackbar()
+
   const { suppliers, status } = useAppSelector(
     (state) => state.admin
   );
   const [searchText, setSearchText] = React.useState("")
   const [loadingDialog, setLoadingDialog] = React.useState(false)
   const[pageNo, setPageNo] = React.useState(1)
+  const [deleteDialog, setDeleteDialog] = React.useState({ dialog: false, id: '', name: '' })
 
   useEffect(()=> {
     dispatch(fetchSuppliers({limit: page_limit, page: pageNo})).unwrap()
@@ -87,6 +91,7 @@ export default function Suppliers() {
                   <TableCell>Supplier Address</TableCell>
                   <TableCell>Supplier GST</TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -102,6 +107,9 @@ export default function Suppliers() {
                           supplier_id: row.id
                         }
                       })
+                    }} /></TableCell>
+                    <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }} onClick={() => {
+                      setDeleteDialog({ dialog: true, id: row.id, name: row.supplier_name })
                     }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
@@ -124,6 +132,29 @@ export default function Suppliers() {
       <Dialog maxWidth={'md'}
         open={loadingDialog}>
           <CircularProgress color='success' sx={{m:3}} />
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteSupplier({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchSuppliers({ limit: page_limit, page: pageNo }))
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete supplier', { variant: 'error' });
+            })
+          }}>Yes</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

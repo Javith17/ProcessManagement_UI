@@ -9,18 +9,21 @@ import Paper from '@mui/material/Paper';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { fetchVendorDetail, fetchVendors } from '../slices/adminSlice';
+import { deleteVendor, fetchVendorDetail, fetchVendors } from '../slices/adminSlice';
 import { Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, InputAdornment, Pagination, TextField } from '@mui/material';
 import { Add, Search } from '@mui/icons-material';
-import { MdOutlineEdit } from 'react-icons/md';
+import { MdOutlineEdit, MdDeleteOutline } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { nav_vendors, page_limit, TableRowStyled } from '../constants';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
+import { useSnackbar } from 'notistack';
+import DisplaySnackbar from '../utils/DisplaySnackbar';
 
 export default function Vendors() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { enqueueSnackbar } = useSnackbar()
 
   const { vendors, status } = useAppSelector(
     (state) => state.admin
@@ -33,6 +36,7 @@ export default function Vendors() {
     vendorName: ''
   })
   const [pageNo, setPageNo] = React.useState(1)
+  const [deleteDialog, setDeleteDialog] = React.useState({ dialog: false, id: '', name: '' })
 
   useEffect(() => {
     dispatch(fetchVendors({ limit: page_limit, page: pageNo })).unwrap()
@@ -95,6 +99,7 @@ export default function Vendors() {
                   <TableCell>Vendor GST</TableCell>
                   <TableCell>Process</TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -116,6 +121,9 @@ export default function Vendors() {
                           vendor_id: row.id
                         }
                       })
+                    }} /></TableCell>
+                    <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }} onClick={() => {
+                      setDeleteDialog({ dialog: true, id: row.id, name: row.vendor_name })
                     }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
@@ -168,6 +176,29 @@ export default function Vendors() {
           <Button onClick={() => {
             setVendorProcessDialog({ dialog: false, vendorName: '' })
           }} sx={{ color: '#bb0037' }}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteVendor({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchVendors({ limit: page_limit, page: pageNo }))
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete vendor', { variant: 'error' });
+            })
+          }}>Yes</Button>
         </DialogActions>
       </Dialog>
 

@@ -5,12 +5,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { MdOutlineEdit } from "react-icons/md";
+import { MdOutlineEdit, MdDeleteOutline } from "react-icons/md";
 import { Box, Button, Card, Grid2, InputAdornment, Paper, TextField, FormControl, InputLabel, OutlinedInput, Checkbox, ListItemText, Alert, CircularProgress, Pagination, FormControlLabel, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createNewRole, fetchRoles, updateRole } from '../slices/adminSlice';
+import { createNewRole, deleteRole, fetchRoles, updateRole } from '../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -41,6 +41,7 @@ export default function Roles() {
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<any[]>([]);
   const [pageNo, setPageNo] = useState(1)
+  const [deleteDialog, setDeleteDialog] = useState({ dialog: false, id: '', name: '' })
 
   const screensList = screens;
 
@@ -224,6 +225,7 @@ export default function Roles() {
                   <TableCell>Role Name</TableCell>
                   <TableCell>Screens</TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -255,6 +257,9 @@ export default function Roles() {
                       );
 
                       setCreateDialog(true);
+                    }} /></TableCell>
+                    <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }} onClick={() => {
+                      setDeleteDialog({ dialog: true, id: row.id, name: row.role_name })
                     }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
@@ -517,6 +522,29 @@ export default function Roles() {
         open={loadingDialog}>
         <CircularProgress color='success' sx={{ m: 3 }} />
         {/* <img src={loader} style={{margin:'5px'}} /> */}
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteRole({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchRoles({ limit: page_limit, page: pageNo }))
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete role', { variant: 'error' });
+            })
+          }}>Yes</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

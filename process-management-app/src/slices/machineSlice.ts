@@ -86,6 +86,14 @@ export const createNewMachine = createAsyncThunk("createNewMachine", async (data
     return resData
 })
 
+export const deleteMachine = createAsyncThunk("deleteMachine", async (data:any) => {
+    const response = await axiosInstance.post('machine/deleteMachine', data ,{
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data.message
+    return resData
+})
+
 export const getMachineDetails = createAsyncThunk('getMachineDetails', async (data:any) => {
     const response = await axiosInstance.get(`machine/machineDetail/${data}`,{
         headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
@@ -380,6 +388,18 @@ const machineSlice = createSlice({
         .addCase(createNewMachine.rejected, (state, action) => {
             state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to create new machine'
+        })
+
+        .addCase(deleteMachine.pending, (state) => {
+            state.machineStatus = 'loading'
+        })
+        .addCase(deleteMachine.fulfilled, (state, action) => {
+            state.machineStatus = 'idle'
+            state.message = action.payload
+        })
+        .addCase(deleteMachine.rejected, (state, action) => {
+            state.machineStatus = 'error'
+            state.error = action.error.message || 'Unable to delete machine'
         })
 
         .addCase(getMachineDetails.pending, (state) => {

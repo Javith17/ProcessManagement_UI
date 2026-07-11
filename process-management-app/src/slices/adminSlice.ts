@@ -99,6 +99,14 @@ export const updateRole = createAsyncThunk('updateRole', async (data: any) => {
     return resData
 })
 
+export const deleteRole = createAsyncThunk('deleteRole', async (data: any) => {
+    const response = await axiosInstance.post('admin/deleteRole', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
 export const fetchUsers = createAsyncThunk('users', async (data?: { searchText?: String, limit?: number, page?: number }) => {
     const response = await axiosInstance.get('admin/users',
         {
@@ -123,6 +131,14 @@ export const createNewUser = createAsyncThunk('createUser', async (data: any) =>
 
 export const updateUser = createAsyncThunk('updateUser', async (data: any) => {
     const response = await axiosInstance.post('admin/updateUser', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const deleteUser = createAsyncThunk('deleteUser', async (data: any) => {
+    const response = await axiosInstance.post('admin/deleteUser', data, {
         headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
     })
     const resData = response.data.message
@@ -172,6 +188,14 @@ export const updateVendor = createAsyncThunk('updateVendor', async (data: any) =
     return resData
 })
 
+export const deleteVendor = createAsyncThunk('deleteVendor', async (data: any) => {
+    const response = await axiosInstance.post('admin/deleteVendor', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
 export const fetchSuppliers = createAsyncThunk('suppliers', async (data?: { searchText?: String, limit?: number, page?: number }) => {
     try {
         const response = await axiosInstance.get('admin/suppliersList',
@@ -208,6 +232,14 @@ export const createSupplier = createAsyncThunk('createSupplier', async (data: an
 
 export const updateSupplier = createAsyncThunk('updateSupplier', async (data: any) => {
     const response = await axiosInstance.post('admin/updateSupplier', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const deleteSupplier = createAsyncThunk('deleteSupplier', async (data: any) => {
+    const response = await axiosInstance.post('admin/deleteSupplier', data, {
         headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
     })
     const resData = response.data.message
@@ -272,6 +304,14 @@ export const fetchProcessList = createAsyncThunk('processList', async (data?: { 
 
 export const createNewProcess = createAsyncThunk('createProcess', async (data: any) => {
     const response = await axiosInstance.post('admin/createProcess', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
+export const updateProcess = createAsyncThunk('updateProcess', async (data: any) => {
+    const response = await axiosInstance.post('admin/updateProcess', data, {
         headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
     })
     const resData = response.data.message
@@ -505,6 +545,19 @@ const adminSlice = createSlice({
                 state.error = action.error.message || "Unable to load vendors"
             })
 
+            .addCase(deleteUser.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(deleteUser.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.message = action.payload
+            })
+            .addCase(deleteUser.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to delete user"
+            })
+
             .addCase(createNewRole.pending, (state) => {
                 state.status = 'loading';
                 state.error = null
@@ -516,6 +569,19 @@ const adminSlice = createSlice({
             .addCase(createNewRole.rejected, (state, action) => {
                 state.status = 'error';
                 state.error = action.error.message || "Unable to load vendors"
+            })
+
+            .addCase(deleteRole.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(deleteRole.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.message = action.payload
+            })
+            .addCase(deleteRole.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to delete role"
             })
 
             .addCase(createNewProcess.pending, (state) => {
@@ -544,6 +610,19 @@ const adminSlice = createSlice({
                 state.error = action.error.message || "Unable to load vendors"
             })
 
+            .addCase(deleteVendor.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(deleteVendor.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.message = action.payload
+            })
+            .addCase(deleteVendor.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to delete vendor"
+            })
+
             .addCase(createSupplier.pending, (state) => {
                 state.status = 'loading';
                 state.error = null
@@ -555,6 +634,19 @@ const adminSlice = createSlice({
             .addCase(createSupplier.rejected, (state, action) => {
                 state.status = 'error';
                 state.error = action.error.message || "Unable to load vendors"
+            })
+
+            .addCase(deleteSupplier.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(deleteSupplier.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.message = action.payload
+            })
+            .addCase(deleteSupplier.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to delete supplier"
             })
 
             .addCase(createCustomer.pending, (state) => {

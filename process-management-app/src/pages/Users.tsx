@@ -10,9 +10,9 @@ import { Box, Button, Card, FormControl, Grid2, Input, InputAdornment, InputLabe
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createNewUser, fetchRoles, fetchUsers, updateUser } from '../slices/adminSlice';
+import { createNewUser, deleteUser, fetchRoles, fetchUsers, updateUser } from '../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
-import { MdOutlineEdit } from 'react-icons/md';
+import { MdOutlineEdit, MdDeleteOutline } from 'react-icons/md';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -37,6 +37,8 @@ export default function Users() {
   const [createDialog, setCreateDialog] = React.useState(false)
   const [loadingDialog, setLoadingDialog] = React.useState(true)
   const[pageNo, setPageNo] = React.useState(1)
+
+  const [deleteDialog, setDeleteDialog] = React.useState({ dialog: false, id: '', name: '' })
 
   const [selectedId, setSelectedId] = React.useState("");
   const [employeeName, setEmployeeName] = React.useState("")
@@ -174,6 +176,7 @@ export default function Users() {
                   <TableCell>Role</TableCell>
                   <TableCell>Contact No</TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -183,7 +186,7 @@ export default function Users() {
                     <TableCell>{row.emp_name}</TableCell>
                     <TableCell>{row?.role_name}</TableCell>
                     <TableCell>{row.details ? JSON.parse(row.details).contact_no : ''}</TableCell>
-                    <TableCell><MdOutlineEdit onClick={() => {
+                    <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                       setCreateDialog(true);
                       setSelectedId(row.id);
                       setEmployeeName(row.emp_name);
@@ -198,6 +201,9 @@ export default function Users() {
                       setInsuranceExpiry(row.insurance_details ? JSON.parse(row.insurance_details).insurance_expiry : '');
                       setSalary(row.salary);
                       setRole(row.role_id);
+                    }} /></TableCell>
+                    <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }} onClick={() => {
+                      setDeleteDialog({ dialog: true, id: row.id, name: row.emp_name })
                     }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
@@ -410,6 +416,29 @@ export default function Users() {
         open={status.includes('loading')}>
           <CircularProgress color='success' sx={{m:3}} />
           {/* <img src={loader} /> */}
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteUser({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchUsers({ limit: page_limit, page: pageNo }))
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete user', { variant: 'error' });
+            })
+          }}>Yes</Button>
+        </DialogActions>
       </Dialog>
 
     </Box>

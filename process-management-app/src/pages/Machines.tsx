@@ -5,13 +5,13 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { MdOutlineEdit } from "react-icons/md";
-import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
+import { MdOutlineEdit, MdDeleteOutline } from "react-icons/md";
+import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
-import { createAttachment, createNewMachine, fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList } from '../slices/machineSlice';
+import { createAttachment, createNewMachine, deleteMachine, fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList } from '../slices/machineSlice';
 import { nav_boughtouts, nav_machines, TableRowStyled } from '../constants';
 import { useNavigate } from 'react-router-dom';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
@@ -24,7 +24,7 @@ export default function Machines() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
 
-  const { machines } = useAppSelector(
+  const { machines, machineStatus } = useAppSelector(
     (state) => state.machine
   );
 
@@ -32,6 +32,7 @@ export default function Machines() {
   const [errors, setErrors] = useState<any>();
   const [createDialog, setCreateDialog] = useState(false)
   const [machineId, setMachineId] = useState("")
+  const [deleteDialog, setDeleteDialog] = useState({ dialog: false, id: '', name: '' })
   const [formData, setFormData] = useState({
     model_no: '',
     machine_name: '',
@@ -216,6 +217,7 @@ export default function Machines() {
                   <TableCell>Max/ Min Spindles</TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -257,6 +259,9 @@ export default function Machines() {
                         }
                       })
                     }}><MdOutlineRemoveRedEye /></TableCell>
+                    <TableCell><MdDeleteOutline style={{ cursor: 'pointer' }} onClick={() => {
+                      setDeleteDialog({ dialog: true, id: row.id, name: row.machine_name })
+                    }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                   <TableCell colSpan={6} align='center'>No Data</TableCell>
@@ -479,6 +484,34 @@ export default function Machines() {
           }} sx={{ color: '#bb0037' }}>Cancel</Button>
           <Button onClick={handleNewMachineSubmit} variant="contained">Save</Button>
         </DialogActions>
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: '#bb0037' }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteMachine({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchMachineList())
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete machine', { variant: 'error' });
+            })
+          }}>Yes</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog maxWidth={'md'}
+        open={machineStatus == 'loading'}>
+        <CircularProgress color='success' sx={{ m: 3 }} />
       </Dialog>
     </Box>
   );

@@ -97,7 +97,6 @@ export default function NewVendor() {
     const newErrors: any = {};
 
     if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.gst) newErrors.gst = 'GST is required';
     if (!formData.contactNo1) newErrors.contactNo1 = 'Contact number is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
     if (!formData.city) newErrors.city = 'City is required';
@@ -211,11 +210,8 @@ export default function NewVendor() {
                 fullWidth
                 label="GST"
                 name="gst"
-                required
                 value={formData.gst}
                 onChange={handleChange}
-                error={!!errors?.gst}
-                helperText={errors?.gst}
               />
             </Grid2>
             <Grid2 size={3}>

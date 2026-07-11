@@ -10,7 +10,7 @@ import { Box, Button, Card, Grid2, InputAdornment, Paper, TextField, FormControl
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createNewProcess, fetchProcessList, fetchRoles } from '../slices/adminSlice';
+import { createNewProcess, fetchProcessList, fetchRoles, updateProcess } from '../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -33,6 +33,10 @@ export default function Process() {
   const [searchText, setSearchText] = React.useState("")
   const [createDialog, setCreateDialog] = React.useState(false)
   const [processName, setProcessName] = React.useState("")
+  const [selectedProcess, setSelectedProcess] = React.useState({
+    id: '',
+    name: ''
+  })
   const [loadingDialog, setLoadingDialog] = React.useState(false)
   const[pageNo, setPageNo] = React.useState(1)
 
@@ -56,6 +60,26 @@ export default function Process() {
       DisplaySnackbar(res,res.includes('success') ? "success" : "error", enqueueSnackbar)
       setProcessName("")
       dispatch(fetchProcessList({limit: page_limit, page: pageNo})).unwrap()
+    }).catch((err)=>{
+      DisplaySnackbar(err.message, "error", enqueueSnackbar)
+    })
+  }
+
+  const handleUpdateProcess = () => {
+    dispatch(updateProcess({
+      id: selectedProcess.id,
+      process_name: processName
+    })).unwrap().then((res)=>{
+      DisplaySnackbar(res,res.includes('success') ? "success" : "error", enqueueSnackbar)
+      if (res.includes('success')) {
+        setCreateDialog(false)
+        setProcessName("")
+        setSelectedProcess({
+          id: '',
+          name: ''
+        })
+        dispatch(fetchProcessList({limit: page_limit, page: pageNo})).unwrap()
+      }
     }).catch((err)=>{
       DisplaySnackbar(err.message, "error", enqueueSnackbar)
     })
@@ -111,7 +135,14 @@ export default function Process() {
                 {processList.list.length > 0 ? processList.list.map((row) => (
                   <TableRowStyled key={row.id}>
                     <TableCell>{row.process_name}</TableCell>
-                    <TableCell><MdOutlineEdit /></TableCell>
+                    <TableCell><MdOutlineEdit onClick={()=> {
+                      setSelectedProcess({
+                        id: row.id,
+                        name: row.process_name
+                      })
+                      setProcessName(row.process_name)
+                      setCreateDialog(true)
+                    }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
                       <TableCell colSpan={2} align='center'>No Data</TableCell>
@@ -139,8 +170,13 @@ export default function Process() {
             return
           }
           setCreateDialog(false)
+          setSelectedProcess({
+              id: '',
+              name: ''
+            })
+          setProcessName('')
         }}>
-          <DialogTitle>Create New Process</DialogTitle>
+          <DialogTitle>{selectedProcess?.id && selectedProcess?.id?.length > 0 ? 'Update Process' : 'Create New Process'}</DialogTitle>
           <DialogContent>
             <Grid2 container spacing={2}>
               <Grid2 size={12}>
@@ -158,8 +194,19 @@ export default function Process() {
           <DialogActions>
           <Button onClick={()=>{
             setCreateDialog(false)
+            setSelectedProcess({
+              id: '',
+              name: ''
+            })
+            setProcessName('')
           }} sx={{color:'#bb0037'}}>Cancel</Button>
-          <Button onClick={handleNewProcess} variant="contained">Save</Button>
+          <Button onClick={() => {
+            if (selectedProcess?.id && selectedProcess?.id?.length) {
+              handleUpdateProcess();
+            } else {
+              handleNewProcess();
+            }
+          }} variant="contained">{selectedProcess?.id && selectedProcess?.id?.length > 0 ? 'Update' : 'Save'}</Button>
         </DialogActions>
       </Dialog>
 
