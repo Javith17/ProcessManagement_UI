@@ -151,7 +151,7 @@ export default function Machines() {
   }
 
   const uploadAttachments = (id: string) => {
-    const machineImages = images.filter((img:any) => img.type == 'new')?.images.map((img:any) => img.file);
+    const machineImages = images.filter((img:any) => img.type == 'new')?.map((img:any) => img.file);
     dispatch(createAttachment({
       files: machineImages, type: 'machine',
       type_id: id
