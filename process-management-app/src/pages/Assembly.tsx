@@ -6,13 +6,17 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { nav_assembly, nav_customers, page_limit, TableRowStyled } from '../constants';
 import { getAssemblyImage, getMachineMainAssembly, getMachineSectionAssembly, getMachineSubAssembly, getOrderDetail, updateAssemblyStatus } from '../slices/assemblySlice';
+import { closeAssembly } from '../slices/quotationSlice';
 import { MaterialReactTable, MRT_ColumnDef, useMaterialReactTable } from 'material-react-table';
 import { CloseSharp } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
+import DisplaySnackbar from '../utils/DisplaySnackbar';
 
 export default function Assembly() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { state } = useLocation()
+  const { enqueueSnackbar } = useSnackbar()
   const [subAssemblies, setSubAssemblies] = useState<any[]>([])
   const [mainAssemblies, setMainAssemblies] = useState<any[]>([])
   const [sectionAssemblies, setSectionAssemblies] = useState<any[]>([])
@@ -93,7 +97,7 @@ export default function Assembly() {
               }
             }}
             onClick={() => {
-              if (row?.row?.original?.status == 'Ready to Assembly') {
+              if (row?.row?.original?.status == 'Ready to Assemble') {
                 dispatch(updateAssemblyStatus({
                   id: row?.row?.original?.id,
                   assembly_type: 'sub_assembly',
@@ -372,7 +376,7 @@ export default function Assembly() {
               } else if (row?.row?.original?.status == "Assembly In-Progress") {
                 dispatch(updateAssemblyStatus({
                   id: row?.row?.original?.id,
-                  assembly_type: 'sectioni_assembly',
+                  assembly_type: 'section_assembly',
                   status: 'Assembly Completed',
                   assembly_id: row?.row?.original?.section_assembly_id,
                   order_id: state?.order_id,
@@ -466,6 +470,25 @@ export default function Assembly() {
         <Grid2 size={1}>
           <Typography variant='subtitle2' color={'grey'}>Qty</Typography>
           <Typography variant='subtitle1'>{orderDetail?.quotation ? orderDetail?.quotation?.qty : orderDetail?.spares_quotation ? orderDetail?.spares_quotation?.qty : '0'}</Typography>
+        </Grid2>
+
+        <Grid2 size={2}>
+          <Button variant='contained' onClick={() => {
+            if (orderDetail?.status !== "Assembly Completed") {
+              dispatch(closeAssembly({
+                order_id: state?.order_id
+              })).unwrap().then((res: any) => {
+                if (res.message.includes('success')) {
+                  DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                  dispatch(getOrderDetail(state?.order_id)).unwrap().then((res: any) => {
+                    setOrderDetail(res)
+                  })
+                } else {
+                  DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                }
+              })
+            }
+          }}>{orderDetail?.status == "Assembly Completed" ? "Assembly Completed" : "Complete Assembly"}</Button>
         </Grid2>
 
         <Grid2 size={12}>

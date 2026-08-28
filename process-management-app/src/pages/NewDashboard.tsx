@@ -863,7 +863,7 @@ const NewDashboard = () => {
                                         <TableRowStyled key={row.id}>
                                             <TableCell>{index + 1}</TableCell>
                                             <TableCell>{row.order.machine_name}</TableCell>
-                                            <TableCell>{row.order.quotation.quotation_no}</TableCell>
+                                            <TableCell>{row.order?.quotation?.quotation_no}</TableCell>
                                             <TableCell>{row.bought_out_name}</TableCell>
                                             <TableCell>{row.order_qty}</TableCell>
                                             <TableCell>{row.supplier_name}</TableCell>
