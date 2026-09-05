@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { MdOutlineEdit, MdOutlineRemoveRedEye } from "react-icons/md";
+import { MdOutlineEdit, MdOutlineRemoveRedEye, MdOutlineReceiptLong } from "react-icons/md";
 import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid2, Input, InputAdornment, InputLabel, MenuItem, Paper, Select, Tab, Tabs, TextField, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
@@ -17,7 +17,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaWhatsapp } from "react-icons/fa6";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
-import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchOrdersDetail, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart } from '../slices/quotationSlice';
+import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchDeliveryChallanDoc, fetchDeliveryChallanList, fetchOrdersDetail, generateDeliveryChallan, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart, uploadChallanPdf } from '../slices/quotationSlice';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -28,6 +28,9 @@ import {
     useMaterialReactTable,
     type MRT_ColumnDef,
   } from 'material-react-table';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function OrderDetail() {
     const dispatch = useAppDispatch()
@@ -63,6 +66,19 @@ export default function OrderDetail() {
     const [linksDialog, setLinksDialog] = useState(false)
     const [linksList, setLinksList] = useState<{ label: string, url: string }[]>([])
 
+    const [dcListDialog, setDcListDialog] = useState(false)
+    const [dcList, setDcList] = useState<any[]>([])
+    const [dcDocDialog, setDcDocDialog] = useState<{ open: boolean, html: string, id: string, vendorMobile: string }>({
+        open: false, html: '', id: '', vendorMobile: ''
+    })
+    const [generateDcDialog, setGenerateDcDialog] = useState(false)
+    const [generateDcData, setGenerateDcData] = useState<any>({
+        part_id: '', vendor_id: '', part_name: '', vendor_name: '', processes: [],
+        challan_date: dayjs(new Date()), dispatch_mode: 'Porter', vehicle_no: '', total_value: ''
+    })
+    const dcContentRef = useRef<HTMLDivElement>(null);
+    const reactToPrintDcFn = useReactToPrint({ contentRef: dcContentRef });
+
     useEffect(() => {
         if (state?.order_id) {
             dispatch(fetchOrdersDetail({ order_id: state?.order_id, type: state?.type })).unwrap()
@@ -78,10 +94,10 @@ export default function OrderDetail() {
     const [mainAssemblyList, setMainAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
     const [sectionAssemblyList, setSectionAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
     const [mainAssemblySub, setMainAssemblySub] = useState<Array<{ id: number, main_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-    const [mainAssemblyParts, setMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+    const [mainAssemblyParts, setMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, part_code: string, qty: number }>>([])
     const [mainAssemblyBoughtouts, setMainAssemblyBoughtouts] = useState<Array<{ id: number, main_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
     const [sectionAssemblySub, setSectionAssemblySub] = useState<Array<{ id: number, section_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-    const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+    const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, part_code: string, qty: number }>>([])
     const [sectionAssemblyBoughtouts, setSectionAssemblyBoughtouts] = useState<Array<{ id: number, section_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
     const [sectionAssemblyMain, setSectionAssemblyMain] = useState<Array<{ id: number, section_assembly_id: number, main_assembly_id: number, main_assembly_name: string, qty: number }>>([])
 
@@ -112,6 +128,7 @@ export default function OrderDetail() {
                                 main_assembly_id: main.id,
                                 part_id: detail.part.id,
                                 part_name: detail.part.part_name,
+                                part_code: detail.part.part_code,
                                 qty: detail.qty
                             })
                         } else if (detail.bought_out) {
@@ -150,6 +167,7 @@ export default function OrderDetail() {
                                 section_assembly_id: section.id,
                                 part_id: detail.part.id,
                                 part_name: detail.part.part_name,
+                                part_code: detail.part.part_code,
                                 qty: detail.qty
                             })
                         } else if (detail.bought_out) {
@@ -186,9 +204,107 @@ export default function OrderDetail() {
             })
     }
 
+    const openDcDoc = (id: string) => {
+        dispatch(fetchDeliveryChallanDoc(id)).unwrap().then((res: any) => {
+            setDcDocDialog({ open: true, html: res.html, id, vendorMobile: res.vendor_mobile_no1 })
+        })
+    }
+
+    const handleViewDcList = () => {
+        dispatch(fetchDeliveryChallanList(orderId)).unwrap().then((res: any) => {
+            setDcList(res?.list || [])
+            setDcListDialog(true)
+        })
+    }
+
+    const handleRowDcClick = (row: any) => {
+        if (row?.dc_id) {
+            openDcDoc(row.dc_id)
+            return
+        }
+        const processes = orderDetailList.filter((od: any) =>
+            od.part_id == row.part_id && od.vendor_id == row.vendor_id &&
+            od.status === 'Vendor In-Progress' && !od.challan_no
+        )
+        const total = processes.reduce((sum: number, p: any) => sum + (Number(p.cost) || 0), 0)
+        setGenerateDcData({
+            part_id: row.part_id, vendor_id: row.vendor_id, part_name: row.part_name, part_code: row.part_code, vendor_name: row.vendor_name,
+            processes, challan_date: dayjs(new Date()), dispatch_mode: 'Porter', vehicle_no: '', total_value: total ? String(total) : ''
+        })
+        setGenerateDcDialog(true)
+    }
+
+    const handleGenerateDcSubmit = () => {
+        dispatch(generateDeliveryChallan({
+            order_id: orderId,
+            part_id: generateDcData.part_id,
+            vendor_id: generateDcData.vendor_id,
+            challan_date: dayjs(generateDcData.challan_date).format('YYYY-MM-DD'),
+            dispatch_mode: generateDcData.dispatch_mode,
+            vehicle_no: generateDcData.vehicle_no,
+            total_value: generateDcData.total_value
+        })).unwrap().then((res: any) => {
+            if (res?.id) {
+                setOrderDetailList(
+                    orderDetailList.map((od: any) => {
+                        const matched = generateDcData.processes.some((p: any) => p.id == od.id)
+                        return matched ? { ...od, challan_no: res.challan_no, dc_id: res.id } : od
+                    })
+                )
+                setGenerateDcDialog(false)
+                DisplaySnackbar('Delivery Challan generated successfully', 'success', enqueueSnackbar)
+                openDcDoc(res.id)
+            } else {
+                DisplaySnackbar('Unable to generate Delivery Challan', 'error', enqueueSnackbar)
+            }
+        }).catch((err: any) => {
+            DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+        })
+    }
+
+    const handleShareDcWhatsapp = () => {
+        if (!dcDocDialog.html) return
+
+        // Render into an off-screen, unconstrained container so the fixed-width DC
+        // table isn't clipped by the Dialog's maxWidth/overflow (which crops the
+        // right side when capturing the on-screen dialog directly).
+        const captureContainer = document.createElement('div')
+        captureContainer.style.position = 'fixed'
+        captureContainer.style.top = '0'
+        captureContainer.style.left = '-10000px'
+        captureContainer.style.width = '800px'
+        captureContainer.innerHTML = dcDocDialog.html
+        document.body.appendChild(captureContainer)
+
+        html2canvas(captureContainer, { windowWidth: 800, width: captureContainer.scrollWidth, height: captureContainer.scrollHeight }).then((canvas) => {
+            document.body.removeChild(captureContainer)
+            const imgData = canvas.toDataURL('image/png')
+            const pdf = new jsPDF('p', 'pt', [canvas.width, canvas.height])
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+            const blob = pdf.output('blob')
+            const file = new File([blob], `${dcDocDialog.id}.pdf`, { type: 'application/pdf' })
+            dispatch(uploadChallanPdf({ file })).unwrap().then((res: any) => {
+                if (res?.file_name) {
+                    const link = `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${res.file_name}`
+                    const text = `Delivery Challan\n${link}`
+                    window.open(`https://wa.me/${dcDocDialog.vendorMobile}?text=${encodeURIComponent(text)}`, '_blank')?.focus()
+                } else {
+                    DisplaySnackbar('Unable to share Delivery Challan', 'error', enqueueSnackbar)
+                }
+            })
+        }).catch(() => {
+            if (captureContainer.parentNode) document.body.removeChild(captureContainer)
+            DisplaySnackbar('Unable to share Delivery Challan', 'error', enqueueSnackbar)
+        })
+    }
+
     const columns = useMemo<MRT_ColumnDef<any>[]>(
         //column definitions...
         () => [
+          {
+            header: 'Part Code',
+            accessorKey: 'part_code',
+          },
           {
             header: 'Part Name',
             accessorKey: 'part_name',
@@ -210,8 +326,8 @@ export default function OrderDetail() {
                     backgroundColor: 'teal', textAlign: 'center', color: 'white',
                     borderRadius: '4px', cursor: 'pointer'
                 }} onClick={() => {
-                    setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, 
-                        process_name: row?.row?.original?.process_name })
+                    setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name,
+                        part_code: row?.row?.original?.part_code, process_name: row?.row?.original?.process_name })
                     const processVendors = orderDetail?.parts?.partVendors?.filter((pv: any) =>
                         pv.part.id == row?.row?.original?.part_id && pv.process.id == row?.row?.original?.process_id
                     )
@@ -255,9 +371,9 @@ export default function OrderDetail() {
                         if (row?.row?.original?.status.includes('Progress')) {
                             // setDeliveredDialog(true)
                             setCompleteDialog(true)
-                            setCompleteData({ id: row?.row?.original?.id, delivery_date: row?.row?.original?.delivery_date, 
-                                reminder_date: row?.row?.original?.reminder_date, part_name: row?.row?.original?.part_name, 
-                                process_name: row?.row?.original?.process_name })
+                            setCompleteData({ id: row?.row?.original?.id, delivery_date: row?.row?.original?.delivery_date,
+                                reminder_date: row?.row?.original?.reminder_date, part_name: row?.row?.original?.part_name,
+                                part_code: row?.row?.original?.part_code, process_name: row?.row?.original?.process_name })
                             // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
                         } else if (row?.row?.original?.status.toLowerCase() == 'move to vendor') {
                             const processVendors = orderDetail.parts?.partVendors.filter((pv: any) =>
@@ -267,16 +383,16 @@ export default function OrderDetail() {
                                 const process_vendor = processVendors[0].part_process_vendor_list.find((v: any) => v.vendor.id == row.vendor_id)
                                 const deliveryDate = dayjs(new Date()).add(process_vendor.part_process_vendor_delivery_time, 'days')
                                 const reminderDate = deliveryDate.add(-1, 'day')
-                                setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, 
-                                    process_name: row?.row?.original?.process_name })
+                                setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name,
+                                    part_code: row?.row?.original?.part_code, process_name: row?.row?.original?.process_name })
                                 setSelectedVendor({
                                     id: row?.row?.original?.vendor_id, name: process_vendor.vendor.vendor_name, cost: process_vendor.part_process_vendor_price,
                                     delivery_time: process_vendor.part_process_vendor_delivery_time, mobile: process_vendor.vendor.vendor_mobile_no1,
                                     delivery_date: deliveryDate, reminder_date: reminderDate
                                 })
                                 setMoveToVendorData({
-                                    id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, process_name: row?.row?.original?.process_name,
-                                    vendor_id: row?.row?.original?.vendor_id
+                                    id: row?.row?.original?.id, part_name: row?.row?.original?.part_name, part_code: row?.row?.original?.part_code,
+                                    process_name: row?.row?.original?.process_name, vendor_id: row?.row?.original?.vendor_id
                                 })
                                 setMoveToVendorDialog(true)
                             }
@@ -334,11 +450,16 @@ export default function OrderDetail() {
                             })
                         }
                     }} />
+                    {row?.row?.original?.status === 'Vendor In-Progress' &&
+                        <MdOutlineReceiptLong color='#bb0037' style={{ cursor: 'pointer' }}
+                            title={row?.row?.original?.challan_no ? `View DC ${row?.row?.original?.challan_no}` : 'Generate Delivery Challan'}
+                            onClick={() => handleRowDcClick(row?.row?.original)} />
+                    }
                 </Box>
             )
           }
         ],
-        [],
+        [orderDetailList],
         //end
       );
 
@@ -450,6 +571,10 @@ export default function OrderDetail() {
                             })
                         }                        
                     }}>{headerDetail?.status == "Assembly Completed" ? "Assembly Completed" : "Complete Assembly"}</Button>
+                </Grid2>}
+
+                {state?.type == "order" && <Grid2 size={1}>
+                    <Button variant='contained' onClick={handleViewDcList}>View DC</Button>
                 </Grid2>}
 
                 <Grid2 size={12}>
@@ -783,6 +908,186 @@ export default function OrderDetail() {
                 </DialogActions>
             </Dialog>
 
+            {/* Dialog listing all Delivery Challans for this order */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={dcListDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setDcListDialog(false)
+                }}>
+                <DialogTitle>Delivery Challans</DialogTitle>
+                <DialogContent>
+                    <TableContainer component={Paper}>
+                        <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Challan No</TableCell>
+                                    <TableCell>Part Code</TableCell>
+                                    <TableCell>Part Name</TableCell>
+                                    <TableCell>Vendor Name</TableCell>
+                                    <TableCell>Challan Date</TableCell>
+                                    <TableCell>Total Value</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {dcList.length > 0 ? dcList.map((dc: any) => (
+                                    <TableRowStyled key={dc.id} style={{ cursor: 'pointer' }} onClick={() => {
+                                        setDcListDialog(false)
+                                        openDcDoc(dc.id)
+                                    }}>
+                                        <TableCell>{dc.challan_no}</TableCell>
+                                        <TableCell>{dc.part_code}</TableCell>
+                                        <TableCell>{dc.part_name}</TableCell>
+                                        <TableCell>{dc.vendor_name}</TableCell>
+                                        <TableCell>{dc.challan_date ? moment(dc.challan_date).format('DD-MM-YYYY') : ''}</TableCell>
+                                        <TableCell>{dc.total_value}</TableCell>
+                                    </TableRowStyled>
+                                )) : <TableRow key={0}>
+                                    <TableCell colSpan={5} align='center'>No Delivery Challans generated yet</TableCell>
+                                </TableRow>}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDcListDialog(false)} sx={{ color: '#bb0037' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog to generate a Delivery Challan */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={generateDcDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setGenerateDcDialog(false)
+                }}>
+                <DialogTitle>Generate Delivery Challan for {generateDcData?.part_name} - {generateDcData?.vendor_name}
+                    <Typography variant="body2" color="text.secondary">Part Code: {generateDcData?.part_code}</Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <Typography variant='subtitle2' color='grey'>Processes included</Typography>
+                        <CTable small striped>
+                            <CTableHead color='primary'>
+                                <CTableRow>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Process</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Cost</CTableHeaderCell>
+                                </CTableRow>
+                            </CTableHead>
+                            <CTableBody>
+                                {generateDcData?.processes?.map((p: any) => (
+                                    <TableRowStyled key={p.id}>
+                                        <TableCell>{p.process_name}</TableCell>
+                                        <TableCell>{p.order_qty}</TableCell>
+                                        <TableCell>{p.cost}</TableCell>
+                                    </TableRowStyled>
+                                ))}
+                            </CTableBody>
+                        </CTable>
+
+                        <Grid2 container spacing={2} sx={{ mt: 2 }}>
+                            <Grid2 size={6}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="Challan Date"
+                                        sx={{ width: '100%' }}
+                                        value={generateDcData?.challan_date}
+                                        onChange={(e: any) => setGenerateDcData({ ...generateDcData, challan_date: e })}
+                                    />
+                                </LocalizationProvider>
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Dispatch Mode</InputLabel>
+                                    <Select
+                                        label="Dispatch Mode"
+                                        value={generateDcData?.dispatch_mode}
+                                        onChange={(e) => setGenerateDcData({ ...generateDcData, dispatch_mode: e.target.value })}
+                                    >
+                                        <MenuItem value="Porter">Porter</MenuItem>
+                                        <MenuItem value="Transport">Transport</MenuItem>
+                                        <MenuItem value="Own Vehicle">Own Vehicle</MenuItem>
+                                        <MenuItem value="Courier">Courier</MenuItem>
+                                        <MenuItem value="Other">Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Vehicle No"
+                                    value={generateDcData?.vehicle_no}
+                                    onChange={(e) => setGenerateDcData({ ...generateDcData, vehicle_no: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    label="Total Value"
+                                    value={generateDcData?.total_value}
+                                    onChange={(e) => setGenerateDcData({ ...generateDcData, total_value: e.target.value })}
+                                />
+                            </Grid2>
+                        </Grid2>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setGenerateDcDialog(false)} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button variant="contained" onClick={handleGenerateDcSubmit}>Generate</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog to view/print/share a Delivery Challan */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={dcDocDialog.open}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setDcDocDialog({ open: false, html: '', id: '', vendorMobile: '' })
+                }}>
+                <DialogTitle>Delivery Challan</DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <div ref={dcContentRef} dangerouslySetInnerHTML={{ __html: dcDocDialog.html }} />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setDcDocDialog({ open: false, html: '', id: '', vendorMobile: '' })
+                    }} sx={{ color: '#bb0037' }}>Close</Button>
+                    <Button variant="contained" onClick={() => reactToPrintDcFn()}>Print</Button>
+                    <Button variant="contained" color='success' onClick={handleShareDcWhatsapp}>Share via WhatsApp</Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Dialog to Add Vendor */}
 
             <Dialog
@@ -799,7 +1104,9 @@ export default function OrderDetail() {
                     }
                     setEditDialog(false)
                 }}>
-                <DialogTitle>Add vendor to {selectedPart?.part_name} - {selectedPart?.process_name}</DialogTitle>
+                <DialogTitle>Add vendor to {selectedPart?.part_name} - {selectedPart?.process_name}
+                    <Typography variant="body2" color="text.secondary">Part Code: {selectedPart?.part_code}</Typography>
+                </DialogTitle>
                 <DialogContent>
                     <Box>
                         <Grid2 container>
@@ -983,7 +1290,9 @@ export default function OrderDetail() {
                     }
                     setMoveToVendorDialog(false)
                 }}>
-                <DialogTitle>Move {moveToVendorData?.part_name} - {moveToVendorData?.process_name} to {selectedVendor?.name}</DialogTitle>
+                <DialogTitle>Move {moveToVendorData?.part_name} - {moveToVendorData?.process_name} to {selectedVendor?.name}
+                    <Typography variant="body2" color="text.secondary">Part Code: {moveToVendorData?.part_code}</Typography>
+                </DialogTitle>
                 <DialogContent>
                     <Box>
                         <Grid2 container>
@@ -1129,7 +1438,9 @@ export default function OrderDetail() {
                     }
                     setCompleteDialog(false)
                 }}>
-                <DialogTitle>Update {completeData?.part_name} - {completeData?.process_name} Status</DialogTitle>
+                <DialogTitle>Update {completeData?.part_name} - {completeData?.process_name} Status
+                    <Typography variant="body2" color="text.secondary">Part Code: {completeData?.part_code}</Typography>
+                </DialogTitle>
                 <DialogContent>
                     <Box>
                         <Grid2 container>
@@ -1492,6 +1803,7 @@ export default function OrderDetail() {
                                                     <CTable small striped>
                                                         <CTableHead color='primary'>
                                                             <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                                                                 <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                                                                 <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                                                             </CTableRow>
@@ -1499,6 +1811,7 @@ export default function OrderDetail() {
                                                         <CTableBody>
                                                             {mainAssemblyParts.filter((sap: any) => sap.main_assembly_id == sa.id)?.map((part) => {
                                                                 return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                                                                     <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                                                                     <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                                                                 </CTableRow>)
@@ -1573,6 +1886,7 @@ export default function OrderDetail() {
                                                     <CTable small striped>
                                                         <CTableHead color='primary'>
                                                             <CTableRow>
+                                                                <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                                                                 <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                                                                 <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                                                             </CTableRow>
@@ -1580,6 +1894,7 @@ export default function OrderDetail() {
                                                         <CTableBody>
                                                             {sectionAssemblyParts.filter((sap: any) => sap.section_assembly_id == sa.id)?.map((part) => {
                                                                 return (<CTableRow>
+                                                                    <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                                                                     <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                                                                     <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                                                                 </CTableRow>)

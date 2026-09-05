@@ -378,6 +378,56 @@ export const fetchQuotationDoc = createAsyncThunk('fetchQuotationDoc', async (da
 })
 
 
+export const generateDeliveryChallan = createAsyncThunk('generateDeliveryChallan', async (data: any) => {
+    try{
+        const response = await axiosInstance.post(`order/generateDeliveryChallan`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchDeliveryChallanList = createAsyncThunk('fetchDeliveryChallanList', async (order_id: string) => {
+    try{
+        const response = await axiosInstance.get(`order/deliveryChallanList/${order_id}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchDeliveryChallanDoc = createAsyncThunk('fetchDeliveryChallanDoc', async (id: string) => {
+    try{
+        const response = await axiosInstance.get(`order/deliveryChallanDoc/${id}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
+export const uploadChallanPdf = createAsyncThunk('uploadChallanPdf', async (data: { file: File }) => {
+    try{
+        const formData = new FormData()
+        formData.append('file', data.file)
+        const response = await axiosInstance.post(`order/uploadChallanPdf`, formData, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
 export const orderHistory = createAsyncThunk('orderHistory', async (data: string) => {
     try{
         const response = await axiosInstance.get(`order/orderHistory/${data}`, {

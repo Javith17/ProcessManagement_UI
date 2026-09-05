@@ -9,8 +9,8 @@ import Paper from '@mui/material/Paper';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { deleteVendor, fetchVendorDetail, fetchVendors } from '../slices/adminSlice';
-import { Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, InputAdornment, Pagination, TextField } from '@mui/material';
+import { deleteVendor, fetchVendorDetail, fetchVendors, makeVendorPayment } from '../slices/adminSlice';
+import { Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid2, InputAdornment, InputLabel, MenuItem, Pagination, Select, TextField, Typography } from '@mui/material';
 import { Add, Search } from '@mui/icons-material';
 import { MdOutlineEdit, MdDeleteOutline } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
@@ -32,9 +32,15 @@ export default function Vendors() {
   const [searchText, setSearchText] = React.useState("")
   const [loadingDialog, setLoadingDialog] = React.useState(false)
   const [vendorProcessList, setVendorProcessList] = React.useState<any[]>([])
-  const [vendorProcessDialog, setVendorProcessDialog] = React.useState({
+  const [vendorProcessDialog, setVendorProcessDialog] = React.useState<{ dialog: boolean, vendorId: string, vendorName: string, pendingPayment: string }>({
     dialog: false,
-    vendorName: ''
+    vendorId: '',
+    vendorName: '',
+    pendingPayment: '0'
+  })
+  const [vendorPaymentDialog, setVendorPaymentDialog] = React.useState(false)
+  const [vendorPaymentData, setVendorPaymentData] = React.useState<{ paidAmount: string, mode: string, remarks: string }>({
+    paidAmount: '', mode: 'Cash', remarks: ''
   })
   const [pageNo, setPageNo] = React.useState(1)
   const [deleteDialog, setDeleteDialog] = React.useState({ dialog: false, id: '', name: '' })
@@ -120,7 +126,7 @@ export default function Vendors() {
                     <TableCell><MdOutlineRemoveRedEye style={{cursor:'pointer', width:'20px', height:'20px'}} onClick={() => {
                       dispatch(fetchVendorDetail(row?.id)).unwrap().then((res: any) => {
                         setVendorProcessList(res.vendorProcess?.map((vp: any) => vp.process_name))
-                        setVendorProcessDialog({ dialog: true, vendorName: row.vendor_name })
+                        setVendorProcessDialog({ dialog: true, vendorId: row.id, vendorName: row.vendor_name, pendingPayment: res.vendor?.pending_payment || '0' })
                       })
                     }} /></TableCell>
                     <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
@@ -164,6 +170,13 @@ export default function Vendors() {
         open={vendorProcessDialog.dialog}>
         <DialogTitle>Process List for {vendorProcessDialog.vendorName}</DialogTitle>
         <DialogContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant='subtitle1'>Payable amount pending: {vendorProcessDialog.pendingPayment}</Typography>
+            <Button variant='contained' size='small' onClick={() => {
+              setVendorPaymentData({ paidAmount: '', mode: 'Cash', remarks: '' })
+              setVendorPaymentDialog(true)
+            }}>Make Payment</Button>
+          </Box>
           {vendorProcessList.length > 0 &&
             <CTable small striped style={{ marginTop: '5px' }}>
               <CTableHead color='danger'>
@@ -182,8 +195,95 @@ export default function Vendors() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {
-            setVendorProcessDialog({ dialog: false, vendorName: '' })
+            setVendorProcessDialog({ dialog: false, vendorId: '', vendorName: '', pendingPayment: '0' })
           }} sx={{ color: '#bb0037' }}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Make payment against a vendor's pending balance */}
+
+      <Dialog
+        maxWidth={'sm'}
+        open={vendorPaymentDialog}
+        onClose={(event, reason) => {
+          if (reason == "backdropClick") {
+            return
+          }
+          setVendorPaymentDialog(false)
+        }}>
+        <DialogTitle>Make Payment to {vendorProcessDialog.vendorName}</DialogTitle>
+        <DialogContent>
+          <TextField
+            size='small'
+            variant="outlined"
+            fullWidth
+            disabled
+            label="Amount"
+            sx={{ mt: 1 }}
+            value={vendorProcessDialog.pendingPayment}
+          />
+          <TextField
+            size='small'
+            variant="outlined"
+            fullWidth
+            type="number"
+            label="Paid Amount"
+            sx={{ mt: 2 }}
+            value={vendorPaymentData.paidAmount}
+            onChange={(e: any) => {
+              setVendorPaymentData({ ...vendorPaymentData, paidAmount: e.target.value })
+            }}
+          />
+          <FormControl fullWidth size='small' sx={{ mt: 2 }}>
+            <InputLabel>Mode of Payment</InputLabel>
+            <Select
+              label="Mode of Payment"
+              value={vendorPaymentData.mode}
+              onChange={(e) => {
+                setVendorPaymentData({ ...vendorPaymentData, mode: e.target.value })
+              }}
+            >
+              <MenuItem value="Cash">Cash</MenuItem>
+              <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+              <MenuItem value="UPI">UPI</MenuItem>
+              <MenuItem value="Cheque">Cheque</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            size='small'
+            variant="outlined"
+            fullWidth
+            label="Payment Remarks"
+            multiline
+            rows={3}
+            sx={{ mt: 2 }}
+            value={vendorPaymentData.remarks}
+            onChange={(e: any) => {
+              setVendorPaymentData({ ...vendorPaymentData, remarks: e.target.value })
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setVendorPaymentDialog(false)
+          }} sx={{ color: '#bb0037' }}>Cancel</Button>
+          <Button variant="contained" onClick={() => {
+            dispatch(makeVendorPayment({
+              vendor_id: vendorProcessDialog.vendorId,
+              paid_amount: Number(vendorPaymentData.paidAmount) || 0,
+              mode: vendorPaymentData.mode,
+              remarks: vendorPaymentData.remarks
+            })).unwrap().then((res: any) => {
+              if (res?.message?.includes('success')) {
+                DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                const remaining = Math.max(0, Number(vendorProcessDialog.pendingPayment) - (Number(vendorPaymentData.paidAmount) || 0))
+                setVendorProcessDialog({ ...vendorProcessDialog, pendingPayment: String(remaining) })
+                setVendorPaymentDialog(false)
+              } else {
+                DisplaySnackbar('Unable to record payment', 'error', enqueueSnackbar)
+              }
+            })
+          }}>Pay</Button>
         </DialogActions>
       </Dialog>
 

@@ -89,6 +89,7 @@ export default function Stores() {
               <TableHead>
                 <TableRow>
                   <TableCell>S.No</TableCell>
+                  <TableCell>Part Code</TableCell>
                   <TableCell>Part Name</TableCell>
                   <TableCell>Available Qty</TableCell>
                   <TableCell>Minimum Stock Qty</TableCell>
@@ -98,6 +99,7 @@ export default function Stores() {
                 {partsInStoresList && partsInStoresList?.length > 0 ? partsInStoresList?.map((row: any, index: number) => (
                   <TableRowStyled key={row.id}>
                     <TableCell>{index + 1}</TableCell>
+                    <TableCell>{row.part_code}</TableCell>
                     <TableCell>{row.part_name}</TableCell>
                     <TableCell>{row.available_aty}</TableCell>
                     <TableCell>{row.minimum_stock_qty}</TableCell>

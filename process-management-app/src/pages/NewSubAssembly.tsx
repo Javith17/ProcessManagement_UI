@@ -312,7 +312,7 @@ export default function NewSubAssembly() {
                         }}
                       >
                         {partsByMachines.list.map((part) => {
-                          return <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                          return <MenuItem value={part.id}>{part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name}</MenuItem>
                         })}
                       </Select>
                     </FormControl>

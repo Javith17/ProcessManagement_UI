@@ -311,9 +311,10 @@ export default function NewMainAssembly() {
                                                 }}
                                             >
                                                 {parts.list.map((part) => {
-                                                    return part.id == sap.part_id ? <MenuItem value={part.id}>{part.part_name}</MenuItem> :
+                                                    const partLabel = part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name
+                                                    return part.id == sap.part_id ? <MenuItem value={part.id}>{partLabel}</MenuItem> :
                                                         mainAssemblyParts.filter((maps) => maps.part_id == part.id).length == 0 &&
-                                                        <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                                                        <MenuItem value={part.id}>{partLabel}</MenuItem>
                                                 })}
                                             </Select>
                                         </FormControl>

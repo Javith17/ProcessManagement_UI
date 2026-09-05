@@ -196,6 +196,14 @@ export const deleteVendor = createAsyncThunk('deleteVendor', async (data: any) =
     return resData
 })
 
+export const makeVendorPayment = createAsyncThunk('vendorPayment', async (data: any) => {
+    const response = await axiosInstance.post('admin/vendorPayment', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data
+    return resData
+})
+
 export const fetchSuppliers = createAsyncThunk('suppliers', async (data?: { searchText?: String, limit?: number, page?: number }) => {
     try {
         const response = await axiosInstance.get('admin/suppliersList',

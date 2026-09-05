@@ -156,6 +156,38 @@ export const fetchOrderParts = createAsyncThunk('orderParts', async (data?: Stri
     }
 })
 
+export const recordVendorProcessPayment = createAsyncThunk('recordVendorProcessPayment', async (data: any) => {
+    try{
+        const response = await axiosInstance.post('order/recordVendorProcessPayment', data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
+export const uploadVendorInvoice = createAsyncThunk('uploadVendorInvoice', async (data: { file: File, order_id?: string, vendor_id?: string, machine_id?: string, part_id?: string, process?: string }) => {
+    try{
+        const formData = new FormData()
+        formData.append('file', data.file)
+        if (data.order_id) formData.append('order_id', data.order_id)
+        if (data.vendor_id) formData.append('vendor_id', data.vendor_id)
+        if (data.machine_id) formData.append('machine_id', data.machine_id)
+        if (data.part_id) formData.append('part_id', data.part_id)
+        if (data.process) formData.append('process', data.process)
+        formData.append('uploaded_by', JSON.parse(localStorage.getItem("userDetail") as string).user.userId)
+        const response = await axiosInstance.post('order/uploadVendorInvoice', formData, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
 export const closeOrder = createAsyncThunk('closeOrder', async (data: any) => {
     try{
         const response = await axiosInstance.post('order/closeOrder', data, {

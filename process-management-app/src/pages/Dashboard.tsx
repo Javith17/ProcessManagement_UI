@@ -1,11 +1,12 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Card, CardContent, Typography, List, Divider } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid2, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Card, CardContent, Typography, List, Divider, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import Box from '@mui/material/Box';
 import moment from 'moment';
 import { useState } from 'react';
 import { useEffect } from 'react';
+import { useRef } from 'react';
 import { nav_dashboard, TableRowStyled } from '../constants';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
-import { closeOrder, fetchDashboardDetail, fetchDeliveryDateList, fetchOrderParts, fetchPartsInStores, fetchPendingDeliveryBOs, fetchPendingDeliveryParts, fetchPendingPaymentBOs, fetchReminderDateList, fetchReminderQuotations, updateBoughtoutPayment } from '../slices/dashboardSlice';
+import { closeOrder, fetchDashboardDetail, fetchDeliveryDateList, fetchOrderParts, fetchPartsInStores, fetchPendingDeliveryBOs, fetchPendingDeliveryParts, fetchPendingPaymentBOs, fetchReminderDateList, fetchReminderQuotations, recordVendorProcessPayment, updateBoughtoutPayment, uploadVendorInvoice } from '../slices/dashboardSlice';
 import SidebarNav from './SidebarNav';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
@@ -38,6 +39,10 @@ const Dashboard = () => {
 
     const [pendingDeliveryItem, setPendingDeliveryItem] = useState<any>()
     const [assemblyItem, setAssemblyItem] = useState<any>()
+
+    const [processPayments, setProcessPayments] = useState<{ [key: string]: { paid_amount: string, mode: string, remarks: string, paid: boolean } }>({})
+    const [invoiceFileName, setInvoiceFileName] = useState("")
+    const invoiceInputRef = useRef<HTMLInputElement>(null)
 
     const [updateDeliveryDialog, setUpdateDeliveryDialog] = useState(false)
     const [updateAssemblyDialog, setUpdateAssemblyDialog] = useState(false)
@@ -222,6 +227,55 @@ const Dashboard = () => {
             })
         }
     }, [currentRole])
+
+    const initProcessPayments = (processes: any[]) => {
+        const init: any = {}
+        processes?.forEach((p: any) => {
+            init[p.id] = { paid_amount: '', mode: 'Cash', remarks: '', paid: false }
+        })
+        setProcessPayments(init)
+        setInvoiceFileName("")
+    }
+
+    const handlePayProcess = (process: any) => {
+        const payment = processPayments[process.id]
+        dispatch(recordVendorProcessPayment({
+            production_part_id: process.id,
+            paid_amount: Number(payment?.paid_amount) || 0,
+            mode: payment?.mode,
+            remarks: payment?.remarks
+        })).unwrap().then((res: any) => {
+            if (res?.message?.includes('success')) {
+                setProcessPayments((prev) => ({ ...prev, [process.id]: { ...prev[process.id], paid: true } }))
+                DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+            } else {
+                DisplaySnackbar('Unable to record payment', 'error', enqueueSnackbar)
+            }
+        })
+    }
+
+    const handleInvoiceFileChange = (event: any) => {
+        const file = event.target.files[0]
+        if (file) {
+            const firstProcess = pendingDeliveryItem?.processes?.[0]
+            dispatch(uploadVendorInvoice({
+                file,
+                order_id: pendingDeliveryItem?.pm_order_id,
+                part_id: firstProcess?.part_id,
+                machine_id: firstProcess?.machine_id
+            })).unwrap().then((res: any) => {
+                if (res?.file_name) {
+                    setInvoiceFileName(res.file_name)
+                    DisplaySnackbar('Invoice uploaded successfully', 'success', enqueueSnackbar)
+                } else {
+                    DisplaySnackbar('Unable to upload invoice', 'error', enqueueSnackbar)
+                }
+            })
+        }
+    }
+
+    const allProcessesPaid = !pendingDeliveryItem?.processes || pendingDeliveryItem.processes.length === 0 ||
+        pendingDeliveryItem.processes.every((p: any) => processPayments[p.id]?.paid)
 
     return (
         <>
@@ -732,6 +786,7 @@ const Dashboard = () => {
                                                 }
                                             }} onClick={() => {
                                                 setPendingDeliveryItem(row)
+                                                initProcessPayments(row.processes)
                                                 setUpdateDeliveryDialog(true)
                                             }}>Accept Delivery</Box></TableCell>
                                         </TableRowStyled>
@@ -1047,7 +1102,7 @@ const Dashboard = () => {
                     PaperProps={{
                         sx: {
                             width: "100%",
-                            maxWidth: "30vw!important",
+                            maxWidth: "50vw!important",
                         },
                     }}
                     open={updateDeliveryDialog}
@@ -1059,6 +1114,85 @@ const Dashboard = () => {
                     }}>
                     <DialogTitle sx={{ fontSize: '14px' }}>Update Delivery status for {pendingDeliveryItem?.pm_part_name}</DialogTitle>
                     <DialogContent>
+                        <Typography variant='subtitle2' color='grey'>Vendor Payments</Typography>
+                        {pendingDeliveryItem?.processes?.map((process: any) => (
+                            <Card key={process.id} sx={{ padding: 2, mt: 1 }}>
+                                <Grid2 container spacing={2}>
+                                    <Grid2 size={12}>
+                                        <Typography variant='subtitle2'>{process.process_name} - {process.vendor_name}</Typography>
+                                    </Grid2>
+                                    <Grid2 size={3}>
+                                        <TextField
+                                            size='small'
+                                            variant="outlined"
+                                            fullWidth
+                                            disabled
+                                            label="Total Value"
+                                            value={process.cost || '0'}
+                                        />
+                                    </Grid2>
+                                    <Grid2 size={3}>
+                                        <TextField
+                                            size='small'
+                                            variant="outlined"
+                                            fullWidth
+                                            type="number"
+                                            disabled={processPayments[process.id]?.paid}
+                                            label="Paid Amount"
+                                            value={processPayments[process.id]?.paid_amount || ''}
+                                            onChange={(e: any) => {
+                                                setProcessPayments({ ...processPayments, [process.id]: { ...processPayments[process.id], paid_amount: e.target.value } })
+                                            }}
+                                        />
+                                    </Grid2>
+                                    <Grid2 size={3}>
+                                        <FormControl fullWidth size='small' disabled={processPayments[process.id]?.paid}>
+                                            <InputLabel>Mode of Payment</InputLabel>
+                                            <Select
+                                                label="Mode of Payment"
+                                                value={processPayments[process.id]?.mode || 'Cash'}
+                                                onChange={(e) => {
+                                                    setProcessPayments({ ...processPayments, [process.id]: { ...processPayments[process.id], mode: e.target.value } })
+                                                }}
+                                            >
+                                                <MenuItem value="Cash">Cash</MenuItem>
+                                                <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+                                                <MenuItem value="UPI">UPI</MenuItem>
+                                                <MenuItem value="Cheque">Cheque</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid2>
+                                    <Grid2 size={3}>
+                                        <Button fullWidth variant="contained" disabled={processPayments[process.id]?.paid}
+                                            onClick={() => handlePayProcess(process)}>
+                                            {processPayments[process.id]?.paid ? 'Paid' : 'Pay'}
+                                        </Button>
+                                    </Grid2>
+                                    <Grid2 size={12}>
+                                        <TextField
+                                            size='small'
+                                            variant="outlined"
+                                            fullWidth
+                                            disabled={processPayments[process.id]?.paid}
+                                            label="Payment Remarks"
+                                            value={processPayments[process.id]?.remarks || ''}
+                                            onChange={(e: any) => {
+                                                setProcessPayments({ ...processPayments, [process.id]: { ...processPayments[process.id], remarks: e.target.value } })
+                                            }}
+                                        />
+                                    </Grid2>
+                                </Grid2>
+                            </Card>
+                        ))}
+
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant='subtitle2' color='grey'>Invoice Document</Typography>
+                            <input type="file" accept="image/*,application/pdf" ref={invoiceInputRef} style={{ display: 'none' }} onChange={handleInvoiceFileChange} />
+                            <Button variant='outlined' sx={{ mt: 1 }} onClick={() => invoiceInputRef.current?.click()}>
+                                {invoiceFileName ? 'Invoice Uploaded' : 'Upload Invoice'}
+                            </Button>
+                        </Box>
+
                         <TextField
                             size='small'
                             variant="outlined"
@@ -1101,7 +1235,7 @@ const Dashboard = () => {
                             setUpdateDeliveryDialog(false)
                             setPendingDeliveryItem({})
                         }} sx={{ color: '#bb0037' }}>Cancel</Button>
-                        <Button variant="contained" onClick={() => {
+                        {allProcessesPaid && <Button variant="contained" onClick={() => {
                             if (pendingDeliveryItem?.delivered_qty?.length > 0) {
                                 dispatch(deliverProductionMachinePart({
                                     order_id: pendingDeliveryItem.pm_order_id,
@@ -1126,8 +1260,8 @@ const Dashboard = () => {
                                 })
                             }
                         }}>
-                            Delivered
-                        </Button>
+                            Accept Delivery
+                        </Button>}
                     </DialogActions>
                 </Dialog>
 

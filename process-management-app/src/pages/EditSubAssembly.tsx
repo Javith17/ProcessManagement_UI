@@ -39,11 +39,11 @@ export default function EditSubAssembly() {
     (state) => state.assembly
   )
 
-  const [subAssemblyParts, setSubAssemblyParts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, part_id: string, part_name: string, qty: number }>>([])
+  const [subAssemblyParts, setSubAssemblyParts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [subAssemblyBoughtouts, setSubAssemblyBoughtouts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, bought_out_id: string, bought_out_name: string, qty: number }>>([])
 
   const [selectedSubAssembly, setSelectedSubAssembly] = useState<{ id: number, name: string, serial_no: string }>({ id: 0, name: '', serial_no: '' });
-  const [selectedSubAssemblyParts, setSelectedSubAssemblyParts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, part_id: string, part_name: string, qty: number }>>([])
+  const [selectedSubAssemblyParts, setSelectedSubAssemblyParts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [selectedSubAssemblyBoughtouts, setSelectedSubAssemblyBoughtouts] = useState<Array<{ id: number, sub_assembly_id: number, name: string, bought_out_id: string, bought_out_name: string, qty: number }>>([])
 
   const [errors, setErrors] = useState<any>();
@@ -105,7 +105,7 @@ export default function EditSubAssembly() {
             if (detail.part) {
               subParts.push({
                 id: detail.id, sub_assembly_id: res.sub_assembly_detail.id, name: detail.part.part_name,
-                part_id: detail.part.id, part_name: detail.part.part_name, qty: detail.qty
+                part_id: detail.part.id, part_name: detail.part.part_name, part_code: detail.part.part_code, qty: detail.qty
               })
             } else if (detail.bought_out) {
               subBoughtouts.push({
@@ -410,6 +410,7 @@ export default function EditSubAssembly() {
               {subAssemblyParts.length > 0 && <CTable small striped>
                 <CTableHead color='primary'>
                   <CTableRow>
+                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                     <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                     <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                     <CTableHeaderCell />
@@ -419,6 +420,7 @@ export default function EditSubAssembly() {
                 <CTableBody>
                   {subAssemblyParts.map((part: any) => {
                     return (<CTableRow>
+                      <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                       <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                       <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                       <CTableDataCell>
@@ -682,7 +684,7 @@ export default function EditSubAssembly() {
               }}
             >
               {addDialog.type.includes('Part') && partsByMachines.list.map((part) => {
-                return <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                return <MenuItem value={part.id}>{part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name}</MenuItem>
               })}
               {addDialog.type.includes('Boughtout') && boughtoutByMachines.list.map((bo) => {
                 return <MenuItem value={bo.id}>{bo.bought_out_name}</MenuItem>

@@ -413,6 +413,7 @@ export default function NewVendor() {
                 <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda", fontWeight:'bold' } }}>
                   <TableHead>
                     <TableRow>
+                      <TableCell>Part Code</TableCell>
                       <TableCell>Part Name</TableCell>
                       <TableCell>Process Name</TableCell>
                       <TableCell>Machine Name</TableCell>
@@ -424,6 +425,7 @@ export default function NewVendor() {
                   <TableBody>
                     {vendorHistory?.list?.length > 0 ? vendorHistory?.list?.map((row:any) => (
                       <TableRowStyled key={row.id}>
+                        <TableCell>{row.part_code}</TableCell>
                         <TableCell>{row.part_name}</TableCell>
                         <TableCell>{row.process_name}</TableCell>
                         <TableCell>{row.order.machine_name}</TableCell>

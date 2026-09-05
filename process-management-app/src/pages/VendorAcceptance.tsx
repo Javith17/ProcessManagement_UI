@@ -99,6 +99,16 @@ const VendorAcceptance = () => {
                                                 </Grid2>
 
                                                 <Grid2 size={5}>
+                                                    <Typography variant='subtitle2' color={'grey'}>Part Code</Typography>
+                                                </Grid2>
+                                                <Grid2 size={1}>
+                                                    <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                </Grid2>
+                                                <Grid2 size={6}>
+                                                    <Typography variant='subtitle1'>{partProcess?.part_code}</Typography>
+                                                </Grid2>
+
+                                                <Grid2 size={5}>
                                                     <Typography variant='subtitle2' color={'grey'}>Part</Typography>
                                                 </Grid2>
                                                 <Grid2 size={1}>

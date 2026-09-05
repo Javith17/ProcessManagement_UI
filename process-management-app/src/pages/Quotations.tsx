@@ -185,7 +185,8 @@ export default function Quotations() {
                                 spares.push({
                                     type: 'part',
                                     id: md.part.id,
-                                    name: md.part.part_name
+                                    name: md.part.part_name,
+                                    code: md.part.part_code
                                 })
                             }
                         } else if (md.bought_out) {
@@ -214,7 +215,8 @@ export default function Quotations() {
                                 spares.push({
                                     type: 'part',
                                     id: md.part.id,
-                                    name: md.part.part_name
+                                    name: md.part.part_name,
+                                    code: md.part.part_code
                                 })
                             }
                         } else if (md.bought_out) {
@@ -897,6 +899,7 @@ export default function Quotations() {
                                         <TableCell>Qoutation No</TableCell>
                                         <TableCell>Quotation Date</TableCell>
                                         <TableCell>Vendor Name</TableCell>
+                                        <TableCell>Part Code</TableCell>
                                         <TableCell>Part Name</TableCell>
                                         <TableCell>Status</TableCell>
                                         <TableCell>Remarks</TableCell>
@@ -910,6 +913,7 @@ export default function Quotations() {
                                             <TableCell>{quotation.quotation_no}</TableCell>
                                             <TableCell>{moment(quotation.quotation_date).format('DD-MM-YYYY')}</TableCell>
                                             <TableCell>{quotation.vendor.vendor_name}</TableCell>
+                                            <TableCell>{quotation.part.part_code}</TableCell>
                                             <TableCell>{quotation.part.part_name}</TableCell>
                                             <TableCell>
                                                 {quotation.status.includes('Pending Approval') ?
@@ -1464,7 +1468,7 @@ export default function Quotations() {
                                 }}
                             >
                                 {parts && parts.list.length > 0 && parts?.list?.map((part: any) => {
-                                    return <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                                    return <MenuItem value={part.id}>{part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name}</MenuItem>
                                 })}
                             </Select>
                             {errors?.part_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.part_id}</FormHelperText> : <></>}
@@ -1951,7 +1955,7 @@ export default function Quotations() {
                                     }}
                                 >
                                     {machineSpares.map((part) => {
-                                        return <MenuItem value={part.id}>{part.name}</MenuItem>
+                                        return <MenuItem value={part.id}>{part.code ? `${part.code} - ${part.name}` : part.name}</MenuItem>
                                     })}
                                 </Select>
                             </FormControl>

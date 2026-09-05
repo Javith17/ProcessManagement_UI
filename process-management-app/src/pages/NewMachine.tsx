@@ -41,12 +41,12 @@ export default function NewMachine() {
   // Main Assembly States Start
   const [mainAssemblyList, setMainAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
   const [mainAssemblySub, setMainAssemblySub] = useState<Array<{ id: number, main_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-  const [mainAssemblyParts, setMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+  const [mainAssemblyParts, setMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [mainAssemblyBoughtouts, setMainAssemblyBoughtouts] = useState<Array<{ id: number, main_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
 
   const [selectedMainAssembly, setSelectedMainAssembly] = useState<{ id: number, name: string, serial_no: string }>({ id: 0, name: '', serial_no: '' });
   const [selectedMainAssemblySub, setSelectedMainAssemblySub] = useState<Array<{ id: number, main_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-  const [selectedMainAssemblyParts, setSelectedMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+  const [selectedMainAssemblyParts, setSelectedMainAssemblyParts] = useState<Array<{ id: number, main_assembly_id: number, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [selectedMainAssemblyBoughtouts, setSelectedMainAssemblyBoughtouts] = useState<Array<{ id: number, main_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
 
   const [mainAssemblyDialog, setMainAssemblyDialog] = useState(false)
@@ -55,13 +55,13 @@ export default function NewMachine() {
   // Section Assembly States Start
   const [sectionAssemblyList, setSectionAssemblyList] = useState<Array<{ id: number, name: string, serial_no: string }>>([]);
   const [sectionAssemblySub, setSectionAssemblySub] = useState<Array<{ id: number, section_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-  const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+  const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [sectionAssemblyBoughtouts, setSectionAssemblyBoughtouts] = useState<Array<{ id: number, section_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
   const [sectionAssemblyMain, setSectionAssemblyMain] = useState<Array<{ id: number, section_assembly_id: number, main_assembly_id: number, main_assembly_name: string, qty: number }>>([])
 
   const [selectedSectionAssembly, setSelectedSectionAssembly] = useState<{ id: number, name: string, serial_no: string }>({ id: 0, name: '', serial_no: '' });
   const [selectedSectionAssemblySub, setSelectedSectionAssemblySub] = useState<Array<{ id: number, section_assembly_id: number, sub_assembly_id: number, sub_assembly_name: string, qty: number }>>([])
-  const [selectedSectionAssemblyParts, setSelectedSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+  const [selectedSectionAssemblyParts, setSelectedSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
   const [selectedSectionAssemblyBoughtouts, setSelectedSectionAssemblyBoughtouts] = useState<Array<{ id: number, section_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
   const [selectedSectionAssemblyMain, setSelectedSectionAssemblyMain] = useState<Array<{ id: number, section_assembly_id: number, main_assembly_id: number, main_assembly_name: string, qty: number }>>([])
 
@@ -108,6 +108,7 @@ export default function NewMachine() {
                   main_assembly_id: main.id,
                   part_id: detail.part.id,
                   part_name: detail.part.part_name,
+                  part_code: detail.part.part_code,
                   qty: detail.qty
                 })
               }else if(detail.bought_out){
@@ -147,6 +148,7 @@ export default function NewMachine() {
                   section_assembly_id: section.id,
                   part_id: detail.part.id,
                   part_name: detail.part.part_name,
+                  part_code: detail.part.part_code,
                   qty: detail.qty
                 })
               }else if(detail.bought_out){
@@ -727,6 +729,7 @@ export default function NewMachine() {
                         <CTable small striped>
                           <CTableHead color='primary'>
                             <CTableRow>
+                              <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                               <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                               <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                             </CTableRow>
@@ -734,6 +737,7 @@ export default function NewMachine() {
                           <CTableBody>
                             {mainAssemblyParts.filter((sap: any) => sap.main_assembly_id == sa.id)?.map((part) => {
                               return (<CTableRow>
+                                <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                                 <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                                 <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                               </CTableRow>)
@@ -829,6 +833,7 @@ export default function NewMachine() {
                         <CTable small striped>
                           <CTableHead color='primary'>
                             <CTableRow>
+                              <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                               <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                               <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                             </CTableRow>
@@ -836,6 +841,7 @@ export default function NewMachine() {
                           <CTableBody>
                             {sectionAssemblyParts.filter((sap: any) => sap.section_assembly_id == sa.id)?.map((part) => {
                               return (<CTableRow>
+                                <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                                 <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                                 <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                               </CTableRow>)
@@ -1074,9 +1080,10 @@ export default function NewMachine() {
                           }}
                         >
                           {parts.list.map((part) => {
-                          return part.id == sap.part_id ? <MenuItem value={part.id}>{part.part_name}</MenuItem> :
+                          const partLabel = part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name
+                          return part.id == sap.part_id ? <MenuItem value={part.id}>{partLabel}</MenuItem> :
                           mainAssemblyParts.filter((maps) => maps.part_id == part.id).length == 0 &&
-                            <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                            <MenuItem value={part.id}>{partLabel}</MenuItem>
                         })}
                         </Select>
                       </FormControl>
@@ -1364,9 +1371,10 @@ export default function NewMachine() {
                           }}
                         >
                           {parts.list.map((part) => {
-                          return part.id == sap.part_id ? <MenuItem value={part.id}>{part.part_name}</MenuItem> :
+                          const partLabel = part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name
+                          return part.id == sap.part_id ? <MenuItem value={part.id}>{partLabel}</MenuItem> :
                           sectionAssemblyParts.filter((saps) => saps.part_id == part.id).length == 0 &&
-                            <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                            <MenuItem value={part.id}>{partLabel}</MenuItem>
                         })}
 
                         </Select>

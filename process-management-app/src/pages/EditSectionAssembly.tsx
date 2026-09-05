@@ -42,7 +42,7 @@ export default function EditSectionAssembly() {
 
     // Main Assembly States Start
     const [sectionAssemblySub, setSectionAssemblySub] = useState<Array<{ id: number, section_assembly_id: number, sub_assembly_id: string, sub_assembly_name: string, qty: number }>>([])
-    const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, qty: number }>>([])
+    const [sectionAssemblyParts, setSectionAssemblyParts] = useState<Array<{ id: number, section_assembly_id: number, part_id: string, part_name: string, part_code?: string, qty: number }>>([])
     const [sectionAssemblyBoughtouts, setSectionAssemblyBoughtouts] = useState<Array<{ id: number, section_assembly_id: number, bought_out_id: string, bought_out_name: string, qty: number }>>([])
     const [sectionAssemblyMain, setSectionAssemblyMain] = useState<Array<{ id: number, section_assembly_id: number, main_assembly_id: string, main_assembly_name: string, qty: number }>>([])
 
@@ -107,7 +107,7 @@ export default function EditSectionAssembly() {
                     if (detail.part) {
                         sectionParts.push({
                             id: detail.id, section_assembly_id: res.section_assembly_detail.id,
-                            part_id: detail.part.id, part_name: detail.part.part_name, qty: detail.qty
+                            part_id: detail.part.id, part_name: detail.part.part_name, part_code: detail.part.part_code, qty: detail.qty
                         })
                     } else if (detail.bought_out) {
                         sectionBoughtouts.push({
@@ -382,6 +382,7 @@ export default function EditSectionAssembly() {
                             {sectionAssemblyParts.length > 0 && <CTable small striped>
                                 <CTableHead color='primary'>
                                     <CTableRow>
+                                        <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Code</CTableHeaderCell>
                                         <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Part Name</CTableHeaderCell>
                                         <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
                                         <CTableHeaderCell />
@@ -391,6 +392,7 @@ export default function EditSectionAssembly() {
                                 <CTableBody>
                                     {sectionAssemblyParts.map((part: any) => {
                                         return (<CTableRow>
+                                            <CTableDataCell style={{ fontWeight: 'initial', width: '60%' }}>{part.part_code}</CTableDataCell>
                                             <CTableDataCell style={{ fontWeight: 'initial', width: '80%' }}>{part.part_name}</CTableDataCell>
                                             <CTableDataCell style={{ width: '20%' }}>{part.qty}</CTableDataCell>
                                             <CTableDataCell>
@@ -752,7 +754,7 @@ export default function EditSectionAssembly() {
                             }}
                         >
                             {addDialog.type.includes('Part') && parts.list.map((part) => {
-                                return <MenuItem value={part.id}>{part.part_name}</MenuItem>
+                                return <MenuItem value={part.id}>{part.part_code ? `${part.part_code} - ${part.part_name}` : part.part_name}</MenuItem>
                             })}
                             {addDialog.type.includes('Boughtout') && boughtOuts.map((bo) => {
                                 return <MenuItem value={bo.id}>{bo.bought_out_name}</MenuItem>

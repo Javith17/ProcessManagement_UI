@@ -70,6 +70,7 @@ export default function EditPart() {
 
     const [formData, setFormData] = useState({
         name: '',
+        part_code: '',
         minimum_stock_qty: '',
         available_qty: '',
         category: ''
@@ -123,6 +124,7 @@ export default function EditPart() {
                     setPartImageName(res.part_detail.image)
                     setFormData({
                         name: res.part_detail.part_name,
+                        part_code: res.part_detail.part_code,
                         minimum_stock_qty: res.part_detail.minimum_stock_qty,
                         available_qty: res.part_detail.available_aty,
                         category: ''
@@ -203,6 +205,7 @@ export default function EditPart() {
                         update_type_entity: 'part_detail',
                         part_id: state?.id,
                         part_name: formData.name,
+                        part_code: formData.part_code,
                         available_qty: formData.available_qty,
                         minimum_stock_qty: formData.minimum_stock_qty,
                         is_machine: selectedType.includes('Machine'),
@@ -363,6 +366,17 @@ export default function EditPart() {
                                 onChange={handleChange}
                                 error={!!errors?.name}
                                 helperText={errors?.name}
+                            />
+                        </Grid2>
+                        <Grid2 size={3}>
+                            <TextField
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                label="Part Code"
+                                name="part_code"
+                                value={formData.part_code}
+                                onChange={handleChange}
                             />
                         </Grid2>
                         <Grid2 size={3}>

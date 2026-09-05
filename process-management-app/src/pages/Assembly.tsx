@@ -88,6 +88,10 @@ export default function Assembly() {
         accessorKey: 'sub_assembly_qty',
       },
       {
+        header: 'Part Code',
+        accessorKey: 'part_code',
+      },
+      {
         header: 'Part',
         accessorKey: 'part_name',
       },
@@ -209,6 +213,10 @@ export default function Assembly() {
       {
         header: 'Sub Assembly Name',
         accessorKey: 'sub_assembly_name',
+      },
+      {
+        header: 'Part Code',
+        accessorKey: 'part_code',
       },
       {
         header: 'Part',
@@ -340,6 +348,10 @@ export default function Assembly() {
       {
         header: 'Sub Assembly Name',
         accessorKey: 'sub_assembly_name',
+      },
+      {
+        header: 'Part Code',
+        accessorKey: 'part_code',
       },
       {
         header: 'Part',

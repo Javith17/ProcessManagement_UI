@@ -97,6 +97,7 @@ export default function Parts() {
             <Table sx={{ '& .MuiTableCell-head':{ lineHeight: 0.8, backgroundColor:"#fadbda" , fontWeight:'bold'} }}>
               <TableHead>
                 <TableRow>
+                  <TableCell>Part Code</TableCell>
                   <TableCell>Part Name</TableCell>
                   <TableCell>Min. Stock Qty</TableCell>
                   <TableCell>Avail. Stock Qty</TableCell>
@@ -108,6 +109,7 @@ export default function Parts() {
               <TableBody>
                 {parts.list.length > 0 ? parts.list.map((row) => (
                   <TableRowStyled key={row.id}>
+                    <TableCell>{row.part_code}</TableCell>
                     <TableCell>{row.part_name}</TableCell>
                     <TableCell>{row.minimum_stock_qty}</TableCell>
                     <TableCell>{row.available_aty}</TableCell>

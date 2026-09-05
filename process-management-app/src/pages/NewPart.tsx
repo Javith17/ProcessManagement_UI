@@ -53,6 +53,7 @@ export default function NewPart() {
 
   const [formData, setFormData] = useState({
     name: '',
+    part_code: '',
     minimum_stock_qty: '',
     available_qty: '',
     category: ''
@@ -132,6 +133,7 @@ export default function NewPart() {
         } else {
           const createPartObj: any = {}
           createPartObj.part_name = formData.name
+          createPartObj.part_code = formData.part_code
           createPartObj.minimum_stock_qty = formData.minimum_stock_qty
           createPartObj.available_qty = formData.available_qty
           createPartObj.is_machine = selectedType.includes('Machine')
@@ -295,6 +297,17 @@ export default function NewPart() {
                 onChange={handleChange}
                 error={!!errors?.name}
                 helperText={errors?.name}
+              />
+            </Grid2>
+            <Grid2 size={3}>
+              <TextField
+                size='small'
+                variant="outlined"
+                fullWidth
+                label="Part Code"
+                name="part_code"
+                value={formData.part_code}
+                onChange={handleChange}
               />
             </Grid2>
             <Grid2 size={3}>
