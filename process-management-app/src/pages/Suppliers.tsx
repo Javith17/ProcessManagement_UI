@@ -16,6 +16,7 @@ import { Stack } from '@mui/system';
 import { MdOutlineEdit, MdDeleteOutline } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import { nav_suppliers, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 
@@ -42,6 +43,10 @@ export default function Suppliers() {
 
   const handleSearch = () => {
     dispatch(fetchSuppliers({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchSuppliers({limit: page_limit, page: pageNo, searchText})).unwrap()
   }
 
   return (
@@ -75,11 +80,14 @@ export default function Suppliers() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
-            navigate('/suppliers/newSupplier')
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+              navigate('/suppliers/newSupplier')
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

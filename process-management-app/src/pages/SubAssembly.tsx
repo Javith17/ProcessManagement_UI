@@ -16,6 +16,7 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import { IoMdCloseCircle } from "react-icons/io";
@@ -60,6 +61,16 @@ export default function SubAssembly() {
   }, [state])
   
   const handleSearch = () => {
+    if (currentTab == 0) {
+      dispatch(fetchSubAssembly(searchText)).unwrap()
+    } else if (currentTab == 1) {
+      dispatch(fetchMainAssembly(searchText)).unwrap()
+    } else if (currentTab == 2) {
+      dispatch(fetchSectionAssembly(searchText)).unwrap()
+    }
+  }
+
+  const handleRefresh = () => {
     if (currentTab == 0) {
       dispatch(fetchSubAssembly(searchText)).unwrap()
     } else if (currentTab == 1) {
@@ -156,16 +167,19 @@ export default function SubAssembly() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
-            if (currentTab == 0)
-              navigate('/subAssembly/newSubAssembly')
-            else if (currentTab == 1)
-              navigate('/subAssembly/newMainAssembly')
-            else if (currentTab == 2)
-              navigate('/subAssembly/newSectionAssembly')
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
+              if (currentTab == 0)
+                navigate('/subAssembly/newSubAssembly')
+              else if (currentTab == 1)
+                navigate('/subAssembly/newMainAssembly')
+              else if (currentTab == 2)
+                navigate('/subAssembly/newSectionAssembly')
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <Tabs value={currentTab} onChange={(e, newValue) => {

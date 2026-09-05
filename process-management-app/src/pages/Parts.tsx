@@ -15,6 +15,7 @@ import { Add, Search } from '@mui/icons-material';
 import { fetchPartsList } from '../slices/machineSlice';
 import { useNavigate } from 'react-router-dom';
 import { nav_parts, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 
@@ -45,6 +46,10 @@ export default function Parts() {
 
   const handleSearch = () => {
     dispatch(fetchPartsList({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchPartsList({limit: page_limit, page: pageNo, searchText})).unwrap()
   }
 
   return (
@@ -78,11 +83,14 @@ export default function Parts() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
-            navigate('/parts/newPart')
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+              navigate('/parts/newPart')
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

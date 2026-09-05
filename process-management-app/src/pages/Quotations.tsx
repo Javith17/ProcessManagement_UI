@@ -21,6 +21,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { errorTextColor, nav_process, nav_quotations, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
@@ -250,6 +251,18 @@ export default function Quotations() {
 
     const handleSearch = () => {
 
+    }
+
+    const handleRefresh = () => {
+        if (currentTab == 2) {
+            dispatch(fetchVendorQuotationList()).unwrap()
+        } else if (currentTab == 3) {
+            dispatch(fetchSupplierQuotationList()).unwrap()
+        } else if (currentTab == 1) {
+            dispatch(fetchSparesQuotationList()).unwrap()
+        } else {
+            dispatch(fetchMachineQuotationList()).unwrap()
+        }
     }
 
     const getYoutubeId = (url: string) => {
@@ -613,24 +626,27 @@ export default function Quotations() {
                     />
                 </Grid2>
                 <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-                    <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
-                        if (currentTab == 2) {
-                            //vendor
-                            setVendorQDialog(true)
-                        } else if (currentTab == 3) {
-                            setSupplierQDialog(true)
-                        } else if (currentTab == 1) {
-                            setSpareDialog(true)
-                        } else {
-                            setCreateDialog(true)
-                        }
-                        setErrors({})
-                        clearValues()
-                        setIsNew(true)
-                        setQuotationTerms(quotation_terms)
-                    }}>
-                        Add New
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <RefreshButton onClick={handleRefresh} />
+                        <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
+                            if (currentTab == 2) {
+                                //vendor
+                                setVendorQDialog(true)
+                            } else if (currentTab == 3) {
+                                setSupplierQDialog(true)
+                            } else if (currentTab == 1) {
+                                setSpareDialog(true)
+                            } else {
+                                setCreateDialog(true)
+                            }
+                            setErrors({})
+                            clearValues()
+                            setIsNew(true)
+                            setQuotationTerms(quotation_terms)
+                        }}>
+                            Add New
+                        </Button>
+                    </Box>
                 </Grid2>
 
                 <Grid2 size={12}>

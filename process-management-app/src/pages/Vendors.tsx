@@ -15,6 +15,7 @@ import { Add, Search } from '@mui/icons-material';
 import { MdOutlineEdit, MdDeleteOutline } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { nav_vendors, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { useSnackbar } from 'notistack';
@@ -50,6 +51,10 @@ export default function Vendors() {
     dispatch(fetchVendors({ searchText })).unwrap()
   }
 
+  const handleRefresh = () => {
+    dispatch(fetchVendors({ limit: page_limit, page: pageNo, searchText })).unwrap()
+  }
+
   return (
     <Box sx={{ display: 'flex', direction: 'column' }}>
       <SidebarNav currentPage={nav_vendors} />
@@ -81,12 +86,15 @@ export default function Vendors() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small"
-            onClick={() => {
-              navigate("/vendors/newVendor")
-            }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small"
+              onClick={() => {
+                navigate("/vendors/newVendor")
+              }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

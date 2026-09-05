@@ -19,6 +19,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { nav_process, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 
@@ -50,6 +51,10 @@ export default function Process() {
 
   const handleSearch = () => {
     dispatch(fetchProcessList({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchProcessList({limit: page_limit, page: pageNo, searchText})).unwrap()
   }
 
   const handleNewProcess = () => {
@@ -116,11 +121,14 @@ export default function Process() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
-            setCreateDialog(true)
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+              setCreateDialog(true)
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

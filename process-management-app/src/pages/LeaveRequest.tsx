@@ -19,6 +19,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import { nav_leave_request, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 export default function LeaveRequest() {
     const dispatch = useAppDispatch()
@@ -39,6 +40,12 @@ export default function LeaveRequest() {
             setLeaveRequestList(res?.list)
         })
     }, [dispatch])
+
+    const handleRefresh = () => {
+        dispatch(fetchLeaveRequestList(searchText.length > 0 ? { search: searchText } : {})).unwrap().then((res: any) => {
+            setLeaveRequestList(res?.list)
+        })
+    }
 
     const updateLeave = (id: string, status: string) => {
         dispatch(updateLeaveStatus({
@@ -96,7 +103,7 @@ export default function LeaveRequest() {
                 </Grid2>
 
                 <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-
+                    <RefreshButton onClick={handleRefresh} />
                 </Grid2>
 
                 <Grid2 size={{ xs: 6, md: 12 }}>

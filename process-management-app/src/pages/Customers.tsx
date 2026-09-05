@@ -16,6 +16,7 @@ import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import { nav_customers, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 
 export default function Customers() {
   const dispatch = useAppDispatch()
@@ -39,6 +40,10 @@ export default function Customers() {
 
   const handleSearch = () => {
     dispatch(fetchCustomers({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchCustomers({limit: page_limit, page: pageNo, searchText})).unwrap()
   }
 
   return (
@@ -72,11 +77,14 @@ export default function Customers() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
-            navigate('/customers/newCustomer')
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+              navigate('/customers/newCustomer')
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

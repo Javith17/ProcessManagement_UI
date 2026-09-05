@@ -23,6 +23,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { nav_attendance, nav_roles, nav_stores, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import loader from '../assets/image/loader.gif'
@@ -73,8 +74,8 @@ export default function Attendance() {
     };
 
     useEffect(() => {
-        dispatch(fetchEmployeeAttendanceList({ attendance_date: 
-            dayjs(selectedDate ? selectedDate : new Date()).format("YYYY-MM-DD") 
+        dispatch(fetchEmployeeAttendanceList({ attendance_date:
+            dayjs(selectedDate ? selectedDate : new Date()).format("YYYY-MM-DD")
         })).unwrap().then((res: any) => {
             setAttendanceList(res?.list)
         })
@@ -82,6 +83,14 @@ export default function Attendance() {
 
     const handleSearch = () => {
         // dispatch(fetchPartsInStores({ searchText })).unwrap()
+    }
+
+    const handleRefresh = () => {
+        dispatch(fetchEmployeeAttendanceList({ attendance_date:
+            dayjs(selectedDate ? selectedDate : new Date()).format("YYYY-MM-DD")
+        })).unwrap().then((res: any) => {
+            setAttendanceList(res?.list)
+        })
     }
 
     return (
@@ -110,7 +119,7 @@ export default function Attendance() {
                 </Grid2>
 
                 <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-
+                    <RefreshButton onClick={handleRefresh} />
                 </Grid2>
 
                 <Grid2 size={{ xs: 6, md: 12 }}>

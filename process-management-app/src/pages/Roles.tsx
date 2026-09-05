@@ -19,6 +19,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { nav_roles, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import loader from '../assets/image/loader.gif'
@@ -53,6 +54,10 @@ export default function Roles() {
 
   const handleSearch = () => {
     dispatch(fetchRoles({ searchText })).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchRoles({ limit: page_limit, page: pageNo, searchText })).unwrap()
   }
 
   useEffect(() => {
@@ -205,16 +210,19 @@ export default function Roles() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
-            setRoleName("")
-            setRoleCode("")
-            setSelectedRole(null)
-            setSelectedPermissions([]);
-            setSelectedScreens([]);
-            setCreateDialog(true);
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
+              setRoleName("")
+              setRoleCode("")
+              setSelectedRole(null)
+              setSelectedPermissions([]);
+              setSelectedScreens([]);
+              setCreateDialog(true);
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

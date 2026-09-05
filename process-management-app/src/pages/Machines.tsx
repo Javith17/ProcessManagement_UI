@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
 import { createAttachment, createNewMachine, deleteMachine, fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList } from '../slices/machineSlice';
 import { nav_boughtouts, nav_machines, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useNavigate } from 'react-router-dom';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
@@ -50,6 +51,10 @@ export default function Machines() {
   }, [])
 
   const handleSearch = () => {
+    dispatch(fetchMachineList(searchText)).unwrap()
+  }
+
+  const handleRefresh = () => {
     dispatch(fetchMachineList(searchText)).unwrap()
   }
 
@@ -197,6 +202,8 @@ export default function Machines() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
+          <Box sx={{ display: 'flex', gap: 1 }}>
+          <RefreshButton onClick={handleRefresh} />
           <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
             // navigate("/machines/newMachine")
             setErrors({})
@@ -204,6 +211,7 @@ export default function Machines() {
           }}>
             Add New
           </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

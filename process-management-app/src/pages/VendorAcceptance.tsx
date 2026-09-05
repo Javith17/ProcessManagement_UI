@@ -32,6 +32,8 @@ const VendorAcceptance = () => {
         (state) => state.auth
     );
 
+    const pendingParts = productionPart?.productionPart?.filter((prod: any) => !prod.vendor_accept_status) ?? []
+
     useEffect(() => {
         dispatch(productionPartDetail({ id: queryParams.get('id') })).unwrap()
     }, [queryParams.get('id')])
@@ -39,7 +41,7 @@ const VendorAcceptance = () => {
 
     const handleClick = (vendorStatus: string) => {
         dispatch(vendorAcceptStatus({
-            id: productionPart?.productionPart?.map((prod:any) => prod.id),
+            id: pendingParts.map((prod:any) => prod.id),
             status: vendorStatus,
             remarks: remarks
         })).unwrap().then((res: any) => {
@@ -79,7 +81,11 @@ const VendorAcceptance = () => {
                                 <Typography variant="h6">Verify and accept the order</Typography>
                                 <Box sx={{ mt: 1 }}>
 
-                                    {productionPart?.productionPart?.map((partProcess: any) =>
+                                    {productionPart?.productionPart?.map((partProcess: any) => {
+                                        const partStatus = partProcess?.vendor_accept_status ?
+                                            partProcess.vendor_accept_status.charAt(0).toUpperCase() + partProcess.vendor_accept_status.slice(1).toLowerCase() :
+                                            (status.length > 0 ? status : "")
+                                        return (
                                         <Card sx={{ padding: 2, mt: 1 }}>
                                             <Grid2 container sx={{ width: '40vw' }}>
                                                 <Grid2 size={5}>
@@ -133,11 +139,23 @@ const VendorAcceptance = () => {
                                                         moment(partProcess?.delivery_date).format('DD-MMM-YYYY') : ""}</Typography>
                                                 </Grid2>
 
+                                                {partStatus.length > 0 && <>
+                                                    <Grid2 size={5}>
+                                                        <Typography variant='subtitle2' color={'grey'}>Status</Typography>
+                                                    </Grid2>
+                                                    <Grid2 size={1}>
+                                                        <Typography variant='subtitle1' color={'grey'}>:</Typography>
+                                                    </Grid2>
+                                                    <Grid2 size={6}>
+                                                        <Typography variant='subtitle1'>{partStatus}</Typography>
+                                                    </Grid2>
+                                                </>}
+
                                             </Grid2>
                                         </Card>
-                                    )}
+                                    )})}
 
-                                    {(productionPart?.productionPart?.length > 0 && !productionPart?.productionPart[0]?.vendor_accept_status && status.length == 0) ? <Grid2 container><Grid2 size={12}>
+                                    {(pendingParts.length > 0 && status.length == 0) ? <Grid2 container><Grid2 size={12}>
                                         <TextField
                                             size='small'
                                             variant="outlined"
@@ -174,17 +192,7 @@ const VendorAcceptance = () => {
                                             >
                                                 Reject Order
                                             </Button>
-                                        </Grid2></Grid2> : <Grid2 container sx={{mt:3}}>
-                                        <Grid2 size={5}>
-                                            <Typography variant='h5' color={'grey'}>Status</Typography>
-                                        </Grid2>
-                                        <Grid2 size={1}>
-                                            <Typography variant='h5' color={'grey'}>:</Typography>
-                                        </Grid2>
-                                        <Grid2 size={6}>
-                                            <Typography variant='h5'>{status.length > 0 ? status :
-                                             productionPart?.productionPart?.length > 0 ? productionPart?.productionPart[0]?.vendor_accept_status.charAt(0).toUpperCase() + productionPart?.productionPart[0]?.vendor_accept_status.slice(1).toLowerCase() : ''} </Typography>
-                                        </Grid2></Grid2>}
+                                        </Grid2></Grid2> : null}
                                 </Box>
                             </Box>
                         </Box>

@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
 import { fetchBoughtOutList } from '../slices/machineSlice';
 import { nav_boughtouts, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useNavigate } from 'react-router-dom';
 import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
@@ -32,6 +33,10 @@ export default function BoughtOuts() {
   },[])
 
   const handleSearch = () => {
+    dispatch(fetchBoughtOutList({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
     dispatch(fetchBoughtOutList({searchText})).unwrap()
   }
 
@@ -66,11 +71,14 @@ export default function BoughtOuts() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-          <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
-            navigate("/boughtout/newBoughtout")
-          }}>
-            Add New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={()=>{
+              navigate("/boughtout/newBoughtout")
+            }}>
+              Add New
+            </Button>
+          </Box>
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>

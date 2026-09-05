@@ -11,6 +11,7 @@ import { MaterialReactTable, MRT_ColumnDef, useMaterialReactTable } from 'materi
 import { CloseSharp } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
+import RefreshButton from '../components/RefreshButton';
 
 export default function Assembly() {
   const dispatch = useAppDispatch()
@@ -55,6 +56,25 @@ export default function Assembly() {
       setOrderDetail(res)
     })
   }, [dispatch])
+
+  const handleRefresh = () => {
+    dispatch(getOrderDetail(state?.order_id)).unwrap().then((res: any) => {
+      setOrderDetail(res)
+    })
+    if (currentTab == 0) {
+      dispatch(getMachineSubAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+        setSubAssemblies(res)
+      })
+    } else if (currentTab == 1) {
+      dispatch(getMachineMainAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+        setMainAssemblies(res)
+      })
+    } else if (currentTab == 2) {
+      dispatch(getMachineSectionAssembly({ machineId: state?.machine_id, orderId: state?.order_id })).unwrap().then((res: any) => {
+        setSectionAssemblies(res)
+      })
+    }
+  }
 
   const columns = useMemo<MRT_ColumnDef<any>[]>(
     //column definitions...
@@ -489,6 +509,10 @@ export default function Assembly() {
               })
             }
           }}>{orderDetail?.status == "Assembly Completed" ? "Assembly Completed" : "Complete Assembly"}</Button>
+        </Grid2>
+
+        <Grid2 size={1} display="flex" alignItems="end">
+          <RefreshButton onClick={handleRefresh} />
         </Grid2>
 
         <Grid2 size={12}>

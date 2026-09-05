@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
 import { createNewMachine, fetchBoughtOutList, fetchMachineList } from '../slices/machineSlice';
 import { nav_assembly, nav_boughtouts, nav_machines, nav_orders, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
@@ -58,6 +59,10 @@ export default function Orders() {
     dispatch(fetchOrdersList({search_list: ['Initiated', 'In-Progress', 'Assembly Completed'], searchText })).unwrap()
   }
 
+  const handleRefresh = () => {
+    dispatch(fetchOrdersList({search_list: ['Initiated', 'In-Progress', 'Assembly Completed'], searchText })).unwrap()
+  }
+
   return (
     <Box sx={{ display: 'flex', direction: 'column' }}>
       <SidebarNav currentPage={state?.type === "assembly" ? nav_assembly : nav_orders} />
@@ -89,6 +94,10 @@ export default function Orders() {
           />
         </Grid2>
 
+        <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
+          <RefreshButton onClick={handleRefresh} />
+        </Grid2>
+
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>
             <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda", fontWeight: 'bold' } }}>
@@ -117,7 +126,7 @@ export default function Orders() {
                           machineId: row.machine.id,
                           orderId: row.id
                         })).unwrap().then((res:any)=>{
-                          if(res?.message?.includes('success')){
+                          if(res?.messag?.includes('success')){
                             dispatch(fetchOrdersList({search_list: ['In-Progress', 'Assembly Completed']})).unwrap()
                           }else{
                             DisplaySnackbar('Unable to configure assembly', 'error', enqueueSnackbar)

@@ -20,6 +20,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { CustomTablePagination, nav_users, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import { IoIosArrowDown } from "react-icons/io";
@@ -76,13 +77,13 @@ export default function Enquiry() {
     const [approveForm, setApproveForm] = React.useState<{
         followupUser: string;
         quotationDate: Dayjs | null;
-        reminderDate: Dayjs | null;
+        reminderDays: string;
         cost: string;
         quantity: string;
     }>({
         followupUser: "",
         quotationDate: null,
-        reminderDate: null,
+        reminderDays: "",
         cost: "",
         quantity: ""
     });
@@ -107,6 +108,10 @@ export default function Enquiry() {
     }, [statusFilter])
 
     const handleSearch = () => {
+        dispatch(fetchEnquiries({ limit: page_limit, page: pageNo, status: statusFilter, searchText: searchText })).unwrap();
+    }
+
+    const handleRefresh = () => {
         dispatch(fetchEnquiries({ limit: page_limit, page: pageNo, status: statusFilter, searchText: searchText })).unwrap();
     }
 
@@ -178,11 +183,12 @@ export default function Enquiry() {
     }
 
     const handleApproveSubmit = () => {
+        const reminderDate = dayjs().add(Number(approveForm.reminderDays), 'day').format('YYYY-MM-DD');
         dispatch(updateEnquiryStatus({
             enquiry_id: selectedRow?.id,
             status: 'Approve',
             quotation_date: approveForm.quotationDate,
-            reminder_date: approveForm.reminderDate,
+            reminder_date: reminderDate,
             cost: approveForm.cost,
             qty: approveForm.quantity,
             approved_by: JSON.parse(localStorage.getItem("userDetail") as string).user.userId,
@@ -194,7 +200,7 @@ export default function Enquiry() {
                 setApproveForm({
                     followupUser: "",
                     quotationDate: null,
-                    reminderDate: null,
+                    reminderDays: "",
                     cost: "",
                     quantity: ""
                 })
@@ -287,6 +293,8 @@ export default function Enquiry() {
                             ))}
                         </Select>
                     </FormControl>
+
+                    <RefreshButton onClick={handleRefresh} />
 
                     <Button
                         variant="contained"
@@ -696,21 +704,18 @@ export default function Enquiry() {
                             </LocalizationProvider>
                         </Grid2>
 
-                        {/* Reminder Date */}
+                        {/* Reminder Days */}
                         <Grid2 size={{ xs: 12, md: 6 }}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DatePicker
-                                    label="Reminder Date"
-                                    sx={{ mt: 2, width: '100%' }}
-                                    value={dayjs(approveForm.reminderDate)}
-                                    onChange={(e: any) => {
-                                        setApproveForm({ ...approveForm, reminderDate: e })
-                                    }}
-                                    slotProps={{
-                                        textField: { fullWidth: true }
-                                    }}
-                                />
-                            </LocalizationProvider>
+                            <TextField
+                                fullWidth
+                                sx={{ mt: 2 }}
+                                type="number"
+                                label="Reminder Days"
+                                value={approveForm.reminderDays}
+                                onChange={(e) =>
+                                    setApproveForm({ ...approveForm, reminderDays: e.target.value })
+                                }
+                            />
                         </Grid2>
 
                         {/* Cost */}

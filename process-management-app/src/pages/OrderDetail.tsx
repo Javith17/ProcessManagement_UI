@@ -5,7 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { MdOutlineEdit } from "react-icons/md";
+import { MdOutlineEdit, MdOutlineRemoveRedEye } from "react-icons/md";
 import { Box, Button, Card, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid2, Input, InputAdornment, InputLabel, MenuItem, Paper, Select, Tab, Tabs, TextField, Typography } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
@@ -59,6 +59,9 @@ export default function OrderDetail() {
     const [addBODialog, setAddBODialog] = useState(false)
     const [supplierList, setSupplierList] = useState<any[]>()
     const [selectedSupplier, setSelectedSupplier] = useState<any>()
+
+    const [linksDialog, setLinksDialog] = useState(false)
+    const [linksList, setLinksList] = useState<{ label: string, url: string }[]>([])
 
     useEffect(() => {
         if (state?.order_id) {
@@ -291,25 +294,47 @@ export default function OrderDetail() {
           {
             header: '',
             accessorKey: 'id',
-            size: 25,
+            size: 50,
             Cell: (row: any) => (
-                <FaWhatsapp color='green' onClick={() => {
-                    if (row?.row?.original?.vendor_id) {
-                        dispatch(fetchVendorAttachment({ vendor_id: row?.row?.original?.vendor_id, 
-                            part_id: row?.row?.original?.part_id })).unwrap().then((res: any) => {
-                            if (res.attachments?.length > 0) {
-                                const link = res.attachments.map((att: any) => `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`).join(',')
-                                const text = `Hi ${res.vendor.vendor_name}
-                                Accept the order using following link ${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row?.row?.original?.id} 
-                                Get the drawings from following link ${link}`
-                                console.log("-----------", text)
-                                window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${text}`, '_blank')?.focus()
-                            } else {
-                                DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)
-                            }
-                        })
-                    }
-                }} />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <FaWhatsapp color='green' style={{ cursor: 'pointer' }} onClick={() => {
+                        if (row?.row?.original?.vendor_id) {
+                            dispatch(fetchVendorAttachment({ vendor_id: row?.row?.original?.vendor_id,
+                                part_id: row?.row?.original?.part_id })).unwrap().then((res: any) => {
+                                if (res.attachments?.length > 0) {
+                                    const link = res.attachments.map((att: any) => `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`).join(',')
+                                    const text = `Hi ${res.vendor.vendor_name}
+                                    Accept the order using following link ${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row?.row?.original?.id}
+                                    Get the drawings from following link ${link}`
+                                    console.log("-----------", text)
+                                    window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${text}`, '_blank')?.focus()
+                                } else {
+                                    DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)
+                                }
+                            })
+                        }
+                    }} />
+                    <MdOutlineRemoveRedEye color='teal' style={{ cursor: 'pointer' }} onClick={() => {
+                        if (row?.row?.original?.vendor_id) {
+                            dispatch(fetchVendorAttachment({ vendor_id: row?.row?.original?.vendor_id,
+                                part_id: row?.row?.original?.part_id })).unwrap().then((res: any) => {
+                                if (res.attachments?.length > 0) {
+                                    const attachmentLinks = res.attachments.map((att: any) => ({
+                                        label: att.file_name,
+                                        url: `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`
+                                    }))
+                                    setLinksList([
+                                        { label: 'Accept Order', url: `${process.env.REACT_APP_UI_URL}/vendorAccept?id=${row?.row?.original?.id}` },
+                                        ...attachmentLinks
+                                    ])
+                                    setLinksDialog(true)
+                                } else {
+                                    DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)
+                                }
+                            })
+                        }
+                    }} />
+                </Box>
             )
           }
         ],
@@ -729,6 +754,32 @@ export default function OrderDetail() {
                     }}>
                         Delivered
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog to view shared links */}
+
+            <Dialog
+                open={linksDialog}
+                onClose={() => {
+                    setLinksDialog(false)
+                    setLinksList([])
+                }}>
+                <DialogTitle>Shared Links</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: '300px' }}>
+                        {linksList.map((link, index) => (
+                            <a key={index} href={link.url} target='_blank' rel='noreferrer'>
+                                {link.label}
+                            </a>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setLinksDialog(false)
+                        setLinksList([])
+                    }} sx={{ color: '#bb0037' }}>Close</Button>
                 </DialogActions>
             </Dialog>
 

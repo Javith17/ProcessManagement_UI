@@ -19,6 +19,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import DialogTitle from '@mui/material/DialogTitle';
 import { nav_roles, nav_stores, page_limit, TableRowStyled } from '../constants';
+import RefreshButton from '../components/RefreshButton';
 import { useSnackbar } from 'notistack';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import loader from '../assets/image/loader.gif'
@@ -41,6 +42,12 @@ export default function Stores() {
 
   const handleSearch = () => {
     dispatch(fetchPartsInStores({searchText})).unwrap()
+  }
+
+  const handleRefresh = () => {
+    dispatch(fetchPartsInStores({searchText})).unwrap().then((res: any) => {
+      setPartsInStoresList(res?.list)
+    })
   }
 
   return (
@@ -74,7 +81,7 @@ export default function Stores() {
           />
         </Grid2>
         <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
-
+          <RefreshButton onClick={handleRefresh} />
         </Grid2>
         <Grid2 size={{ xs: 6, md: 12 }}>
           <TableContainer component={Paper}>
