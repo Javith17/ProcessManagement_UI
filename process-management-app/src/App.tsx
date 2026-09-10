@@ -40,6 +40,45 @@ import Enquiry from './pages/Enquiry';
 import Attendance from './pages/Attendance';
 import LeaveRequest from './pages/LeaveRequest';
 
+import V2ThemeWrapper from './v2/V2ThemeWrapper';
+import V2DefaultLayout from './v2/V2DefaultLayout';
+import V2ProtectedLayout from './v2/V2ProtectedLayout';
+import V2Login from './v2/pages/V2Login';
+import V2Dashboard from './v2/pages/V2Dashboard';
+import V2Users from './v2/pages/V2Users';
+import V2Roles from './v2/pages/V2Roles';
+import V2Vendors from './v2/pages/V2Vendors';
+import V2Suppliers from './v2/pages/V2Suppliers';
+import V2Stores from './v2/pages/V2Stores';
+import V2Attendance from './v2/pages/V2Attendance';
+import V2LeaveRequest from './v2/pages/V2LeaveRequest';
+import V2Customers from './v2/pages/V2Customers';
+import V2Process from './v2/pages/V2Process';
+import V2Parts from './v2/pages/V2Parts';
+import V2BoughtOuts from './v2/pages/V2BoughtOuts';
+import V2NewVendor from './v2/pages/V2NewVendor';
+import V2NewSupplier from './v2/pages/V2NewSupplier';
+import V2NewCustomer from './v2/pages/V2NewCustomer';
+import V2NewPart from './v2/pages/V2NewPart';
+import V2EditPart from './v2/pages/V2EditPart';
+import V2NewBoughtout from './v2/pages/V2NewBoughtout';
+import V2EditBoughtout from './v2/pages/V2EditBoughtout';
+import V2Machines from './v2/pages/V2Machines';
+import V2NewMachine from './v2/pages/V2NewMachine';
+import V2SubAssembly from './v2/pages/V2SubAssembly';
+import V2NewSubAssembly from './v2/pages/V2NewSubAssembly';
+import V2EditSubAssembly from './v2/pages/V2EditSubAssembly';
+import V2NewMainAssembly from './v2/pages/V2NewMainAssembly';
+import V2EditMainAssembly from './v2/pages/V2EditMainAssembly';
+import V2NewSectionAssembly from './v2/pages/V2NewSectionAssembly';
+import V2EditSectionAssembly from './v2/pages/V2EditSectionAssembly';
+import V2Quotations from './v2/pages/V2Quotations';
+import V2Assembly from './v2/pages/V2Assembly';
+import V2Orders from './v2/pages/V2Orders';
+import V2OrderDetail from './v2/pages/V2OrderDetail';
+import V2Enquiry from './v2/pages/V2Enquiry';
+import V2VendorAcceptance from './v2/pages/V2VendorAcceptance';
+
 function App() {
   return (
     <>
@@ -82,6 +121,49 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/orderDetail" element={<OrderDetail />} />
           <Route path="/enquiries" element={<Enquiry />} />
+        </Route>
+
+        {/* ===== v2 design concept — additive only, mirrors every route above under /v2 ===== */}
+        <Route path="/v2" element={<V2ThemeWrapper />}>
+          <Route path="vendorAccept" element={<V2VendorAcceptance />} />
+          <Route element={<V2DefaultLayout />}>
+            <Route path="login" element={<V2Login />} />
+          </Route>
+          <Route element={<V2ProtectedLayout />}>
+            <Route index element={<V2Dashboard />} />
+            <Route path="users" element={<V2Users />} />
+            <Route path="roles" element={<V2Roles />} />
+            <Route path="vendors" element={<V2Vendors />} />
+            <Route path="suppliers" element={<V2Suppliers />} />
+            <Route path="stores" element={<V2Stores />} />
+            <Route path="attendance" element={<V2Attendance />} />
+            <Route path="leave-request" element={<V2LeaveRequest />} />
+            <Route path="customers" element={<V2Customers />} />
+            <Route path="process" element={<V2Process />} />
+            <Route path="parts" element={<V2Parts />} />
+            <Route path="boughtout" element={<V2BoughtOuts />} />
+            <Route path="vendors/newVendor" element={<V2NewVendor />} />
+            <Route path="suppliers/newSupplier" element={<V2NewSupplier />} />
+            <Route path="customers/newCustomer" element={<V2NewCustomer />} />
+            <Route path="parts/newPart" element={<V2NewPart />} />
+            <Route path="parts/editPart" element={<V2EditPart />} />
+            <Route path="boughtout/newBoughtout" element={<V2NewBoughtout />} />
+            <Route path="boughtout/editBoughtout" element={<V2EditBoughtout />} />
+            <Route path="machines" element={<V2Machines />} />
+            <Route path="machines/newMachine" element={<V2NewMachine />} />
+            <Route path="subAssembly" element={<V2SubAssembly />} />
+            <Route path="subAssembly/newSubAssembly" element={<V2NewSubAssembly />} />
+            <Route path="subAssembly/editSubAssembly" element={<V2EditSubAssembly />} />
+            <Route path="subAssembly/newMainAssembly" element={<V2NewMainAssembly />} />
+            <Route path="subAssembly/editMainAssembly" element={<V2EditMainAssembly />} />
+            <Route path="subAssembly/newSectionAssembly" element={<V2NewSectionAssembly />} />
+            <Route path="subAssembly/editSectionAssembly" element={<V2EditSectionAssembly />} />
+            <Route path="quotations" element={<V2Quotations />} />
+            <Route path="assembly" element={<V2Assembly />} />
+            <Route path="orders" element={<V2Orders />} />
+            <Route path="orderDetail" element={<V2OrderDetail />} />
+            <Route path="enquiries" element={<V2Enquiry />} />
+          </Route>
         </Route>
       </Routes>
     </>

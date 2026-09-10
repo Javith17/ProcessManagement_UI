@@ -1,0 +1,270 @@
+import { useState } from 'react';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import { MdOutlineEdit } from "react-icons/md";
+import { Box, Button, Grid2, InputAdornment, Paper, Tab, Tabs, TextField } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux-hooks';
+import { useEffect } from 'react';
+import { Add, Search } from '@mui/icons-material';
+import { useLocation, useNavigate } from 'react-router-dom';
+import RefreshButton from '../../components/RefreshButton';
+import { fetchMainAssembly, fetchSectionAssembly, fetchSubAssembly } from '../../slices/assemblySlice';
+import V2PageShell from '../components/V2PageShell';
+import { V2TableRowStyled } from '../components/v2Table';
+import { v2Colors } from '../theme';
+
+// Functional port of pages/SubAssembly.tsx.
+export default function V2SubAssembly() {
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const { state } = useLocation()
+
+  const { subAssemblies, mainAssemblies, sectionAssemblies } = useAppSelector(
+    (state) => state.assembly
+  );
+
+  const [searchText, setSearchText] = useState("")
+  const [currentTab, setCurrentTab] = useState(0)
+
+  useEffect(() => {
+    dispatch(fetchSubAssembly()).unwrap()
+  }, [dispatch])
+
+  useEffect(() => {
+    if (currentTab == 0) {
+      dispatch(fetchSubAssembly()).unwrap()
+    } else if (currentTab == 1) {
+      dispatch(fetchMainAssembly()).unwrap()
+    } else if (currentTab == 2) {
+      dispatch(fetchSectionAssembly()).unwrap()
+    }
+  }, [currentTab])
+
+  useEffect(() => {
+    if (state?.from) {
+      if (state?.from.includes('Section')) {
+        setCurrentTab(2)
+      } else if (state?.from.includes('Main')) {
+        setCurrentTab(1)
+      } else if (state?.from.includes('Sub')) {
+        setCurrentTab(0)
+      }
+    }
+  }, [state])
+
+  const handleSearch = () => {
+    if (currentTab == 0) {
+      dispatch(fetchSubAssembly(searchText)).unwrap()
+    } else if (currentTab == 1) {
+      dispatch(fetchMainAssembly(searchText)).unwrap()
+    } else if (currentTab == 2) {
+      dispatch(fetchSectionAssembly(searchText)).unwrap()
+    }
+  }
+
+  const handleRefresh = () => {
+    if (currentTab == 0) {
+      dispatch(fetchSubAssembly(searchText)).unwrap()
+    } else if (currentTab == 1) {
+      dispatch(fetchMainAssembly(searchText)).unwrap()
+    } else if (currentTab == 2) {
+      dispatch(fetchSectionAssembly(searchText)).unwrap()
+    }
+  }
+
+  const getMainAssemblyDays = (sub: any) => {
+    const mainAssemblyParts: Array<{ id: string, days: number }> = []
+    sub.map((s: any) => {
+      if (s.part) {
+        if (mainAssemblyParts.filter((mp: any) => mp.id == s.part.id).length == 0) {
+          mainAssemblyParts.push({ id: s.part.id, days: s.part.days })
+        }
+      } else if (s.sub_assembly) {
+        s.sub_assembly.sub_assembly_detail.map((sab: any) => {
+          if (sab.part) {
+            if (mainAssemblyParts.filter((mp: any) => mp.id == sab.part.id).length == 0) {
+              mainAssemblyParts.push({ id: sab.part.id, days: sab.part.days })
+            }
+          }
+        })
+      }
+    })
+    return mainAssemblyParts.reduce((n: any, vl: any) => n + vl.days, 0)
+  }
+
+  const getSectionAssemblyDays = (sub: any) => {
+    const sectionAssemblyParts: Array<{ id: string, days: number }> = []
+    sub.map((s: any) => {
+      if (s.part) {
+        if (sectionAssemblyParts.filter((mp: any) => mp.id == s.part.id).length == 0) {
+          sectionAssemblyParts.push({ id: s.part.id, days: s.part.days })
+        }
+      } else if (s.sub_assembly) {
+        s.sub_assembly.sub_assembly_detail.map((sab: any) => {
+          if (sab.part) {
+            if (sectionAssemblyParts.filter((mp: any) => mp.id == sab.part.id).length == 0) {
+              sectionAssemblyParts.push({ id: sab.part.id, days: sab.part.days })
+            }
+          }
+        })
+      } else if (s.main_assembly) {
+        s.main_assembly.main_assembly_detail.map((mad: any) => {
+          if (mad.part) {
+            if (sectionAssemblyParts.filter((sp: any) => sp.id == mad.part.id).length == 0) {
+              sectionAssemblyParts.push({ id: mad.part.id, days: mad.part.days })
+            }
+          } else if (mad.sub_assembly) {
+            mad.sub_assembly.sub_assembly_detail.map((sad: any) => {
+              if (sad.part) {
+                if (sectionAssemblyParts.filter((sp: any) => sp.id == sad.part.id).length == 0) {
+                  sectionAssemblyParts.push({ id: sad.part.id, days: sad.part.days })
+                }
+              }
+            })
+          }
+        })
+      }
+    })
+    return sectionAssemblyParts.reduce((n: any, vl: any) => n + vl.days, 0)
+  }
+
+  return (
+    <V2PageShell currentPage="assemblySettings">
+      <Grid2 container spacing={2}>
+        <Grid2 size={{ xs: 6, md: 8 }}>
+          <TextField
+            placeholder='Search sub assembly'
+            variant="outlined"
+            size='small'
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value)
+            }}
+            onKeyDown={(ev) => {
+              if (ev.key == "Enter") {
+                handleSearch()
+              }
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </Grid2>
+        <Grid2 size="grow" display="flex" alignItems="end" flexDirection="column">
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <RefreshButton onClick={handleRefresh} />
+            <Button variant="contained" startIcon={<Add />} size="small" onClick={() => {
+              if (currentTab == 0)
+                navigate('/v2/subAssembly/newSubAssembly')
+              else if (currentTab == 1)
+                navigate('/v2/subAssembly/newMainAssembly')
+              else if (currentTab == 2)
+                navigate('/v2/subAssembly/newSectionAssembly')
+            }}>
+              Add New
+            </Button>
+          </Box>
+        </Grid2>
+        <Grid2 size={{ xs: 6, md: 12 }}>
+          <Tabs value={currentTab} onChange={(e, newValue) => {
+            setCurrentTab(newValue)
+          }} variant='fullWidth' textColor='secondary' indicatorColor='secondary'>
+            <Tab label="Sub Assembly" value={0} />
+            <Tab label="Main Assembly" value={1} />
+            <Tab label="Section Assembly" value={2} />
+          </Tabs>
+          <TableContainer component={Paper} sx={{ mt: 1, border: `1px solid ${v2Colors.line}`, boxShadow: 'none' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Serial No</TableCell>
+                  <TableCell>Assembly Name</TableCell>
+                  <TableCell>Parts</TableCell>
+                  <TableCell>Boughtouts</TableCell>
+                  {currentTab > 0 && <TableCell>Sub Assembly</TableCell>}
+                  {currentTab == 2 && <TableCell>Main Assembly</TableCell>}
+                  {currentTab > 0 && <TableCell>Machine</TableCell>}
+                  <TableCell>Days</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {currentTab == 0 ? subAssemblies.length > 0 ? subAssemblies.map((row) => (
+                  <V2TableRowStyled key={row.id}>
+                    <TableCell>{row.serial_no}</TableCell>
+                    <TableCell>{row.sub_assembly_name}</TableCell>
+                    <TableCell>{row.sub_assembly_detail?.filter((sub: any) => sub.part != null)?.length || 0}</TableCell>
+                    <TableCell>{row.sub_assembly_detail.filter((sub: any) => sub.bought_out != null)?.length || 0}</TableCell>
+                    <TableCell>{row.sub_assembly_detail.filter((sub: any) => sub.part != null).reduce((n: any, vl: any) => n + vl?.part?.days, 0) +
+                      row.sub_assembly_detail.filter((sub: any) => sub.bought_out != null).reduce((n: any, vl: any) => n + vl?.bought_out?.days, 0)}</TableCell>
+                    <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                      navigate('/v2/subAssembly/editSubAssembly', {
+                        state: {
+                          id: row.id
+                        }
+                      })
+                    }} /></TableCell>
+                  </V2TableRowStyled>
+                )) : <TableRow key={0}>
+                  <TableCell colSpan={5} align='center'>No Data</TableCell>
+                </TableRow> : currentTab == 1 ? mainAssemblies.length > 0 ? mainAssemblies.map((row) => (
+                  <V2TableRowStyled key={row.id}>
+                    <TableCell>{row.serial_no}</TableCell>
+                    <TableCell>{row.main_assembly_name}</TableCell>
+                    <TableCell>{row.main_assembly_detail?.filter((sub: any) => sub.part != null)?.length || 0}</TableCell>
+                    <TableCell>{row.main_assembly_detail.filter((sub: any) => sub.bought_out != null)?.length || 0}</TableCell>
+                    <TableCell>{row.main_assembly_detail.filter((sub: any) => sub.sub_assembly != null)?.length || 0}</TableCell>
+                    <TableCell>{row.machine.machine_name}</TableCell>
+                    <TableCell>{getMainAssemblyDays(row.main_assembly_detail)}</TableCell>
+                    <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                      navigate('/v2/subAssembly/editMainAssembly', {
+                        state: {
+                          id: row.id
+                        }
+                      })
+                    }} /></TableCell>
+                  </V2TableRowStyled>
+                )) : <TableRow key={0}>
+                  <TableCell colSpan={7} align='center'>No Data</TableCell>
+                </TableRow> : currentTab == 2 ? sectionAssemblies.length > 0 ? sectionAssemblies.map((row) => (
+                  <V2TableRowStyled key={row.id}>
+                    <TableCell>{row.serial_no}</TableCell>
+                    <TableCell>{row.section_assembly_name}</TableCell>
+                    <TableCell>{row.section_assembly_detail?.filter((sub: any) => sub.part != null)?.length || 0}</TableCell>
+                    <TableCell>{row.section_assembly_detail.filter((sub: any) => sub.bought_out != null)?.length || 0}</TableCell>
+                    <TableCell>{row.section_assembly_detail.filter((sub: any) => sub.sub_assembly != null)?.length || 0}</TableCell>
+                    <TableCell>{row.section_assembly_detail.filter((sub: any) => sub.main_assembly != null)?.length || 0}</TableCell>
+                    <TableCell>{row.machine.machine_name}</TableCell>
+                    <TableCell>{getSectionAssemblyDays(row.section_assembly_detail)}</TableCell>
+                    <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                      navigate('/v2/subAssembly/editSectionAssembly', {
+                        state: {
+                          id: row.id
+                        }
+                      })
+                    }} /></TableCell>
+                  </V2TableRowStyled>
+                )) : <TableRow key={0}>
+                  <TableCell colSpan={8} align='center'>No Data</TableCell>
+                </TableRow> : <TableRow key={0}>
+                  <TableCell colSpan={8} align='center'>No Data</TableCell>
+                </TableRow>}
+
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid2>
+      </Grid2>
+    </V2PageShell>
+  );
+}
