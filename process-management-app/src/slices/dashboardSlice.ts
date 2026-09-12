@@ -54,6 +54,14 @@ export const updateBoughtoutPayment = createAsyncThunk('updateBoughtoutPayment',
     return resData
 })
 
+export const recordBoughtoutPayment = createAsyncThunk('recordBoughtoutPayment', async (data: any) => {
+    const response = await axiosInstance.post('order/recordBoughtoutPayment', data ,{
+        headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+    })
+    const resData = response.data
+    return resData
+})
+
 export const fetchPendingDeliveryParts = createAsyncThunk('deliveryPendingParts', async (data?: { searchText?:String, limit?: number, page?: number }) => {
     const response = await axiosInstance.get('order/deliveryPendingParts',
     {
@@ -230,6 +238,19 @@ const dashboardSlice = createSlice({
         .addCase(updateBoughtoutPayment.rejected, (state, action) => {
             state.status = 'error';
             state.error = action.error.message || "Unable to load roles"
+        })
+
+        .addCase(recordBoughtoutPayment.pending, (state) => {
+            state.status = 'loading';
+            state.error = null
+        })
+        .addCase(recordBoughtoutPayment.fulfilled, (state, action) => {
+            state.status = 'idle';
+            state.message = action.payload?.message
+        })
+        .addCase(recordBoughtoutPayment.rejected, (state, action) => {
+            state.status = 'error';
+            state.error = action.error.message || "Unable to record payment"
         })
 
         .addCase(fetchPendingDeliveryParts.pending, (state) => {

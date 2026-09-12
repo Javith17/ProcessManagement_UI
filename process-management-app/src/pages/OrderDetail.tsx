@@ -11,13 +11,15 @@ import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { Add, Search, Settings } from '@mui/icons-material';
-import { createNewMachine, fetchBoughtOutList, fetchMachineList, fetchVendorAttachment, getMachineDetails } from '../slices/machineSlice';
+import { createNewMachine, fetchBoughtOutList, fetchMachineList, fetchSupplierAttachment, fetchVendorAttachment, getMachineDetails } from '../slices/machineSlice';
 import { nav_assembly, nav_boughtouts, nav_machines, nav_orders, TableRowStyled } from '../constants';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaWhatsapp } from "react-icons/fa6";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
-import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachinePart, fetchDeliveryChallanDoc, fetchDeliveryChallanList, fetchOrdersDetail, generateDeliveryChallan, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart, uploadChallanPdf } from '../slices/quotationSlice';
+import { closeAssembly, closeBoughtoutAssembly, closePartAssembly, completeProductPartProcess, deliverProductionMachineBO, deliverProductionMachinePart, fetchDeliveryChallanDoc, fetchDeliveryChallanList, fetchOrdersDetail, fetchPurchaseOrderDoc, fetchPurchaseOrderList, generateDeliveryChallan, generatePurchaseOrder, moveProductionMachinePartToVendor, rescheduleProductPartProcess, updateProductionMachineBO, updateProductionMachinePart, uploadChallanPdf, uploadPoPdf } from '../slices/quotationSlice';
+import { po_terms } from '../utils/Constants';
+import { recordBoughtoutPayment } from '../slices/dashboardSlice';
 import { CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -58,6 +60,9 @@ export default function OrderDetail() {
     const [completeDialog, setCompleteDialog] = useState(false)
     const [completeData, setCompleteData] = useState<any>()
 
+    const [deliverBODialog, setDeliverBODialog] = useState(false)
+    const [deliverBOData, setDeliverBOData] = useState<any>()
+
     const [selectedBO, setSelectedBO] = useState<any>()
     const [addBODialog, setAddBODialog] = useState(false)
     const [supplierList, setSupplierList] = useState<any[]>()
@@ -78,6 +83,20 @@ export default function OrderDetail() {
     })
     const dcContentRef = useRef<HTMLDivElement>(null);
     const reactToPrintDcFn = useReactToPrint({ contentRef: dcContentRef });
+
+    const [poListDialog, setPoListDialog] = useState(false)
+    const [poList, setPoList] = useState<any[]>([])
+    const [poDocDialog, setPoDocDialog] = useState<{ open: boolean, html: string, id: string, supplierMobile: string }>({
+        open: false, html: '', id: '', supplierMobile: ''
+    })
+    const [generatePoDialog, setGeneratePoDialog] = useState(false)
+    const [generatePoData, setGeneratePoData] = useState<any>({
+        supplier_id: '', supplier_name: '', line_items: [],
+        po_date: dayjs(new Date()), reference_doc_no: '', payment_terms: '50% advance, 50% at the time of dispatch',
+        delivery_schedule: '', gst_percent: 18, terms: po_terms
+    })
+    const poContentRef = useRef<HTMLDivElement>(null);
+    const reactToPrintPoFn = useReactToPrint({ contentRef: poContentRef });
 
     useEffect(() => {
         if (state?.order_id) {
@@ -298,6 +317,106 @@ export default function OrderDetail() {
         })
     }
 
+    const openPoDoc = (id: string) => {
+        dispatch(fetchPurchaseOrderDoc(id)).unwrap().then((res: any) => {
+            setPoDocDialog({ open: true, html: res.html, id, supplierMobile: res.supplier_mobile_no1 })
+        })
+    }
+
+    const handleViewPoList = () => {
+        dispatch(fetchPurchaseOrderList(orderId)).unwrap().then((res: any) => {
+            setPoList(res?.list || [])
+            setPoListDialog(true)
+        })
+    }
+
+    const handleRowPoClick = (row: any) => {
+        if (row?.po_id) {
+            openPoDoc(row.po_id)
+            return
+        }
+        const pendingBOs = orderDetailBOList.filter((bo: any) =>
+            bo.supplier_id == row.supplier_id && bo.supplier_accept_status === 'accepted' && !bo.po_id
+        )
+        const line_items = pendingBOs.map((bo: any) => ({
+            production_boughtout_id: bo.id,
+            description: bo.bought_out_name,
+            qty: Number(bo.order_qty) || 0,
+            uom: 'NOS',
+            rate: Number(bo.order_qty) > 0 ? (Number(bo.cost) || 0) / Number(bo.order_qty) : (Number(bo.cost) || 0),
+            remarks: ''
+        }))
+        setGeneratePoData({
+            supplier_id: row.supplier_id, supplier_name: row.supplier_name, line_items,
+            po_date: dayjs(new Date()), reference_doc_no: '', payment_terms: '50% advance, 50% at the time of dispatch',
+            delivery_schedule: '', gst_percent: 18, terms: po_terms
+        })
+        setGeneratePoDialog(true)
+    }
+
+    const handleGeneratePoSubmit = () => {
+        dispatch(generatePurchaseOrder({
+            order_id: orderId,
+            supplier_id: generatePoData.supplier_id,
+            po_date: dayjs(generatePoData.po_date).format('YYYY-MM-DD'),
+            reference_doc_no: generatePoData.reference_doc_no,
+            payment_terms: generatePoData.payment_terms,
+            delivery_schedule: generatePoData.delivery_schedule,
+            gst_percent: generatePoData.gst_percent,
+            line_items: generatePoData.line_items,
+            terms: generatePoData.terms
+        })).unwrap().then((res: any) => {
+            if (res?.id) {
+                setOrderDetailBOList(
+                    orderDetailBOList.map((od: any) => {
+                        const matched = generatePoData.line_items.some((li: any) => li.production_boughtout_id == od.id)
+                        return matched ? { ...od, po_no: res.po_no, po_id: res.id } : od
+                    })
+                )
+                setGeneratePoDialog(false)
+                DisplaySnackbar('Purchase Order generated successfully', 'success', enqueueSnackbar)
+                openPoDoc(res.id)
+            } else {
+                DisplaySnackbar('Unable to generate Purchase Order', 'error', enqueueSnackbar)
+            }
+        }).catch((err: any) => {
+            DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+        })
+    }
+
+    const handleSharePoWhatsapp = () => {
+        if (!poDocDialog.html) return
+
+        const captureContainer = document.createElement('div')
+        captureContainer.style.position = 'fixed'
+        captureContainer.style.top = '0'
+        captureContainer.style.left = '-10000px'
+        captureContainer.style.width = '800px'
+        captureContainer.innerHTML = poDocDialog.html
+        document.body.appendChild(captureContainer)
+
+        html2canvas(captureContainer, { windowWidth: 800, width: captureContainer.scrollWidth, height: captureContainer.scrollHeight }).then((canvas) => {
+            document.body.removeChild(captureContainer)
+            const imgData = canvas.toDataURL('image/png')
+            const pdf = new jsPDF('p', 'pt', [canvas.width, canvas.height])
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+            const blob = pdf.output('blob')
+            const file = new File([blob], `${poDocDialog.id}.pdf`, { type: 'application/pdf' })
+            dispatch(uploadPoPdf({ file })).unwrap().then((res: any) => {
+                if (res?.file_name) {
+                    const link = `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${res.file_name}`
+                    const text = `Purchase Order\n${link}`
+                    window.open(`https://wa.me/${poDocDialog.supplierMobile}?text=${encodeURIComponent(text)}`, '_blank')?.focus()
+                } else {
+                    DisplaySnackbar('Unable to share Purchase Order', 'error', enqueueSnackbar)
+                }
+            })
+        }).catch(() => {
+            if (captureContainer.parentNode) document.body.removeChild(captureContainer)
+            DisplaySnackbar('Unable to share Purchase Order', 'error', enqueueSnackbar)
+        })
+    }
+
     const columns = useMemo<MRT_ColumnDef<any>[]>(
         //column definitions...
         () => [
@@ -353,19 +472,19 @@ export default function OrderDetail() {
             header: 'Status',
             accessorKey: 'status',
             Cell: ( row:any ) => (
-                <Box 
+                <Box
                 sx={{
-                    borderColor: row?.row?.original?.status.includes('Pending') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
-                    color: row?.row?.original?.status.includes('Pending') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
+                    borderColor: row?.row?.original?.status.includes('Pending') || row?.row?.original?.status.includes('Rejected') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
+                    color: row?.row?.original?.status.includes('Pending') || row?.row?.original?.status.includes('Rejected') ? '#F95454' : row?.row?.original?.status.includes('Progress') ? '#006BFF' : '#347928',
                     borderStyle: 'solid', borderWidth: 'thin',
                     textAlign: 'center',
-                    borderRadius: '4px', cursor: row?.row?.original?.status.includes('Progress') ? 'pointer' : 'default',
+                    borderRadius: '4px', cursor: row?.row?.original?.status.includes('Progress') || row?.row?.original?.status.includes('Rejected') ? 'pointer' : 'default',
                     ":hover": {
-                        backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : 'white',
-                        color: row?.row?.original?.status.includes('Progress') ? 'white' :
+                        backgroundColor: row?.row?.original?.status.includes('Progress') ? '#006BFF' : row?.row?.original?.status.includes('Rejected') ? '#F95454' : 'white',
+                        color: row?.row?.original?.status.includes('Progress') || row?.row?.original?.status.includes('Rejected') ? 'white' :
                         row?.row?.original?.status.includes('Pending') ? '#F95454' : '#347928'
                     }
-                }} 
+                }}
                 onClick={() => {
                     if (state?.type === "order") {
                         if (row?.row?.original?.status.includes('Progress')) {
@@ -397,6 +516,16 @@ export default function OrderDetail() {
                                 setMoveToVendorDialog(true)
                             }
 
+                        } else if (row?.row?.original?.status.includes('Rejected')) {
+                            setSelectedPart({ id: row?.row?.original?.id, part_name: row?.row?.original?.part_name,
+                                part_code: row?.row?.original?.part_code, process_name: row?.row?.original?.process_name })
+                            const processVendors = orderDetail?.parts?.partVendors?.filter((pv: any) =>
+                                pv.part.id == row?.row?.original?.part_id && pv.process.id == row?.row?.original?.process_id
+                            )
+                            if (processVendors?.length > 0) {
+                                setVendorList(processVendors[0].part_process_vendor_list)
+                                setEditDialog(true)
+                            }
                         }
                     } else {
                         if(row.status.includes('Assembly In-Progress')){
@@ -701,7 +830,11 @@ export default function OrderDetail() {
 
                 {/* Boughtout supplier */}
 
-                <Grid2 size={{ xs: 6, md: 12 }} sx={{ mt: 3 }}>
+                {state?.type == "order" && <Grid2 size={12} sx={{ mt: 3 }}>
+                    <Button variant='contained' onClick={handleViewPoList}>View PO</Button>
+                </Grid2>}
+
+                <Grid2 size={{ xs: 6, md: 12 }} sx={{ mt: 1 }}>
                     <TableContainer component={Paper}>
                         <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
                             <TableHead>
@@ -715,6 +848,8 @@ export default function OrderDetail() {
                                     {state?.type == "order" && <TableCell>Reminder Date</TableCell>}
                                     <TableCell>Status</TableCell>
                                     <TableCell></TableCell>
+                                    {state?.type == "order" && <TableCell></TableCell>}
+                                    {state?.type == "order" && <TableCell></TableCell>}
                                     {state?.type == "assembly" && <TableCell></TableCell>}
                                 </TableRow>
                             </TableHead>
@@ -759,10 +894,8 @@ export default function OrderDetail() {
                                         }} onClick={() => {
                                             if (state?.type === "order") {
                                                 if (row.status.includes('Progress')) {
-                                                    // setDeliveredDialog(true)
-                                                    setCompleteDialog(true)
-                                                    setCompleteData({ id: row.id })
-                                                    // setDeliveryPart({ id: row.id, part_name: row.part_name, process_name: row.process_name })
+                                                    setDeliverBODialog(true)
+                                                    setDeliverBOData({ id: row.id, bought_out_name: row.bought_out_name, order_qty: row.order_qty, cost: row.cost, paid_amount: row.paid_amount })
                                                 } else if (row.status.toLowerCase() == 'move to vendor') {
                                                     const processVendors = orderDetail.parts?.orderDetail?.partVendors.filter((pv: any) =>
                                                         pv.part.id == row.part_id && pv.process.id == row.process_id
@@ -794,22 +927,37 @@ export default function OrderDetail() {
                                         }}>{row.status}</Box></TableCell>
                                         {state?.type == "assembly" && <TableCell></TableCell>}
                                         {state?.type == "assembly" && <TableCell>View Part Diagrams</TableCell>}
-                                        {state?.type == "order" && <TableCell><FaWhatsapp color='green' onClick={() => {
-                                            if (row.vendor_id) {
-                                                dispatch(fetchVendorAttachment({ supplier_id: row.supplier_id, part_id: row.bought_out_id })).unwrap().then((res: any) => {
-                                                    if (res.attachments?.length > 0) {
-                                                        const link = res.attachments.map((att: any) => `https://localhost:3000/machine/loadAttachment/${att.file_name}`).join(',')
-                                                        window.open(`https://wa.me/${res.vendor.vendor_mobile_no1}?text=${link}`, '_blank')?.focus()
-                                                        console.log(res)
-                                                    } else {
-                                                        DisplaySnackbar('No drawings available to share', 'error', enqueueSnackbar)
-                                                    }
+                                        {state?.type == "order" && <TableCell><FaWhatsapp color='green' style={{ cursor: 'pointer' }} onClick={() => {
+                                            if (row.supplier_id) {
+                                                dispatch(fetchSupplierAttachment({ supplier_id: row.supplier_id, bought_out_id: row.bought_out_id })).unwrap().then((res: any) => {
+                                                    const drawingLinks = res.attachments?.length > 0
+                                                        ? res.attachments.map((att: any) => `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}`).join(',')
+                                                        : ''
+                                                    const text = `Hi ${res.supplier?.supplier_name}\nAccept the order using following link ${process.env.REACT_APP_UI_URL}/supplierAccept?id=${row.id}` +
+                                                        (drawingLinks ? `\nGet the drawings from following link ${drawingLinks}` : '')
+                                                    window.open(`https://wa.me/${res.supplier?.supplier_mobile_no1}?text=${encodeURIComponent(text)}`, '_blank')?.focus()
                                                 })
                                             }
                                         }} /></TableCell>}
+                                        {state?.type == "order" && <TableCell><MdOutlineRemoveRedEye color='teal' style={{ cursor: 'pointer' }} onClick={() => {
+                                            if (row.supplier_id) {
+                                                dispatch(fetchSupplierAttachment({ supplier_id: row.supplier_id, bought_out_id: row.bought_out_id })).unwrap().then((res: any) => {
+                                                    setLinksList([
+                                                        { label: 'Accept Order', url: `${process.env.REACT_APP_UI_URL}/supplierAccept?id=${row.id}` },
+                                                        ...(res.attachments ?? []).map((att: any) => ({ label: att.file_name, url: `${process.env.REACT_APP_API_URL}/machine/loadAttachment/${att.file_name}` }))
+                                                    ])
+                                                    setLinksDialog(true)
+                                                })
+                                            }
+                                        }} /></TableCell>}
+                                        {state?.type == "order" && row.supplier_accept_status === 'accepted' &&
+                                            <TableCell><MdOutlineReceiptLong color='#bb0037' style={{ cursor: 'pointer' }}
+                                                title={row?.po_no ? `View PO ${row?.po_no}` : 'Generate Purchase Order'}
+                                                onClick={() => handleRowPoClick(row)} /></TableCell>}
+                                        {state?.type == "order" && row.supplier_accept_status !== 'accepted' && <TableCell></TableCell>}
                                     </TableRowStyled>
                                 )) : <TableRow key={0}>
-                                    <TableCell colSpan={9} align='center'>No Data</TableCell>
+                                    <TableCell colSpan={11} align='center'>No Data</TableCell>
                                 </TableRow>}
                             </TableBody>
                         </Table>
@@ -1088,6 +1236,220 @@ export default function OrderDetail() {
                 </DialogActions>
             </Dialog>
 
+            {/* Dialog listing all Purchase Orders for this order */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={poListDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setPoListDialog(false)
+                }}>
+                <DialogTitle>Purchase Orders</DialogTitle>
+                <DialogContent>
+                    <TableContainer component={Paper}>
+                        <Table sx={{ '& .MuiTableCell-head': { lineHeight: 0.8, backgroundColor: "#fadbda" } }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>PO No</TableCell>
+                                    <TableCell>Supplier Name</TableCell>
+                                    <TableCell>PO Date</TableCell>
+                                    <TableCell>Net Total</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {poList.length > 0 ? poList.map((po: any) => (
+                                    <TableRowStyled key={po.id} style={{ cursor: 'pointer' }} onClick={() => {
+                                        setPoListDialog(false)
+                                        openPoDoc(po.id)
+                                    }}>
+                                        <TableCell>{po.po_no}</TableCell>
+                                        <TableCell>{po.supplier_name}</TableCell>
+                                        <TableCell>{po.po_date ? moment(po.po_date).format('DD-MM-YYYY') : ''}</TableCell>
+                                        <TableCell>{po.net_total}</TableCell>
+                                    </TableRowStyled>
+                                )) : <TableRow key={0}>
+                                    <TableCell colSpan={4} align='center'>No Purchase Orders generated yet</TableCell>
+                                </TableRow>}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPoListDialog(false)} sx={{ color: '#bb0037' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog to generate a Purchase Order */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={generatePoDialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setGeneratePoDialog(false)
+                }}>
+                <DialogTitle>Generate Purchase Order for {generatePoData?.supplier_name}</DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <Typography variant='subtitle2' color='grey'>Items</Typography>
+                        <CTable small striped>
+                            <CTableHead color='primary'>
+                                <CTableRow>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Description</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Qty</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>UOM</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Rate</CTableHeaderCell>
+                                    <CTableHeaderCell scope='col' style={{ fontWeight: 'initial' }}>Amount</CTableHeaderCell>
+                                </CTableRow>
+                            </CTableHead>
+                            <CTableBody>
+                                {generatePoData?.line_items?.map((item: any, index: number) => (
+                                    <TableRowStyled key={item.production_boughtout_id}>
+                                        <TableCell>{item.description}</TableCell>
+                                        <TableCell>{item.qty}</TableCell>
+                                        <TableCell>{item.uom}</TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                size='small'
+                                                variant="outlined"
+                                                type="number"
+                                                sx={{ width: '100px' }}
+                                                value={item.rate}
+                                                onChange={(e) => {
+                                                    const line_items = [...generatePoData.line_items]
+                                                    line_items[index] = { ...item, rate: e.target.value }
+                                                    setGeneratePoData({ ...generatePoData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{(Number(item.qty) * Number(item.rate)).toFixed(2)}</TableCell>
+                                    </TableRowStyled>
+                                ))}
+                            </CTableBody>
+                        </CTable>
+
+                        <Grid2 container spacing={2} sx={{ mt: 2 }}>
+                            <Grid2 size={6}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="PO Date"
+                                        sx={{ width: '100%' }}
+                                        value={generatePoData?.po_date}
+                                        onChange={(e: any) => setGeneratePoData({ ...generatePoData, po_date: e })}
+                                    />
+                                </LocalizationProvider>
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Reference Doc No"
+                                    value={generatePoData?.reference_doc_no}
+                                    onChange={(e) => setGeneratePoData({ ...generatePoData, reference_doc_no: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Payment Terms"
+                                    value={generatePoData?.payment_terms}
+                                    onChange={(e) => setGeneratePoData({ ...generatePoData, payment_terms: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Delivery Schedule"
+                                    value={generatePoData?.delivery_schedule}
+                                    onChange={(e) => setGeneratePoData({ ...generatePoData, delivery_schedule: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    label="GST %"
+                                    value={generatePoData?.gst_percent}
+                                    onChange={(e) => setGeneratePoData({ ...generatePoData, gst_percent: e.target.value })}
+                                />
+                            </Grid2>
+                        </Grid2>
+
+                        <Typography variant='subtitle2' color='grey' sx={{ mt: 2 }}>Terms and Conditions</Typography>
+                        {generatePoData?.terms?.map((term: string, index: number) => (
+                            <TextField
+                                key={index}
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                multiline
+                                sx={{ mt: 1 }}
+                                value={term}
+                                onChange={(e: any) => {
+                                    setGeneratePoData({
+                                        ...generatePoData,
+                                        terms: [
+                                            ...generatePoData.terms.slice(0, index),
+                                            e.target.value,
+                                            ...generatePoData.terms.slice(index + 1)
+                                        ]
+                                    })
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setGeneratePoDialog(false)} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button variant="contained" onClick={handleGeneratePoSubmit}>Generate</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog to view/print/share a Purchase Order */}
+
+            <Dialog
+                PaperProps={{
+                    sx: {
+                        width: "100%",
+                        maxWidth: "60vw!important",
+                    },
+                }}
+                open={poDocDialog.open}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setPoDocDialog({ open: false, html: '', id: '', supplierMobile: '' })
+                }}>
+                <DialogTitle>Purchase Order</DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <div ref={poContentRef} dangerouslySetInnerHTML={{ __html: poDocDialog.html }} />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setPoDocDialog({ open: false, html: '', id: '', supplierMobile: '' })
+                    }} sx={{ color: '#bb0037' }}>Close</Button>
+                    <Button variant="contained" onClick={() => reactToPrintPoFn()}>Print</Button>
+                    <Button variant="contained" color='success' onClick={handleSharePoWhatsapp}>Share via WhatsApp</Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Dialog to Add Vendor */}
 
             <Dialog
@@ -1134,7 +1496,8 @@ export default function OrderDetail() {
                                                         borderRadius: '4px', cursor: 'pointer', borderWidth: 'thin', borderStyle: 'solid'
                                                     }} onClick={() => {
                                                         setSelectedVendor({
-                                                            id: v.vendor.id, name: v.vendor.vendor_name, cost: v.part_process_vendor_price
+                                                            id: v.vendor.id, name: v.vendor.vendor_name, cost: v.part_process_vendor_price,
+                                                            delivery_date: dayjs(new Date()).add(Number(v.part_process_vendor_delivery_time) || 0, 'days')
                                                         })
                                                     }}>Select</div></TableCell>
                                                 </TableRowStyled>
@@ -1160,41 +1523,8 @@ export default function OrderDetail() {
                                     value={selectedVendor?.name}
                                     error={!!errors?.vendor_id}
                                     helperText={errors?.vendor_id}
+                                    slotProps={{ inputLabel: { shrink: !!selectedVendor?.name } }}
                                 />
-                                {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker
-                                        label="Delivery Date"
-                                        sx={{ width: '100%', height: '20px', mt: 1 }}
-                                        slotProps={{
-                                            textField: {
-                                                size: 'small',
-                                                error: !!errors?.delivery_date,
-                                                helperText: errors?.delivery_date
-                                            }
-                                        }}
-                                        value={selectedVendor ? dayjs(selectedVendor.delivery_date) : dayjs(new Date())}
-                                        onChange={(e: any) => {
-                                            setSelectedVendor({ ...selectedVendor, delivery_date: e })
-                                        }}
-                                    />
-                                </LocalizationProvider>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker
-                                        label="Reminder Date"
-                                        sx={{ width: '100%', height: '20px', mt: 3 }}
-                                        slotProps={{
-                                            textField: {
-                                                size: 'small',
-                                                error: !!errors?.reminder_date,
-                                                helperText: errors?.reminder_date
-                                            }
-                                        }}
-                                        value={selectedVendor ? dayjs(selectedVendor.reminder_date) : dayjs(new Date())}
-                                        onChange={(e: any) => {
-                                            setSelectedVendor({ ...selectedVendor, reminder_date: e })
-                                        }}
-                                    />
-                                </LocalizationProvider> */}
                                 <TextField
                                     size='small'
                                     variant="outlined"
@@ -1206,10 +1536,28 @@ export default function OrderDetail() {
                                     helperText={errors?.cost}
                                     value={selectedVendor?.cost}
                                     sx={{ mt: 1 }}
+                                    slotProps={{ inputLabel: { shrink: !!selectedVendor?.cost } }}
                                     onChange={(e: any) => {
                                         setSelectedVendor({ ...selectedVendor, cost: e.target.value })
                                     }}
                                 />
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="Delivery Date"
+                                        sx={{ width: '100%', height: '20px', mt: 3 }}
+                                        slotProps={{
+                                            textField: {
+                                                size: 'small',
+                                                error: !!errors?.delivery_date,
+                                                helperText: errors?.delivery_date
+                                            }
+                                        }}
+                                        value={selectedVendor?.delivery_date ? dayjs(selectedVendor.delivery_date) : null}
+                                        onChange={(e: any) => {
+                                            setSelectedVendor({ ...selectedVendor, delivery_date: e })
+                                        }}
+                                    />
+                                </LocalizationProvider>
                             </Grid2>
                         </Grid2>
                     </Box>
@@ -1240,7 +1588,7 @@ export default function OrderDetail() {
                                 vendor_id: selectedVendor.id,
                                 vendor_name: selectedVendor.name,
                                 cost: selectedVendor.cost,
-                                // delivery_date: selectedVendor.delivery_date,
+                                delivery_date: selectedVendor.delivery_date,
                                 // reminder_date: selectedVendor.reminder_date,
                                 production_part_id: selectedPart.id,
                                 status: 'Move to vendor'
@@ -1254,8 +1602,8 @@ export default function OrderDetail() {
                                                 vendor_id: selectedVendor.id,
                                                 vendor_name: selectedVendor.name,
                                                 cost: selectedVendor.cost,
-                                                status: 'Move to vendor'
-                                                // delivery_date: moment(selectedVendor.delivery_date).format('MM-DD-YYYY'),
+                                                status: 'Move to vendor',
+                                                delivery_date: selectedVendor.delivery_date
                                                 // reminder_date: moment(selectedVendor.reminder_date).format('MM-DD-YYYY')
                                             } : od
                                         })
@@ -1569,6 +1917,125 @@ export default function OrderDetail() {
                 </DialogActions>
             </Dialog>
 
+            {/* Dialog to deliver boughtout */}
+
+            <Dialog
+                open={deliverBODialog}
+                onClose={(event, reason) => {
+                    if (reason == "backdropClick") {
+                        return
+                    }
+                    setDeliverBODialog(false)
+                }}>
+                <DialogTitle>Update Delivery status for {deliverBOData?.bought_out_name}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        disabled
+                        label="Pending Amount"
+                        sx={{ mt: 1 }}
+                        value={Math.max(0, (Number(deliverBOData?.cost) || 0) - (Number(deliverBOData?.paid_amount) || 0))}
+                    />
+                    {Math.max(0, (Number(deliverBOData?.cost) || 0) - (Number(deliverBOData?.paid_amount) || 0)) > 0 &&
+                        <Button size='small' variant="outlined" sx={{ mt: 1 }} onClick={() => {
+                            const pendingAmount = Math.max(0, (Number(deliverBOData?.cost) || 0) - (Number(deliverBOData?.paid_amount) || 0))
+                            dispatch(recordBoughtoutPayment({
+                                production_boughtout_id: deliverBOData.id,
+                                paid_amount: pendingAmount,
+                                mode: 'Cash',
+                                remarks: 'Settled at delivery acceptance'
+                            })).unwrap().then((res: any) => {
+                                if (res?.message?.includes('success')) {
+                                    DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                                    setDeliverBOData({ ...deliverBOData, paid_amount: deliverBOData?.cost })
+                                } else {
+                                    DisplaySnackbar('Unable to record payment', 'error', enqueueSnackbar)
+                                }
+                            })
+                        }}>
+                            Mark as Paid
+                        </Button>
+                    }
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Delivery Remarks"
+                        multiline
+                        rows={4}
+                        name="remarks"
+                        sx={{ mt: 2 }}
+                        value={deliverBOData?.remarks ? deliverBOData?.remarks : ""}
+                        onChange={(e: any) => {
+                            setDeliverBOData({ ...deliverBOData, remarks: e.target.value })
+                        }}
+                    />
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Ordered Qty"
+                        disabled={true}
+                        name="order_qty"
+                        sx={{ mt: 2 }}
+                        value={deliverBOData?.order_qty ? deliverBOData?.order_qty : "0"}
+                    />
+                    <TextField
+                        size='small'
+                        variant="outlined"
+                        fullWidth
+                        label="Delivered Qty"
+                        name="delivered_qty"
+                        sx={{ mt: 2 }}
+                        value={deliverBOData?.delivered_qty ? deliverBOData?.delivered_qty : ""}
+                        onChange={(e: any) => {
+                            setDeliverBOData({ ...deliverBOData, delivered_qty: e.target.value })
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {
+                        setDeliverBODialog(false)
+                        setDeliverBOData({})
+                    }} sx={{ color: '#bb0037' }}>Cancel</Button>
+                    <Button variant="contained"
+                        disabled={Math.max(0, (Number(deliverBOData?.cost) || 0) - (Number(deliverBOData?.paid_amount) || 0)) > 0}
+                        onClick={() => {
+                        if (deliverBOData?.delivered_qty?.length > 0) {
+                            dispatch(deliverProductionMachineBO({
+                                production_boughtout_id: deliverBOData.id,
+                                order_id: state?.order_id,
+                                bought_out_name: deliverBOData.bought_out_name,
+                                remarks: deliverBOData.remarks,
+                                delivered_qty: deliverBOData.delivered_qty
+                            })).unwrap().then((res: any) => {
+                                if (res.message.includes('success')) {
+                                    DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                                    setOrderDetailBOList(
+                                        orderDetailBOList.map((od: any) => {
+                                            return (od.id == deliverBOData.id) ? {
+                                                ...od,
+                                                status: 'In-Stores'
+                                            } : od
+                                        })
+                                    )
+                                    setDeliverBODialog(false)
+                                    setDeliverBOData({})
+                                } else {
+                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                }
+                            }).catch((err: any) => {
+                                DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+                            })
+                        }
+                    }}>
+                        Delivered
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Dialog to Add supplier */}
 
             <Dialog
@@ -1613,7 +2080,7 @@ export default function OrderDetail() {
                                                         borderRadius: '4px', cursor: 'pointer', borderWidth: 'thin', borderStyle: 'solid'
                                                     }} onClick={() => {
                                                         setSelectedSupplier({
-                                                            id: s.supplier.id, name: s.supplier.supplier_name, cost: s.cost
+                                                            id: s.supplier.id, name: s.supplier.supplier_name, cost: s.cost, delivery_time: s.delivery_time
                                                         })
                                                     }}>Select</div></TableCell>
                                                 </TableRowStyled>
@@ -1677,14 +2144,16 @@ export default function OrderDetail() {
                         }
 
                         else {
+                            const deliveryDate = dayjs(new Date()).add(Number(selectedSupplier.delivery_time) || 0, 'days')
+                            const reminderDate = deliveryDate.subtract(1, 'day')
                             dispatch(updateProductionMachineBO({
                                 supplier_id: selectedSupplier.id,
                                 supplier_name: selectedSupplier.name,
                                 cost: selectedSupplier.cost,
-                                // delivery_date: selectedVendor.delivery_date,
-                                // reminder_date: selectedVendor.reminder_date,
+                                delivery_date: deliveryDate,
+                                reminder_date: reminderDate,
                                 production_part_id: selectedBO.id,
-                                status: 'Payment Pending'
+                                status: 'Pending Supplier Acceptance'
                             })).unwrap().then((res: any) => {
                                 if (res.message.includes('success')) {
                                     DisplaySnackbar(res.message, 'success', enqueueSnackbar)
@@ -1695,9 +2164,9 @@ export default function OrderDetail() {
                                                 supplier_id: selectedSupplier.id,
                                                 supplier_name: selectedSupplier.name,
                                                 cost: selectedSupplier.cost,
-                                                status: 'Payment Pending'
-                                                // delivery_date: moment(selectedVendor.delivery_date).format('MM-DD-YYYY'),
-                                                // reminder_date: moment(selectedVendor.reminder_date).format('MM-DD-YYYY')
+                                                status: 'Pending Supplier Acceptance',
+                                                delivery_date: deliveryDate,
+                                                reminder_date: reminderDate
                                             } : od
                                         })
                                     )

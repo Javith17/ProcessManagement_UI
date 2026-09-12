@@ -20,7 +20,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { HiTruck } from "react-icons/hi";
 import { HiServer } from "react-icons/hi";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LuBoxes } from "react-icons/lu";
 import { AiFillDashboard } from "react-icons/ai";
 import { FaUsers } from "react-icons/fa6";
@@ -135,6 +135,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
   const [open, setOpen] = useState(true)
   const [menuData, setMenuData] = useState(props.currentPage ? props.currentPage : 'Dashboard')
   const navigate = useNavigate()
+  const activeItemRef = useRef<HTMLLIElement>(null)
   const [screens, setScreens] = useState<string[]>()
   const [homeScreens, setHomeScreens] = useState<any[]>()
   const [vendorScreens, setVendorScreens] = useState<any[]>()
@@ -239,6 +240,11 @@ export default function SidebarNav(props: {currentPage?: string}) {
       }
     }
   },[])
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [homeScreens, vendorScreens, partScreens, orderScreens])
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -269,8 +275,8 @@ export default function SidebarNav(props: {currentPage?: string}) {
         
           <List>
             {homeScreens?.map((hs:any) => (
-              <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{ 
-                  setMenuData(hs.screen) 
+              <ListItem key={hs.screen} ref={menuData == hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={()=>{
+                  setMenuData(hs.screen)
                   if(hs.screen == "dashboard") {
                     navigate("/")
                   }else if(hs.screen == "roles") {
@@ -314,7 +320,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
         
         <List>
           {vendorScreens?.map((hs:any) => (
-            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+            <ListItem key={hs.screen} ref={menuData == hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={()=>{
               setMenuData(hs.screen)
               if(hs.screen == "vendor") {
                 navigate("/vendors")
@@ -390,7 +396,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
 
         <List>
           {partScreens?.map((hs:any) => (
-            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+            <ListItem key={hs.screen} ref={menuData == hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={()=>{
               setMenuData(hs.screen)
                 if(hs.screen == "process"){
                     navigate("/process")
@@ -469,7 +475,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
         
         <List>
           {orderScreens?.map((hs:any) => (
-            <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={()=>{
+            <ListItem key={hs.screen} ref={menuData == hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={()=>{
               setMenuData(hs.screen)
                 if(hs.screen == "quotations"){
                   navigate('/quotations')

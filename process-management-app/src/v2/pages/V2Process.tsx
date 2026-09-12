@@ -9,7 +9,7 @@ import { MdOutlineEdit } from "react-icons/md";
 import { Box, Button, Card, Grid2, InputAdornment, Paper, TextField, FormControl, Alert, CircularProgress, Pagination } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux-hooks';
 import { useEffect } from 'react';
-import { createNewProcess, fetchProcessList, fetchRoles, updateProcess } from '../../slices/adminSlice';
+import { createNewProcess, deleteProcess, fetchProcessList, fetchRoles, updateProcess } from '../../slices/adminSlice';
 import { Add, Search } from '@mui/icons-material';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -52,6 +52,7 @@ export default function V2Process() {
     name: ''
   })
   const [loadingDialog, setLoadingDialog] = React.useState(false)
+  const [deleteDialog, setDeleteDialog] = React.useState({ dialog: false, id: '', name: '' })
   const [pageNo, setPageNo] = React.useState(1)
 
   useEffect(() => {
@@ -171,7 +172,7 @@ export default function V2Process() {
             </Table>
           </TableContainer>
 
-          <Pagination count={processList.count / page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(processList.count / page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt: 2
@@ -194,6 +195,10 @@ export default function V2Process() {
         }}
         title={selectedProcess?.id && selectedProcess?.id?.length > 0 ? 'Update Process' : 'Create New Process'}
         actions={<>
+          {selectedProcess?.id && selectedProcess?.id?.length > 0 && <Button variant='text' onClick={() => {
+            setCreateDialog(false)
+            setDeleteDialog({ dialog: true, id: selectedProcess.id, name: selectedProcess.name })
+          }} sx={{ color: v2Colors.primary }}>Delete</Button>}
           <Button variant='text' onClick={() => {
             setCreateDialog(false)
             setSelectedProcess({
@@ -228,6 +233,31 @@ export default function V2Process() {
       <Dialog maxWidth={'md'}
         open={loadingDialog}>
         <CircularProgress color='success' sx={{ m: 3 }} />
+      </Dialog>
+
+      <Dialog
+        maxWidth={'sm'}
+        open={deleteDialog.dialog}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete {deleteDialog.name}?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDeleteDialog({ dialog: false, id: '', name: '' })
+          }} sx={{ color: v2Colors.primary }}>No</Button>
+          <Button variant="contained" size="small" onClick={() => {
+            dispatch(deleteProcess({ id: deleteDialog.id })).unwrap().then((res: any) => {
+              setDeleteDialog({ dialog: false, id: '', name: '' })
+              setSelectedProcess({ id: '', name: '' })
+              setProcessName('')
+              DisplaySnackbar(res, res.includes('success') ? 'success' : 'error', enqueueSnackbar)
+              dispatch(fetchProcessList({ limit: page_limit, page: pageNo }))
+            }).catch((err: any) => {
+              enqueueSnackbar('Unable to delete process', { variant: 'error' });
+            })
+          }}>Yes</Button>
+        </DialogActions>
       </Dialog>
     </V2PageShell>
   );

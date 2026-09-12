@@ -326,6 +326,14 @@ export const updateProcess = createAsyncThunk('updateProcess', async (data: any)
     return resData
 })
 
+export const deleteProcess = createAsyncThunk('deleteProcess', async (data: any) => {
+    const response = await axiosInstance.post('admin/deleteProcess', data, {
+        headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
+    })
+    const resData = response.data.message
+    return resData
+})
+
 export const fetchVendorHistory = createAsyncThunk('vendorHistory', async (data?: { searchText?: String, limit?: number, page?: number }) => {
     try {
         const response = await axiosInstance.get('admin/vendorsHistory',
@@ -603,6 +611,19 @@ const adminSlice = createSlice({
             .addCase(createNewProcess.rejected, (state, action) => {
                 state.status = 'error';
                 state.error = action.error.message || "Unable to load vendors"
+            })
+
+            .addCase(deleteProcess.pending, (state) => {
+                state.status = 'loading';
+                state.error = null
+            })
+            .addCase(deleteProcess.fulfilled, (state, action) => {
+                state.status = 'idle';
+                state.message = action.payload
+            })
+            .addCase(deleteProcess.rejected, (state, action) => {
+                state.status = 'error';
+                state.error = action.error.message || "Unable to delete process"
             })
 
             .addCase(createVendor.pending, (state) => {

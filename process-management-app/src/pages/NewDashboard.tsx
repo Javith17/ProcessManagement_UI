@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { useRef } from 'react';
 import { nav_dashboard, TableRowStyled } from '../constants';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
-import { closeOrder, fetchDashboardDetail, fetchDeliveryDateList, fetchOrderParts, fetchPartsInStores, fetchPendingDeliveryBOs, fetchPendingDeliveryParts, fetchPendingPaymentBOs, fetchReminderDateList, fetchReminderQuotations, recordVendorProcessPayment, updateBoughtoutPayment, uploadVendorInvoice } from '../slices/dashboardSlice';
+import { closeOrder, fetchDashboardDetail, fetchDeliveryDateList, fetchOrderParts, fetchPartsInStores, fetchPendingDeliveryBOs, fetchPendingDeliveryParts, fetchPendingPaymentBOs, fetchReminderDateList, fetchReminderQuotations, recordBoughtoutPayment, recordVendorProcessPayment, uploadVendorInvoice } from '../slices/dashboardSlice';
 import SidebarNav from './SidebarNav';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
@@ -914,7 +914,7 @@ const NewDashboard = () => {
                                         <TableCell>Boughtout Name</TableCell>
                                         <TableCell>Qty</TableCell>
                                         <TableCell>Supplier Name</TableCell>
-                                        <TableCell>Cost</TableCell>
+                                        <TableCell>Balance Pending</TableCell>
                                         <TableCell>Delivery Date</TableCell>
                                         <TableCell>Reminder Date</TableCell>
                                         <TableCell>Status</TableCell>
@@ -930,7 +930,7 @@ const NewDashboard = () => {
                                             <TableCell>{row.bought_out_name}</TableCell>
                                             <TableCell>{row.order_qty}</TableCell>
                                             <TableCell>{row.supplier_name}</TableCell>
-                                            <TableCell>{row.cost}</TableCell>
+                                            <TableCell>{Math.max(0, (Number(row.cost) || 0) - (Number(row.paid_amount) || 0))}</TableCell>
                                             <TableCell>{row.delivery_date ? moment(row.delivery_date).format('DD-MM-YYYY') : ''}</TableCell>
                                             <TableCell>{row.reminder_date ? moment(row.reminder_date).format('DD-MM-YYYY') : ''}</TableCell>
                                             <TableCell><Box sx={{
@@ -981,14 +981,39 @@ const NewDashboard = () => {
                             size='small'
                             variant="outlined"
                             fullWidth
+                            disabled
+                            label="Balance Pending"
+                            sx={{ mt: 1 }}
+                            value={Math.max(0, (Number(pendingPaymentItem?.cost) || 0) - (Number(pendingPaymentItem?.paid_amount) || 0))}
+                        />
+                        <TextField
+                            size='small'
+                            variant="outlined"
+                            fullWidth
+                            type="number"
                             label="Paid Amount"
                             name="paid_amount"
-                            sx={{ mt: 1 }}
+                            sx={{ mt: 2 }}
                             value={pendingPaymentItem?.paidAmount ? pendingPaymentItem?.paidAmount : ""}
                             onChange={(e: any) => {
                                 setPendingPaymentItem({ ...pendingPaymentItem, paidAmount: e.target.value })
                             }}
                         />
+                        <FormControl fullWidth size='small' sx={{ mt: 2 }}>
+                            <InputLabel>Mode of Payment</InputLabel>
+                            <Select
+                                label="Mode of Payment"
+                                value={pendingPaymentItem?.mode ? pendingPaymentItem?.mode : "Cash"}
+                                onChange={(e: any) => {
+                                    setPendingPaymentItem({ ...pendingPaymentItem, mode: e.target.value })
+                                }}
+                            >
+                                <MenuItem value="Cash">Cash</MenuItem>
+                                <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+                                <MenuItem value="UPI">UPI</MenuItem>
+                                <MenuItem value="Cheque">Cheque</MenuItem>
+                            </Select>
+                        </FormControl>
                         <TextField
                             size='small'
                             variant="outlined"
@@ -997,7 +1022,7 @@ const NewDashboard = () => {
                             multiline
                             rows={4}
                             name="remarks"
-                            sx={{ mt: 1 }}
+                            sx={{ mt: 2 }}
                             value={pendingPaymentItem?.paymentRemarks ? pendingPaymentItem?.paymentRemarks : ""}
                             onChange={(e: any) => {
                                 setPendingPaymentItem({ ...pendingPaymentItem, paymentRemarks: e.target.value })
@@ -1010,26 +1035,32 @@ const NewDashboard = () => {
                             setPendingPaymentItem({})
                         }} sx={{ color: '#bb0037' }}>Cancel</Button>
                         <Button variant="contained" onClick={() => {
-                            dispatch(updateBoughtoutPayment({
-                                production_part_id: pendingPaymentItem.id,
+                            dispatch(recordBoughtoutPayment({
+                                production_boughtout_id: pendingPaymentItem.id,
                                 remarks: pendingPaymentItem.paymentRemarks,
-                                status: 'In-Progress',
-                                paid_amount: pendingPaymentItem.paidAmount
+                                mode: pendingPaymentItem.mode,
+                                paid_amount: Number(pendingPaymentItem.paidAmount) || 0
                             })).unwrap().then((res: any) => {
-                                if (res.includes('success')) {
-                                    DisplaySnackbar(res, ' success', enqueueSnackbar)
-                                    setPendingPaymentsList(
-                                        pendingPaymentsList?.map((od: any) => {
-                                            return (od.id == pendingPaymentItem.id) ? {
-                                                ...od,
-                                                status: 'Payment Completed'
-                                            } : od
-                                        })
-                                    )
+                                if (res?.message?.includes('success')) {
+                                    DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                                    if (res.balance <= 0) {
+                                        setPendingPaymentsList(
+                                            pendingPaymentsList?.filter((od: any) => od.id != pendingPaymentItem.id)
+                                        )
+                                    } else {
+                                        setPendingPaymentsList(
+                                            pendingPaymentsList?.map((od: any) => {
+                                                return (od.id == pendingPaymentItem.id) ? {
+                                                    ...od,
+                                                    paid_amount: (Number(od.paid_amount) || 0) + (Number(pendingPaymentItem.paidAmount) || 0)
+                                                } : od
+                                            })
+                                        )
+                                    }
                                     setUpdatePaymentDialog(false)
                                     setPendingPaymentItem({})
                                 } else {
-                                    DisplaySnackbar(res.message, 'error', enqueueSnackbar)
+                                    DisplaySnackbar('Unable to record payment', 'error', enqueueSnackbar)
                                 }
                             })
                         }}>
@@ -1229,11 +1260,40 @@ const NewDashboard = () => {
                             size='small'
                             variant="outlined"
                             fullWidth
+                            disabled
+                            label="Pending Amount"
+                            sx={{ mt: 1 }}
+                            value={Math.max(0, (Number(pendingDeliveryItem?.bo_cost) || 0) - (Number(pendingDeliveryItem?.bo_paid_amount) || 0))}
+                        />
+                        {Math.max(0, (Number(pendingDeliveryItem?.bo_cost) || 0) - (Number(pendingDeliveryItem?.bo_paid_amount) || 0)) > 0 &&
+                            <Button size='small' variant="outlined" sx={{ mt: 1 }} onClick={() => {
+                                const pendingAmount = Math.max(0, (Number(pendingDeliveryItem?.bo_cost) || 0) - (Number(pendingDeliveryItem?.bo_paid_amount) || 0))
+                                dispatch(recordBoughtoutPayment({
+                                    production_boughtout_id: pendingDeliveryItem.bo_id,
+                                    paid_amount: pendingAmount,
+                                    mode: 'Cash',
+                                    remarks: 'Settled at delivery acceptance'
+                                })).unwrap().then((res: any) => {
+                                    if (res?.message?.includes('success')) {
+                                        DisplaySnackbar(res.message, 'success', enqueueSnackbar)
+                                        setPendingDeliveryItem({ ...pendingDeliveryItem, bo_paid_amount: pendingDeliveryItem?.bo_cost })
+                                    } else {
+                                        DisplaySnackbar('Unable to record payment', 'error', enqueueSnackbar)
+                                    }
+                                })
+                            }}>
+                                Mark as Paid
+                            </Button>
+                        }
+                        <TextField
+                            size='small'
+                            variant="outlined"
+                            fullWidth
                             label="Delivery Remarks"
                             multiline
                             rows={4}
                             name="remarks"
-                            sx={{ mt: 1 }}
+                            sx={{ mt: 2 }}
                             value={pendingDeliveryItem?.deliveryRemarks ? pendingDeliveryItem?.deliveryRemarks : ""}
                             onChange={(e: any) => {
                                 setPendingDeliveryItem({ ...pendingDeliveryItem, deliveryRemarks: e.target.value })
@@ -1267,12 +1327,14 @@ const NewDashboard = () => {
                             setUpdateDeliveryBODialog(false)
                             setPendingDeliveryItem({})
                         }} sx={{ color: '#bb0037' }}>Cancel</Button>
-                        <Button variant="contained" onClick={() => {
+                        <Button variant="contained"
+                            disabled={Math.max(0, (Number(pendingDeliveryItem?.bo_cost) || 0) - (Number(pendingDeliveryItem?.bo_paid_amount) || 0)) > 0}
+                            onClick={() => {
                             if (pendingDeliveryItem?.delivered_qty?.length > 0) {
                                 dispatch(deliverProductionMachineBO({
                                     production_boughtout_id: pendingDeliveryItem.bo_id,
                                     order_id: pendingDeliveryItem.bo_order_id,
-                                    bought_out_name: pendingDeliveryItem.pm_part_name,
+                                    bought_out_name: pendingDeliveryItem.bo_bought_out_name,
                                     remarks: pendingDeliveryItem.deliveryRemarks,
                                     delivered_qty: pendingDeliveryItem.delivered_qty
                                 })).unwrap().then((res: any) => {

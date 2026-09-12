@@ -124,7 +124,7 @@ export default function Customers() {
             </Table>
           </TableContainer>
 
-          <Pagination count={customers.count/page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(customers.count/page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt:2

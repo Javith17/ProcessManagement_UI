@@ -12,6 +12,14 @@ export const quotation_terms = ["GST at 18% will be applicable.",
     "This quotation is valid for 15 days from the date mentioned above.",
     "Anything legally related to this is determined at the court in Coimbatore and no other courts"]
 
+export const po_terms = ["GST at 18% will be applicable.",
+    "50% advance, 50% at the time of dispatch.",
+    "Debit charges will be applicable in case of any delay from beyond delivery schedule.",
+    "Packing should be safe and it is the supplier's responsibility & in case of any transit damage that's the supplier's responsibility.",
+    "1-year warranty - any problem during this period must be rectified by the supplier at no extra cost.",
+    "If any issue arises due to use of non-branded/low-quality materials, the supplier will bear the debit/penalty.",
+    "Anything legally related to this is determined by the court in Coimbatore and no other courts."]
+
 export const screens = [
   {
     "name": "Dashboard",

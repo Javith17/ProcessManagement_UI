@@ -196,6 +196,14 @@ export const fetchVendorAttachment = createAsyncThunk("fetchVendorAttachment", a
     return resData
 })
 
+export const fetchSupplierAttachment = createAsyncThunk("fetchSupplierAttachment", async (data:any) => {
+    const response = await axiosInstance.post(`machine/supplierAttachment`, data, {
+        headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
+    })
+    const resData = response.data
+    return resData
+})
+
 export const fetchMachineAttachmentLinks = createAsyncThunk("fetchMachineAttachmentLinks", async (data:any) => {
     const response = await axiosInstance.get(`machine/machineAttachmentLinks/${data}`, {
         headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userDetail') as string).accessToken}`}
@@ -219,6 +227,10 @@ type MachineApiState = {
     },
     vendorAttachment: {
         vendor: any,
+        attachment: Array<any>
+    }
+    supplierAttachment: {
+        supplier: any,
         attachment: Array<any>
     }
     data: any | null;
@@ -255,6 +267,10 @@ const initialState: MachineApiState = {
     },
     vendorAttachment: {
         vendor: {},
+        attachment: []
+    },
+    supplierAttachment: {
+        supplier: {},
         attachment: []
     },
     data: null,
@@ -494,6 +510,17 @@ const machineSlice = createSlice({
             state.vendorAttachment = action.payload
         })
         .addCase(fetchVendorAttachment.rejected, (state, action) => {
+            state.machineStatus = 'error'
+            state.error = action.error.message || 'Unable to get attachments'
+        })
+        .addCase(fetchSupplierAttachment.pending, (state) => {
+            state.machineStatus = 'loading'
+        })
+        .addCase(fetchSupplierAttachment.fulfilled, (state, action) => {
+            state.machineStatus = 'idle'
+            state.supplierAttachment = action.payload
+        })
+        .addCase(fetchSupplierAttachment.rejected, (state, action) => {
             state.machineStatus = 'error'
             state.error = action.error.message || 'Unable to get attachments'
         })

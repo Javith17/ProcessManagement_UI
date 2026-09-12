@@ -336,108 +336,113 @@ export default function EditPart() {
                     Back
                 </Button>
                 <form noValidate>
-                    <Grid2 container spacing={4} sx={{ mt: 1, alignItems: 'center' }}>
+                    <Grid2 container spacing={4} sx={{ mt: 1 }}>
                         <Grid2 size={1}>
-                            <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
-                                    onClick={handleCardClick}>
-                                    {partImage ? <img src={URL.createObjectURL(partImage)} style={{ height: '80px', width: '80px' }}
-                                    /> : partImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${partImageName}`} style={{ height: '80px', width: '80px' }}
-                                    /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
-                                    <input
-                                        type="file"
-                                        accept='image/png, image/jpeg'
-                                        ref={fileInputRef}
-                                        style={{ display: "none" }}
-                                        onChange={handleFileChange}
+                            <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Card sx={{ borderRadius: '50%', height: '100px', width: '100px' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', width: '100px' }}
+                                        onClick={handleCardClick}>
+                                        {partImage ? <img src={URL.createObjectURL(partImage)} style={{ height: '80px', width: '80px' }}
+                                        /> : partImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${partImageName}`} style={{ height: '80px', width: '80px' }}
+                                        /> : <FcAddImage style={{ height: '60px', width: '60px' }} />}
+                                        <input
+                                            type="file"
+                                            accept='image/png, image/jpeg'
+                                            ref={fileInputRef}
+                                            style={{ display: "none" }}
+                                            onChange={handleFileChange}
+                                        />
+                                    </Box>
+                                </Card>
+                            </Box>
+                        </Grid2>
+                        <Grid2 size={11}>
+                            <Grid2 container spacing={2}>
+                                <Grid2 size={4}>
+                                    <TextField
+                                        size='small'
+                                        variant="outlined"
+                                        fullWidth
+                                        label="Name"
+                                        name="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        error={!!errors?.name}
+                                        helperText={errors?.name}
                                     />
-                                </Box>
-                            </Card>
-                        </Grid2>
-                        <Grid2 size={3} style={{ paddingLeft: 0, paddingRight: 0 }}>
-                            <TextField
-                                size='small'
-                                variant="outlined"
-                                fullWidth
-                                label="Name"
-                                name="name"
-                                required
-                                value={formData.name}
-                                onChange={handleChange}
-                                error={!!errors?.name}
-                                helperText={errors?.name}
-                            />
-                        </Grid2>
-                        <Grid2 size={3}>
-                            <TextField
-                                size='small'
-                                variant="outlined"
-                                fullWidth
-                                label="Part Code"
-                                name="part_code"
-                                value={formData.part_code}
-                                onChange={handleChange}
-                            />
-                        </Grid2>
-                        <Grid2 size={3}>
-                            <TextField
-                                size='small'
-                                variant="outlined"
-                                fullWidth
-                                label="Minimum Stock Qty."
-                                name="minimum_stock_qty"
-                                required
-                                value={formData.minimum_stock_qty}
-                                onChange={handleChange}
-                                error={!!errors?.minimum_stock_qty}
-                                helperText={errors?.minimum_stock_qty}
-                            />
-                        </Grid2>
-                        <Grid2 size={2}>
-                            <TextField
-                                size='small'
-                                variant="outlined"
-                                fullWidth
-                                label="Available Qty."
-                                name="available_qty"
-                                required
-                                value={formData.available_qty}
-                                onChange={handleChange}
-                                error={!!errors?.available_qty}
-                                helperText={errors?.available_qty}
-                            />
-                        </Grid2>
-
-                        <Grid2 size={3}>
-                            <FormControl fullWidth>
-                                <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
-                                <Select
-                                    labelId="demo-multiple-checkbox-label"
-                                    id="demo-multiple-checkbox"
-                                    size='small'
-                                    multiple
-                                    required
-                                    value={selectedType}
-                                    onChange={handleMultiProcessChange}
-                                    input={<OutlinedInput label="Tag" />}
-                                    renderValue={(selected) => (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {selected.map((value: any) => (
-                                                value.length > 0 ?
-                                                    <Chip key={value} label={value} /> : <></>
+                                </Grid2>
+                                <Grid2 size={4}>
+                                    <TextField
+                                        size='small'
+                                        variant="outlined"
+                                        fullWidth
+                                        label="Part Code"
+                                        name="part_code"
+                                        value={formData.part_code}
+                                        onChange={handleChange}
+                                    />
+                                </Grid2>
+                                <Grid2 size={4}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
+                                        <Select
+                                            labelId="demo-multiple-checkbox-label"
+                                            id="demo-multiple-checkbox"
+                                            size='small'
+                                            multiple
+                                            required
+                                            value={selectedType}
+                                            onChange={handleMultiProcessChange}
+                                            input={<OutlinedInput label="Tag" />}
+                                            renderValue={(selected) => (
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                    {selected.map((value: any) => (
+                                                        value.length > 0 ?
+                                                            <Chip key={value} label={value} /> : <></>
+                                                    ))}
+                                                </Box>
+                                            )}
+                                        // MenuProps={MenuProps}
+                                        >
+                                            {['Machine', 'Spares', 'SPM'].map((type) => (
+                                                <MenuItem key={type} value={type}>
+                                                    <Checkbox checked={selectedType.includes(type)} />
+                                                    <ListItemText primary={type} />
+                                                </MenuItem>
                                             ))}
-                                        </Box>
-                                    )}
-                                // MenuProps={MenuProps}
-                                >
-                                    {['Machine', 'Spares', 'SPM'].map((type) => (
-                                        <MenuItem key={type} value={type}>
-                                            <Checkbox checked={selectedType.includes(type)} />
-                                            <ListItemText primary={type} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                                        </Select>
+                                    </FormControl>
+                                </Grid2>
+                                <Grid2 size={6}>
+                                    <TextField
+                                        size='small'
+                                        variant="outlined"
+                                        fullWidth
+                                        label="Minimum Stock Qty."
+                                        name="minimum_stock_qty"
+                                        required
+                                        value={formData.minimum_stock_qty}
+                                        onChange={handleChange}
+                                        error={!!errors?.minimum_stock_qty}
+                                        helperText={errors?.minimum_stock_qty}
+                                    />
+                                </Grid2>
+                                <Grid2 size={6}>
+                                    <TextField
+                                        size='small'
+                                        variant="outlined"
+                                        fullWidth
+                                        label="Available Qty."
+                                        name="available_qty"
+                                        required
+                                        value={formData.available_qty}
+                                        onChange={handleChange}
+                                        error={!!errors?.available_qty}
+                                        helperText={errors?.available_qty}
+                                    />
+                                </Grid2>
+                            </Grid2>
                         </Grid2>
 
                         <Grid2 size={3} sx={{ minHeight: '60vh' }}>

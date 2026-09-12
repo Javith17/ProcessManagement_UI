@@ -393,7 +393,7 @@ export default function V2Enquiry() {
                         </Table>
                     </TableContainer>
 
-                    <Pagination count={enquiries.count / page_limit} shape="rounded" sx={{
+                    <Pagination count={Math.ceil(enquiries.count / page_limit)} shape="rounded" sx={{
                         '& > .MuiPagination-ul': {
                             justifyContent: 'center',
                         }, mt: 2

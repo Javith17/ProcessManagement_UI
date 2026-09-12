@@ -22,7 +22,6 @@ import { V2TableRowStyled } from '../components/v2Table';
 import { v2Colors } from '../theme';
 
 // Functional port of pages/Suppliers.tsx. Kept verbatim:
-// - Pagination count is `suppliers.count / page_limit` (no Math.ceil)
 // - delete failure path uses a plain enqueueSnackbar, not DisplaySnackbar
 export default function V2Suppliers() {
   const dispatch = useAppDispatch()
@@ -100,6 +99,7 @@ export default function V2Suppliers() {
                   <TableCell>Supplier Contact No</TableCell>
                   <TableCell>Supplier Address</TableCell>
                   <TableCell>Supplier GST</TableCell>
+                  <TableCell>Pending Payment</TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -111,6 +111,7 @@ export default function V2Suppliers() {
                     <TableCell>{row.supplier_mobile_no1}</TableCell>
                     <TableCell>{`${row.supplier_address1}\n${row.supplier_address2}\n${row.supplier_city}\n${row.supplier_state}\n${row.supplier_pincode}`}</TableCell>
                     <TableCell>{row.supplier_gst}</TableCell>
+                    <TableCell>{row.pending_payment ?? '0'}</TableCell>
                     <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                       navigate('/v2/suppliers/newSupplier', {
                         state: {
@@ -123,13 +124,13 @@ export default function V2Suppliers() {
                     }} /></TableCell>
                   </V2TableRowStyled>
                 )) : <TableRow key={0}>
-                  <TableCell colSpan={4} align='center'>No Data</TableCell>
+                  <TableCell colSpan={5} align='center'>No Data</TableCell>
                 </TableRow>}
               </TableBody>
             </Table>
           </TableContainer>
 
-          <Pagination count={suppliers.count / page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(suppliers.count / page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt: 2

@@ -428,6 +428,56 @@ export const uploadChallanPdf = createAsyncThunk('uploadChallanPdf', async (data
     }
 })
 
+export const generatePurchaseOrder = createAsyncThunk('generatePurchaseOrder', async (data: any) => {
+    try{
+        const response = await axiosInstance.post(`order/generatePurchaseOrder`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchPurchaseOrderList = createAsyncThunk('fetchPurchaseOrderList', async (order_id: string) => {
+    try{
+        const response = await axiosInstance.get(`order/purchaseOrderList/${order_id}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchPurchaseOrderDoc = createAsyncThunk('fetchPurchaseOrderDoc', async (id: string) => {
+    try{
+        const response = await axiosInstance.get(`order/purchaseOrderDoc/${id}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
+export const uploadPoPdf = createAsyncThunk('uploadPoPdf', async (data: { file: File }) => {
+    try{
+        const formData = new FormData()
+        formData.append('file', data.file)
+        const response = await axiosInstance.post(`order/uploadPoPdf`, formData, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
 export const orderHistory = createAsyncThunk('orderHistory', async (data: string) => {
     try{
         const response = await axiosInstance.get(`order/orderHistory/${data}`, {

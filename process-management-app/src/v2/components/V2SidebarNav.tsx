@@ -12,7 +12,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AiFillDashboard } from "react-icons/ai";
 import { FaUsers, FaStoreAlt, FaBuffer, FaStroopwafel } from "react-icons/fa";
 import { FaUsersLine } from "react-icons/fa6";
@@ -72,6 +72,7 @@ export default function V2SidebarNav(props: { currentPage?: string }) {
   const [vendorScreens, setVendorScreens] = useState<any[]>();
   const [partScreens, setPartScreens] = useState<any[]>();
   const [orderScreens, setOrderScreens] = useState<any[]>();
+  const activeItemRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     const permission = getPermission();
@@ -82,6 +83,10 @@ export default function V2SidebarNav(props: { currentPage?: string }) {
       setOrderScreens(permission.filter((p: any) => p.type === 'order'));
     }
   }, []);
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [homeScreens, vendorScreens, partScreens, orderScreens]);
 
   const handleDrawerClose = () => {
     // Intentional no-op, matching pages/SidebarNav.tsx's DrawerHeader chevron
@@ -108,7 +113,7 @@ export default function V2SidebarNav(props: { currentPage?: string }) {
       )}
       <List disablePadding>
         {list?.map((hs: any) => (
-          <ListItem key={hs.screen} disablePadding sx={{ display: 'block' }} onClick={() => { setMenuData(hs.screen); onPick(hs.screen); }}>
+          <ListItem key={hs.screen} ref={menuData === hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={() => { setMenuData(hs.screen); onPick(hs.screen); }}>
             <ListItemButton sx={itemSx(menuData === hs.screen)}>
               <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto', justifyContent: 'center', color: 'inherit' }}>
                 {menuIcons.find((mi) => mi.name === hs.screen)?.icon}

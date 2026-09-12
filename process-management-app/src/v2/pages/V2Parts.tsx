@@ -137,7 +137,7 @@ export default function V2Parts() {
             </Table>
           </TableContainer>
 
-          <Pagination count={parts.count / page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(parts.count / page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt: 2

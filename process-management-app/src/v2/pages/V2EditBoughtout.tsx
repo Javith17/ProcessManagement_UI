@@ -290,75 +290,75 @@ export default function V2EditBoughtout() {
             </Box>
 
             <V2Panel title="Basic Details">
-                <Grid2 container spacing={3} alignItems="center">
+                <Grid2 container spacing={3}>
                     <Grid2 size="auto">
-                        <Card sx={{ borderRadius: '50%', height: '96px', width: '96px', overflow: 'hidden' }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', width: '96px', cursor: 'pointer', backgroundColor: v2Colors.surface2 }}
-                                onClick={handleCardClick}>
-                                {boImage ? <img src={URL.createObjectURL(boImage)} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
-                                /> : boImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${boImageName}`} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
-                                /> : <FcAddImage style={{ height: '42px', width: '42px' }} />}
-                                <input
-                                    type="file"
-                                    accept='image/png, image/jpeg'
-                                    ref={fileInputRef}
-                                    style={{ display: "none" }}
-                                    onChange={handleFileChange}
-                                />
-                            </Box>
-                        </Card>
+                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Card sx={{ borderRadius: '50%', height: '96px', width: '96px', overflow: 'hidden' }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', width: '96px', cursor: 'pointer', backgroundColor: v2Colors.surface2 }}
+                                    onClick={handleCardClick}>
+                                    {boImage ? <img src={URL.createObjectURL(boImage)} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
+                                    /> : boImageName ? <img src={`${process.env.REACT_APP_API_URL}/machine/loadImage/${boImageName}`} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
+                                    /> : <FcAddImage style={{ height: '42px', width: '42px' }} />}
+                                    <input
+                                        type="file"
+                                        accept='image/png, image/jpeg'
+                                        ref={fileInputRef}
+                                        style={{ display: "none" }}
+                                        onChange={handleFileChange}
+                                    />
+                                </Box>
+                            </Card>
+                        </Box>
                     </Grid2>
                     <Grid2 size="grow">
-                        <Grid2 container spacing={2}>
-                            <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
-                                <TextField
+                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+                            <TextField
+                                size='small'
+                                variant="outlined"
+                                fullWidth
+                                label="Name"
+                                name="name"
+                                required
+                                value={formData.name}
+                                onChange={handleChange}
+                                error={!!errors?.name}
+                                helperText={errors?.name}
+                            />
+                        </Box>
+                    </Grid2>
+                    <Grid2 size="grow">
+                        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+                            <FormControl fullWidth>
+                                <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
+                                <Select
+                                    labelId="demo-multiple-checkbox-label"
+                                    id="demo-multiple-checkbox"
                                     size='small'
-                                    variant="outlined"
-                                    fullWidth
-                                    label="Name"
-                                    name="name"
+                                    multiple
                                     required
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    error={!!errors?.name}
-                                    helperText={errors?.name}
-                                />
-                            </Grid2>
-                        </Grid2>
+                                    value={selectedType}
+                                    onChange={handleMultiProcessChange}
+                                    input={<OutlinedInput label="Tag" />}
+                                    renderValue={(selected) => (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {selected.map((value: any) => (
+                                                value.length > 0 ?
+                                                    <Chip key={value} label={value} /> : <></>
+                                            ))}
+                                        </Box>
+                                    )}
+                                >
+                                    {['Machine', 'Spares', 'SPM'].map((type) => (
+                                        <MenuItem key={type} value={type}>
+                                            <Checkbox checked={selectedType.includes(type)} />
+                                            <ListItemText primary={type} />
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
                     </Grid2>
                 </Grid2>
-
-                <Box sx={{ mt: 3 }}>
-                    <Typography sx={{ fontSize: '12px', fontWeight: 600, color: v2Colors.muted, mb: 1 }}>Type</Typography>
-                    <FormControl sx={{ minWidth: 280 }}>
-                        <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
-                        <Select
-                            labelId="demo-multiple-checkbox-label"
-                            id="demo-multiple-checkbox"
-                            size='small'
-                            multiple
-                            required
-                            value={selectedType}
-                            onChange={handleMultiProcessChange}
-                            input={<OutlinedInput label="Tag" />}
-                            renderValue={(selected) => (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                    {selected.map((value: any) => (
-                                        value.length > 0 ?
-                                            <Chip key={value} label={value} /> : <></>
-                                    ))}
-                                </Box>
-                            )}
-                        >
-                            {['Machine', 'Spares', 'SPM'].map((type) => (
-                                <MenuItem key={type} value={type}>
-                                    <Checkbox checked={selectedType.includes(type)} />
-                                    <ListItemText primary={type} />
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
             </V2Panel>
 
             <V2Panel title="Machines" caption={`${selectedMachines.length} linked`}>

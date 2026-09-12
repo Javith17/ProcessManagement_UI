@@ -212,7 +212,7 @@ export default function V2Roles() {
             </Table>
           </TableContainer>
 
-          <Pagination count={roles.count / page_limit} shape="rounded" sx={{ '& > .MuiPagination-ul': { justifyContent: 'center' }, mt: 2 }} onChange={(e: any, value: number) => {
+          <Pagination count={Math.ceil(roles.count / page_limit)} shape="rounded" sx={{ '& > .MuiPagination-ul': { justifyContent: 'center' }, mt: 2 }} onChange={(e: any, value: number) => {
             dispatch(fetchRoles({ limit: page_limit, page: value }));
           }} />
         </Grid2>

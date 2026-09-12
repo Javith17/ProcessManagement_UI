@@ -98,6 +98,7 @@ export default function Suppliers() {
                   <TableCell>Supplier Contact No</TableCell>
                   <TableCell>Supplier Address</TableCell>
                   <TableCell>Supplier GST</TableCell>
+                  <TableCell>Pending Payment</TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -109,6 +110,7 @@ export default function Suppliers() {
                     <TableCell>{row.supplier_mobile_no1}</TableCell>
                     <TableCell>{`${row.supplier_address1}\n${row.supplier_address2}\n${row.supplier_city}\n${row.supplier_state}\n${row.supplier_pincode}`}</TableCell>
                     <TableCell>{row.supplier_gst}</TableCell>
+                    <TableCell>{row.pending_payment ?? '0'}</TableCell>
                     <TableCell><MdOutlineEdit style={{cursor:'pointer'}} onClick={()=>{
                       navigate('/suppliers/newSupplier', {
                         state: {
@@ -121,13 +123,13 @@ export default function Suppliers() {
                     }} /></TableCell>
                   </TableRowStyled>
                 )) : <TableRow key={0}>
-                      <TableCell colSpan={4} align='center'>No Data</TableCell>
+                      <TableCell colSpan={5} align='center'>No Data</TableCell>
                     </TableRow>}
               </TableBody>
             </Table>
           </TableContainer>
 
-          <Pagination count={suppliers.count/page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(suppliers.count/page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt:2

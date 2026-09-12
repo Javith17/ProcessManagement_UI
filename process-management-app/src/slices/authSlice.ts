@@ -12,6 +12,7 @@ type AuthApiState = {
     error: string | null,
     productionPart: any;
     acceptStatus: any
+    productionBoughtout: any;
 }
 
 const initialState: AuthApiState = {
@@ -20,7 +21,8 @@ const initialState: AuthApiState = {
     status: 'idle',
     error: null,
     productionPart: {},
-    acceptStatus: ''
+    acceptStatus: '',
+    productionBoughtout: {}
 }
 
 export const login = createAsyncThunk("login", async (data: SignIn) => {
@@ -42,6 +44,20 @@ export const vendorAcceptStatus = createAsyncThunk("vendorAcceptStatus", async (
     const response = await axiosInstance.post(`auth/vendorAcceptStatus`, data);
     const resData = response.data
     
+    return resData
+})
+
+export const productionBoughtoutDetail = createAsyncThunk("productionBoughtoutDetail", async (data: any) => {
+    const response = await axiosInstance.get(`auth/productionBoughtoutDetail/${data.id}`);
+    const resData = response.data
+
+    return resData
+})
+
+export const supplierAcceptStatus = createAsyncThunk("supplierAcceptStatus", async (data: any) => {
+    const response = await axiosInstance.post(`auth/supplierAcceptStatus`, data);
+    const resData = response.data
+
     return resData
 })
 
@@ -91,6 +107,32 @@ const authSlice = createSlice({
                 state.acceptStatus = action.payload
             })
             .addCase(vendorAcceptStatus.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Unable to accept/reject order'
+            })
+
+            .addCase(productionBoughtoutDetail.pending, (state)=>{
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(productionBoughtoutDetail.fulfilled, (state, action: PayloadAction<any>) => {
+                state.status = 'idle';
+                state.productionBoughtout = action.payload
+            })
+            .addCase(productionBoughtoutDetail.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Unable to fetch boughtout details'
+            })
+
+            .addCase(supplierAcceptStatus.pending, (state)=>{
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(supplierAcceptStatus.fulfilled, (state, action: PayloadAction<any>) => {
+                state.status = 'idle';
+                state.acceptStatus = action.payload
+            })
+            .addCase(supplierAcceptStatus.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Unable to accept/reject order'
             })

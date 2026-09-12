@@ -33,6 +33,7 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import EditBoughtout from './pages/EditBoughtout';
 import VendorAcceptance from './pages/VendorAcceptance';
+import SupplierAcceptance from './pages/SupplierAcceptance';
 import Stores from './pages/Stores';
 import Assembly from './pages/Assembly';
 import NewDashboard from './pages/NewDashboard';
@@ -78,12 +79,14 @@ import V2Orders from './v2/pages/V2Orders';
 import V2OrderDetail from './v2/pages/V2OrderDetail';
 import V2Enquiry from './v2/pages/V2Enquiry';
 import V2VendorAcceptance from './v2/pages/V2VendorAcceptance';
+import V2SupplierAcceptance from './v2/pages/V2SupplierAcceptance';
 
 function App() {
   return (
     <>
       <Routes>
         <Route path="/vendorAccept" element={<VendorAcceptance />} />
+        <Route path="/supplierAccept" element={<SupplierAcceptance />} />
         <Route element={<DefaultLayout />}>
           <Route path="/login" element={<Login />} />
          </Route>
@@ -126,6 +129,7 @@ function App() {
         {/* ===== v2 design concept — additive only, mirrors every route above under /v2 ===== */}
         <Route path="/v2" element={<V2ThemeWrapper />}>
           <Route path="vendorAccept" element={<V2VendorAcceptance />} />
+          <Route path="supplierAccept" element={<V2SupplierAcceptance />} />
           <Route element={<V2DefaultLayout />}>
             <Route path="login" element={<V2Login />} />
           </Route>

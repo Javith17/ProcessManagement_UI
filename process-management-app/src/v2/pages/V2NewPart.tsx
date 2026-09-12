@@ -275,22 +275,24 @@ export default function V2NewPart() {
       </Box>
 
       <V2Panel title="Basic Details">
-        <Grid2 container spacing={3} alignItems="center">
+        <Grid2 container spacing={3}>
           <Grid2 size="auto">
-            <Card sx={{ borderRadius: '50%', height: '96px', width: '96px', overflow: 'hidden' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', width: '96px', cursor: 'pointer', backgroundColor: v2Colors.surface2 }}
-                onClick={handleCardClick}>
-                {partImage ? <img src={URL.createObjectURL(partImage)} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
-                 /> : <FcAddImage style={{ height: '42px', width: '42px' }}/>}
-                <input
-                  type="file"
-                  accept='image/png, image/jpeg'
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-              </Box>
-            </Card>
+            <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Card sx={{ borderRadius: '50%', height: '96px', width: '96px', overflow: 'hidden' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '96px', width: '96px', cursor: 'pointer', backgroundColor: v2Colors.surface2 }}
+                  onClick={handleCardClick}>
+                  {partImage ? <img src={URL.createObjectURL(partImage)} style={{ height: '96px', width: '96px', objectFit: 'cover' }}
+                   /> : <FcAddImage style={{ height: '42px', width: '42px' }}/>}
+                  <input
+                    type="file"
+                    accept='image/png, image/jpeg'
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                </Box>
+              </Card>
+            </Box>
           </Grid2>
           <Grid2 size="grow">
             <Grid2 container spacing={2}>
@@ -308,7 +310,7 @@ export default function V2NewPart() {
                   helperText={errors?.name}
                 />
               </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
                 <TextField
                   size='small'
                   variant="outlined"
@@ -319,7 +321,37 @@ export default function V2NewPart() {
                   onChange={handleChange}
                 />
               </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <FormControl fullWidth>
+                  <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
+                  <Select
+                    labelId="demo-multiple-checkbox-label"
+                    id="demo-multiple-checkbox"
+                    size='small'
+                    multiple
+                    required
+                    value={selectedType}
+                    onChange={handleMultiProcessChange}
+                    input={<OutlinedInput label="Tag" />}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value: any) => (
+                          value.length > 0 ?
+                            <Chip key={value} label={value} /> : <></>
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Machine', 'Spares', 'SPM'].map((type) => (
+                      <MenuItem key={type} value={type}>
+                        <Checkbox checked={selectedType.includes(type)} />
+                        <ListItemText primary={type} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid2>
+              <Grid2 size={{ xs: 12, sm: 6, md: 6 }}>
                 <TextField
                   size='small'
                   variant="outlined"
@@ -333,7 +365,7 @@ export default function V2NewPart() {
                   helperText={errors?.minimum_stock_qty}
                 />
               </Grid2>
-              <Grid2 size={{ xs: 12, sm: 6, md: 2 }}>
+              <Grid2 size={{ xs: 12, sm: 6, md: 6 }}>
                 <TextField
                   size='small'
                   variant="outlined"
@@ -350,38 +382,6 @@ export default function V2NewPart() {
             </Grid2>
           </Grid2>
         </Grid2>
-
-        <Box sx={{ mt: 3 }}>
-          <Typography sx={{ fontSize: '12px', fontWeight: 600, color: v2Colors.muted, mb: 1 }}>Type</Typography>
-          <FormControl sx={{ minWidth: 280 }}>
-            <InputLabel id="demo-multiple-checkbox-label">Type</InputLabel>
-            <Select
-              labelId="demo-multiple-checkbox-label"
-              id="demo-multiple-checkbox"
-              size='small'
-              multiple
-              required
-              value={selectedType}
-              onChange={handleMultiProcessChange}
-              input={<OutlinedInput label="Tag" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value: any) => (
-                    value.length > 0 ?
-                      <Chip key={value} label={value} /> : <></>
-                  ))}
-                </Box>
-              )}
-            >
-              {['Machine', 'Spares', 'SPM'].map((type) => (
-                <MenuItem key={type} value={type}>
-                  <Checkbox checked={selectedType.includes(type)} />
-                  <ListItemText primary={type} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
       </V2Panel>
 
       <V2Panel title="Machines" caption={`${selectedMachines.length} linked`}>

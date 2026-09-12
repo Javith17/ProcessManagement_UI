@@ -147,7 +147,7 @@ export default function Vendors() {
             </Table>
           </TableContainer>
 
-          <Pagination count={vendors.count / page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(vendors.count / page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt: 2

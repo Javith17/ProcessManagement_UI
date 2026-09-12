@@ -1694,9 +1694,7 @@ export default function Quotations() {
                                 error={!!errors?.bought_out_id}
                                 disabled={isApprove}
                                 onChange={(e: any) => {
-                                    if (isNew) {
-                                        setSupplierFormData({ ...supplierFormData, bought_out_id: e.target.value })
-                                    }
+                                    setSupplierFormData({ ...supplierFormData, bought_out_id: e.target.value })
                                 }}
                             >
                                 {boughtOuts && boughtOuts.length > 0 && boughtOuts?.map((boughtOut: any) => {

@@ -277,7 +277,7 @@ export default function Roles() {
             </Table>
           </TableContainer>
 
-          <Pagination count={roles.count / page_limit} shape="rounded" sx={{
+          <Pagination count={Math.ceil(roles.count / page_limit)} shape="rounded" sx={{
             '& > .MuiPagination-ul': {
               justifyContent: 'center',
             }, mt: 2
