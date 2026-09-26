@@ -478,6 +478,30 @@ export const uploadPoPdf = createAsyncThunk('uploadPoPdf', async (data: { file: 
     }
 })
 
+export const generateInvoice = createAsyncThunk('generateInvoice', async (data: any) => {
+    try{
+        const response = await axiosInstance.post(`order/generateInvoice`, data, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return []
+    }
+})
+
+export const fetchInvoiceDoc = createAsyncThunk('fetchInvoiceDoc', async (id: string) => {
+    try{
+        const response = await axiosInstance.get(`order/invoiceDoc/${id}`, {
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return {}
+    }
+})
+
 export const orderHistory = createAsyncThunk('orderHistory', async (data: string) => {
     try{
         const response = await axiosInstance.get(`order/orderHistory/${data}`, {

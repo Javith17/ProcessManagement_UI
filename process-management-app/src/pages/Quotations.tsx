@@ -702,7 +702,7 @@ export default function Quotations() {
                                             <TableCell>{quotation.user?.emp_name}</TableCell>
                                             <TableCell>
                                                 {(quotation.status.includes('Pending Approval') || quotation.status.includes('Pending Verification')) ?
-                                                    <Card sx={{ bgcolor: quotation.status.includes('Pending Approval') ? '#006BFF' : '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+                                                    <Card sx={{ bgcolor: '#006BFF', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
                                                         setFormData({
                                                             quotation_id: quotation.id,
                                                             quotation_no: quotation.quotation_no,
@@ -730,7 +730,7 @@ export default function Quotations() {
                                                         <Card sx={{ bgcolor: 'green', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card> :
                                                         <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card>}
                                             </TableCell>
-                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                            {(quotation.status.includes('Pending Verification') || quotation.status.includes('Pending Approval')) ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setCreateDialog(true)
                                                 setQuotationTerms(quotation.quotation_terms)
@@ -821,7 +821,7 @@ export default function Quotations() {
                                             <TableCell>{quotation.user?.emp_name}</TableCell>
                                             <TableCell>
                                                 {(quotation.status.includes('Pending Approval') || quotation.status.includes('Pending Verification')) ?
-                                                    <Card sx={{ bgcolor: quotation.status.includes('Pending Approval') ? '#006BFF' : '#bb0037', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+                                                    <Card sx={{ bgcolor: '#006BFF', color: 'white', p: 1, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
                                                         setSparesFormData({
                                                             quotation_id: quotation.id,
                                                             quotation_no: quotation.quotation_no,
@@ -852,7 +852,7 @@ export default function Quotations() {
                                                         <Card sx={{ bgcolor: 'green', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card> :
                                                         <Card sx={{ bgcolor: '#bb0037', color: 'white', p: 1, textAlign: 'center' }}>{quotation.status}</Card>}
                                             </TableCell>
-                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                            {(quotation.status.includes('Pending Verification') || quotation.status.includes('Pending Approval')) ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setSpareDialog(true)
                                                 setQuotationTerms(quotation.quotation_terms)
@@ -1297,7 +1297,7 @@ export default function Quotations() {
                 }}>
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <h5 style={{ flexGrow: '1' }}>{formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Quotation'} </h5>
+                        <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
                         <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
                             setApproveDialog(false)
                             clearValues()
@@ -1358,7 +1358,7 @@ export default function Quotations() {
                         fullWidth
                         multiline
                         rows={2}
-                        label={formData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
+                        label="Approval/Rejection Remarks"
                         name="approva_remarks"
                         onChange={(e: any) => {
                             setApproveData({ ...approveData, remarks: e.target.value })
@@ -1383,7 +1383,7 @@ export default function Quotations() {
 
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => handleApproveReject(formData.type == "Pending Approval" ? "Approved" : "Verified", 'machine')} variant="contained">{formData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
+                    <Button onClick={() => handleApproveReject("Approved", 'machine')} variant="contained">Approve</Button>
                     <Button onClick={() => handleApproveReject('Rejected', 'machine')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </DialogActions>
             </Dialog>
@@ -2112,7 +2112,7 @@ export default function Quotations() {
                 </DialogActions>
             </Dialog>
 
-            {/* Verification Dialog for spares quotation */}
+            {/* Approve/Reject Dialog for spares quotation */}
 
             <Dialog
                 maxWidth={'md'}
@@ -2126,7 +2126,7 @@ export default function Quotations() {
                 }}>
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <h5 style={{ flexGrow: '1' }}>{formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Spares Quotation'} </h5>
+                        <h5 style={{ flexGrow: '1' }}>Approve/Reject Quotation</h5>
                         <CloseSharp style={{ cursor: 'pointer' }} onClick={() => {
                             setApproveSpareDialog(false)
                             clearValues()
@@ -2238,7 +2238,7 @@ export default function Quotations() {
                         fullWidth
                         multiline
                         rows={2}
-                        label={sparesFormData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
+                        label="Approval/Rejection Remarks"
                         name="approva_remarks"
                         onChange={(e: any) => {
                             setApproveData({ ...approveData, remarks: e.target.value })
@@ -2249,7 +2249,7 @@ export default function Quotations() {
 
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => handleApproveReject(sparesFormData.type == "Pending Approval" ? "Approved" : "Verified", 'spares')} variant="contained">{sparesFormData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
+                    <Button onClick={() => handleApproveReject("Approved", 'spares')} variant="contained">Approve</Button>
                     <Button onClick={() => handleApproveReject('Rejected', 'spares')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </DialogActions>
             </Dialog>

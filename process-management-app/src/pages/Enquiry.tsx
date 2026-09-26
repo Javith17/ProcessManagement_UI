@@ -6,7 +6,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import { Box, Button, Card, FormControl, Grid2, Input, InputAdornment, InputLabel, Alert, TextField, CircularProgress, Pagination, RadioGroup, FormControlLabel, Radio, Typography, Autocomplete } from '@mui/material';
+import { Box, Button, ButtonGroup, Card, FormControl, Grid2, Input, InputAdornment, InputLabel, Alert, TextField, CircularProgress, Pagination, RadioGroup, FormControlLabel, Radio, Typography, Autocomplete } from '@mui/material';
 import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
@@ -30,6 +30,13 @@ import { fetchMachineList } from '../slices/machineSlice';
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
+const statusColors: Record<string, "info" | "warning" | "error" | "success"> = {
+    "Open": "info",
+    "In Progress": "warning",
+    "Rejected": "error",
+    "Approved": "success",
+};
 
 export default function Enquiry() {
     const dispatch = useAppDispatch()
@@ -258,7 +265,16 @@ export default function Enquiry() {
         <Box sx={{ display: 'flex', direction: 'column' }}>
             <SidebarNav currentPage={nav_users} />
             <Grid2 container spacing={2} padding={2} sx={{ mt: 10, flexGrow: 1 }}>
-                <Grid2 size={{ xs: 6, md: 8 }}>
+                <Grid2
+                    size={12}
+                    sx={{
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        alignItems: 'center',
+                        gap: 2,
+                        overflowX: 'auto',
+                    }}
+                >
                     <TextField
                         placeholder="Search enquiry"
                         variant="outlined"
@@ -266,6 +282,7 @@ export default function Enquiry() {
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        sx={{ flex: '1 1 240px', minWidth: 150 }}
                         slotProps={{
                             input: {
                                 startAdornment: (
@@ -276,37 +293,45 @@ export default function Enquiry() {
                             },
                         }}
                     />
-                </Grid2>
 
-                <Grid2 size="grow" display="flex" gap={2} justifyContent="flex-end">
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                            value={statusFilter}
-                            label="Status"
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                            }}
-                        >
-                            {["Open", "In Progress", "Rejected", "Approved"].map((s) => (
-                                <MenuItem key={s} value={s}>{s}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <RefreshButton onClick={handleRefresh} />
-
-                    <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        size="small"
-                        onClick={() => {
-                            clearValues();
-                            setCreateDialog(true);
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'nowrap',
+                            alignItems: 'center',
+                            gap: 2,
+                            flexShrink: 0,
                         }}
                     >
-                        Add New
-                    </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<Add />}
+                            size="small"
+                            sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                            onClick={() => {
+                                clearValues();
+                                setCreateDialog(true);
+                            }}
+                        >
+                            Add New
+                        </Button>
+
+                        <ButtonGroup size="small" sx={{ flexWrap: 'nowrap' }}>
+                            {["Open", "In Progress", "Rejected", "Approved"].map((s) => (
+                                <Button
+                                    key={s}
+                                    color={statusColors[s]}
+                                    variant={statusFilter === s ? "contained" : "outlined"}
+                                    onClick={() => setStatusFilter(s)}
+                                    sx={{ whiteSpace: 'nowrap' }}
+                                >
+                                    {s}
+                                </Button>
+                            ))}
+                        </ButtonGroup>
+
+                        <RefreshButton onClick={handleRefresh} />
+                    </Box>
                 </Grid2>
 
                 <Grid2 size={{ xs: 6, md: 12 }}>

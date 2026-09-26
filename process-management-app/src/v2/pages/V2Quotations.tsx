@@ -45,8 +45,7 @@ import V2Drawer from '../components/V2Drawer';
 import { v2Colors } from '../theme';
 
 const quotationStatusVariant = (status: string): V2BadgeVariant => {
-  if (status.includes('Pending Approval')) return 'info';
-  if (status.includes('Pending Verification')) return 'crimson';
+  if (status.includes('Pending Approval') || status.includes('Pending Verification')) return 'info';
   if (status.includes('Approved')) return 'green';
   return 'crimson';
 }
@@ -739,7 +738,7 @@ export default function V2Quotations() {
                                                     } : undefined}
                                                 />
                                             </TableCell>
-                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                            {(quotation.status.includes('Pending Verification') || quotation.status.includes('Pending Approval')) ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setCreateDialog(true)
                                                 setQuotationTerms(quotation.quotation_terms)
@@ -861,7 +860,7 @@ export default function V2Quotations() {
                                                     } : undefined}
                                                 />
                                             </TableCell>
-                                            {quotation.status.includes('Pending Verification') ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
+                                            {(quotation.status.includes('Pending Verification') || quotation.status.includes('Pending Approval')) ? <TableCell><MdOutlineEdit style={{ cursor: 'pointer' }} onClick={() => {
                                                 setIsNew(false)
                                                 setSpareDialog(true)
                                                 setQuotationTerms(quotation.quotation_terms)
@@ -1295,9 +1294,9 @@ export default function V2Quotations() {
                     setApproveDialog(false)
                     clearValues()
                 }}
-                title={formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Quotation'}
+                title="Approve/Reject Quotation"
                 actions={<>
-                    <Button onClick={() => handleApproveReject(formData.type == "Pending Approval" ? "Approved" : "Verified", 'machine')} variant="contained">{formData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
+                    <Button onClick={() => handleApproveReject("Approved", 'machine')} variant="contained">Approve</Button>
                     <Button onClick={() => handleApproveReject('Rejected', 'machine')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </>}
             >
@@ -1354,7 +1353,7 @@ export default function V2Quotations() {
                         fullWidth
                         multiline
                         rows={2}
-                        label={formData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
+                        label="Approval/Rejection Remarks"
                         name="approva_remarks"
                         onChange={(e: any) => {
                             setApproveData({ ...approveData, remarks: e.target.value })
@@ -2054,7 +2053,7 @@ export default function V2Quotations() {
                     })}
             </V2Drawer>
 
-            {/* Verification Dialog for spares quotation */}
+            {/* Approve/Reject Dialog for spares quotation */}
 
             <V2Drawer
                 width={700}
@@ -2063,9 +2062,9 @@ export default function V2Quotations() {
                     setApproveSpareDialog(false)
                     clearValues()
                 }}
-                title={formData.type == 'Pending Approval' ? 'Approve/Reject Quotation' : 'Verify Spares Quotation'}
+                title="Approve/Reject Quotation"
                 actions={<>
-                    <Button onClick={() => handleApproveReject(sparesFormData.type == "Pending Approval" ? "Approved" : "Verified", 'spares')} variant="contained">{sparesFormData.type == "Pending Approval" ? "Approve" : "Verify"}</Button>
+                    <Button onClick={() => handleApproveReject("Approved", 'spares')} variant="contained">Approve</Button>
                     <Button onClick={() => handleApproveReject('Rejected', 'spares')} sx={{ backgroundColor: '#bb0037' }} variant="contained">Reject</Button>
                 </>}
             >
@@ -2173,7 +2172,7 @@ export default function V2Quotations() {
                         fullWidth
                         multiline
                         rows={2}
-                        label={sparesFormData.type == "Pending Approval" ? "Approval/Rejection Remarks" : "Verification Remarks"}
+                        label="Approval/Rejection Remarks"
                         name="approva_remarks"
                         onChange={(e: any) => {
                             setApproveData({ ...approveData, remarks: e.target.value })

@@ -10,8 +10,9 @@ import DisplaySnackbar from '../../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import { AdminRole, getRole, StoreRole, SuperAdminRole } from '../../utils/Permissions';
 import { FaCalendarAlt } from "react-icons/fa";
-import { deliverProductionMachineBO, deliverProductionMachinePart, fetchOrdersList, moveBoughtoutToAssembly, movePartToAssembly } from '../../slices/quotationSlice';
-import { DateCalendar, LocalizationProvider } from '@mui/x-date-pickers';
+import { deliverProductionMachineBO, deliverProductionMachinePart, fetchInvoiceDoc, fetchOrdersList, generateInvoice, moveBoughtoutToAssembly, movePartToAssembly } from '../../slices/quotationSlice';
+import { DateCalendar, DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { useReactToPrint } from 'react-to-print';
 import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { MdOutlineRemoveRedEye } from 'react-icons/md';
@@ -52,6 +53,21 @@ const V2Dashboard = () => {
     const [reminderDateList, setReminderDateList] = useState<any[]>()
     const [deliveryDateList, setDeliveryDateList] = useState<any[]>()
     const [ordersCloseList, setOrdersCloseList] = useState<any[]>()
+
+    const [generateInvoiceDialog, setGenerateInvoiceDialog] = useState(false)
+    const [generateInvoiceData, setGenerateInvoiceData] = useState<any>({
+        order_id: '', customer_name: '', customer_address: '', customer_gst: '', customer_state: '',
+        invoice_date: dayjs(new Date()), delivery_note: '', delivery_note_date: dayjs(new Date()),
+        dispatch_doc_no: '', dispatched_through: 'By Road', bill_of_lading_no: '', bill_of_lading_date: dayjs(new Date()),
+        destination: '', vehicle_no: '', terms_of_delivery: '', mode_of_payment: '',
+        insurance_charges: 0, igst_percent: 18,
+        line_items: [{ description: '', hsn_sac: '', qty: 1, unit: 'nos', rate: 0 }]
+    })
+    const [invoiceDocDialog, setInvoiceDocDialog] = useState<{ open: boolean, html: string, id: string }>({
+        open: false, html: '', id: ''
+    })
+    const invoiceContentRef = useRef<HTMLDivElement>(null);
+    const reactToPrintInvoiceFn = useReactToPrint({ contentRef: invoiceContentRef });
 
     const [currentRole, setCurrentRole] = useState()
 
@@ -273,6 +289,76 @@ const V2Dashboard = () => {
 
     const allProcessesPaid = !pendingDeliveryItem?.processes || pendingDeliveryItem.processes.length === 0 ||
         pendingDeliveryItem.processes.every((p: any) => processPayments[p.id]?.paid)
+
+    const openInvoiceDoc = (id: string) => {
+        dispatch(fetchInvoiceDoc(id)).unwrap().then((res: any) => {
+            setInvoiceDocDialog({ open: true, html: res.html, id })
+        })
+    }
+
+    const handleRowInvoiceClick = (row: any) => {
+        if (row?.invoice_id) {
+            openInvoiceDoc(row.invoice_id)
+            return
+        }
+        const address = [row.customer?.customer_address1, row.customer?.customer_address2,
+            row.customer?.customer_city, row.customer?.customer_state, row.customer?.customer_pincode]
+            .filter((v) => v && v.length > 0).join(', ')
+        setGenerateInvoiceData({
+            order_id: row.id,
+            customer_name: row.customer?.customer_name,
+            customer_address: address,
+            customer_gst: row.customer?.customer_gst,
+            customer_state: row.customer?.customer_state,
+            invoice_date: dayjs(new Date()), delivery_note: '', delivery_note_date: dayjs(new Date()),
+            dispatch_doc_no: '', dispatched_through: 'By Road', bill_of_lading_no: '', bill_of_lading_date: dayjs(new Date()),
+            destination: '', vehicle_no: '', terms_of_delivery: '', mode_of_payment: '',
+            insurance_charges: 0, igst_percent: 18,
+            line_items: [{
+                description: row.machine_name || '', hsn_sac: '', qty: 1, unit: 'nos',
+                rate: Number(row.quotation?.approved_cost || row.spares_quotation?.approved_cost || 0)
+            }]
+        })
+        setGenerateInvoiceDialog(true)
+    }
+
+    const handleGenerateInvoiceSubmit = () => {
+        dispatch(generateInvoice({
+            order_id: generateInvoiceData.order_id,
+            customer_name: generateInvoiceData.customer_name,
+            customer_address: generateInvoiceData.customer_address,
+            customer_gst: generateInvoiceData.customer_gst,
+            customer_state: generateInvoiceData.customer_state,
+            invoice_date: dayjs(generateInvoiceData.invoice_date).format('DD-MMM-YY'),
+            delivery_note: generateInvoiceData.delivery_note,
+            delivery_note_date: generateInvoiceData.delivery_note_date ? dayjs(generateInvoiceData.delivery_note_date).format('DD-MMM-YY') : '',
+            dispatch_doc_no: generateInvoiceData.dispatch_doc_no,
+            dispatched_through: generateInvoiceData.dispatched_through,
+            bill_of_lading_no: generateInvoiceData.bill_of_lading_no,
+            bill_of_lading_date: generateInvoiceData.bill_of_lading_date ? dayjs(generateInvoiceData.bill_of_lading_date).format('DD-MMM-YY') : '',
+            destination: generateInvoiceData.destination,
+            vehicle_no: generateInvoiceData.vehicle_no,
+            terms_of_delivery: generateInvoiceData.terms_of_delivery,
+            mode_of_payment: generateInvoiceData.mode_of_payment,
+            insurance_charges: generateInvoiceData.insurance_charges,
+            igst_percent: generateInvoiceData.igst_percent,
+            line_items: generateInvoiceData.line_items
+        })).unwrap().then((res: any) => {
+            if (res?.id) {
+                setOrdersCloseList(
+                    ordersCloseList?.map((o: any) => o.id === generateInvoiceData.order_id ?
+                        { ...o, invoice_id: res.id, invoice_no: res.invoice_no } : o)
+                )
+                setGenerateInvoiceDialog(false)
+                DisplaySnackbar('Invoice generated successfully', 'success', enqueueSnackbar)
+                openInvoiceDoc(res.id)
+            } else {
+                DisplaySnackbar('Unable to generate Invoice', 'error', enqueueSnackbar)
+            }
+        }).catch((err: any) => {
+            DisplaySnackbar(err.message, 'error', enqueueSnackbar)
+        })
+    }
 
     const [currentTab, setCurrentTab] = useState(0)
     const [deliveryTab, setDeliveryTab] = useState(0)
@@ -808,7 +894,7 @@ const V2Dashboard = () => {
                                         <TableCell>Machine Name</TableCell>
                                         <TableCell>Customer Name</TableCell>
                                         <TableCell>Status</TableCell>
-                                        {ordersFilter == 'Assembly Completed' && <TableCell>Action</TableCell>}
+                                        {(ordersFilter == 'Assembly Completed' || ordersFilter == 'Closed') && <TableCell>Action</TableCell>}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -819,10 +905,16 @@ const V2Dashboard = () => {
                                             <TableCell>{row?.machine_name}</TableCell>
                                             <TableCell>{row.customer?.customer_name}</TableCell>
                                             <TableCell>{row?.status}</TableCell>
-                                            {ordersFilter == 'Assembly Completed' && <TableCell><V2Badge variant="action" label="Close Order" onClick={() => {
-                                                setAssemblyItem(row)
-                                                setCloseOrderDialog(true)
-                                            }} /></TableCell>}
+                                            {(ordersFilter == 'Assembly Completed' || ordersFilter == 'Closed') && <TableCell>
+                                                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+                                                    {ordersFilter == 'Assembly Completed' && <V2Badge variant="action" label="Close Order" onClick={() => {
+                                                        setAssemblyItem(row)
+                                                        setCloseOrderDialog(true)
+                                                    }} />}
+                                                    <V2Badge variant="green" label={row?.invoice_id ? `View Invoice ${row?.invoice_no || ''}` : 'Generate Invoice'}
+                                                        onClick={() => handleRowInvoiceClick(row)} />
+                                                </Box>
+                                            </TableCell>}
                                         </V2TableRowStyled>
                                     )) : <TableRow key={0}>
                                         <TableCell colSpan={9} align='center'>No Data</TableCell>
@@ -1519,6 +1611,278 @@ const V2Dashboard = () => {
                                 setAssemblyItem({ ...assemblyItem, remarks: e.target.value })
                             }}
                         />
+                </V2Drawer>
+
+                {/* Dialog to collect invoice details before generating */}
+                <V2Drawer
+                    width={720}
+                    open={generateInvoiceDialog}
+                    onClose={() => setGenerateInvoiceDialog(false)}
+                    title={<>Generate Invoice for {generateInvoiceData?.customer_name}</>}
+                    actions={<>
+                        <Button variant='text' onClick={() => setGenerateInvoiceDialog(false)} sx={{ color: v2Colors.primary }}>Cancel</Button>
+                        <Button variant="contained" onClick={handleGenerateInvoiceSubmit}>Generate</Button>
+                    </>}
+                >
+                    <Box>
+                        <Typography variant='subtitle2' color='grey'>Buyer Details</Typography>
+                        <Grid2 container spacing={2} sx={{ mt: 0.5 }}>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Customer Name"
+                                    value={generateInvoiceData?.customer_name}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, customer_name: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="GSTIN/UIN"
+                                    value={generateInvoiceData?.customer_gst}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, customer_gst: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={8}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Address"
+                                    value={generateInvoiceData?.customer_address}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, customer_address: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="State"
+                                    value={generateInvoiceData?.customer_state}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, customer_state: e.target.value })}
+                                />
+                            </Grid2>
+                        </Grid2>
+
+                        <Typography variant='subtitle2' color='grey' sx={{ mt: 2 }}>Items</Typography>
+                        <Table size='small'>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Description</TableCell>
+                                    <TableCell>HSN/SAC</TableCell>
+                                    <TableCell>Qty</TableCell>
+                                    <TableCell>Unit</TableCell>
+                                    <TableCell>Rate</TableCell>
+                                    <TableCell>Amount</TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {generateInvoiceData?.line_items?.map((item: any, index: number) => (
+                                    <TableRow key={index}>
+                                        <TableCell>
+                                            <TextField
+                                                size='small' variant='outlined' sx={{ width: '160px' }}
+                                                value={item.description}
+                                                onChange={(e) => {
+                                                    const line_items = [...generateInvoiceData.line_items]
+                                                    line_items[index] = { ...item, description: e.target.value }
+                                                    setGenerateInvoiceData({ ...generateInvoiceData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                size='small' variant='outlined' sx={{ width: '90px' }}
+                                                value={item.hsn_sac}
+                                                onChange={(e) => {
+                                                    const line_items = [...generateInvoiceData.line_items]
+                                                    line_items[index] = { ...item, hsn_sac: e.target.value }
+                                                    setGenerateInvoiceData({ ...generateInvoiceData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                size='small' variant='outlined' type='number' sx={{ width: '70px' }}
+                                                value={item.qty}
+                                                onChange={(e) => {
+                                                    const line_items = [...generateInvoiceData.line_items]
+                                                    line_items[index] = { ...item, qty: e.target.value }
+                                                    setGenerateInvoiceData({ ...generateInvoiceData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                size='small' variant='outlined' sx={{ width: '70px' }}
+                                                value={item.unit}
+                                                onChange={(e) => {
+                                                    const line_items = [...generateInvoiceData.line_items]
+                                                    line_items[index] = { ...item, unit: e.target.value }
+                                                    setGenerateInvoiceData({ ...generateInvoiceData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                size='small' variant='outlined' type='number' sx={{ width: '110px' }}
+                                                value={item.rate}
+                                                onChange={(e) => {
+                                                    const line_items = [...generateInvoiceData.line_items]
+                                                    line_items[index] = { ...item, rate: e.target.value }
+                                                    setGenerateInvoiceData({ ...generateInvoiceData, line_items })
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{(Number(item.qty) * Number(item.rate)).toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Button size='small' sx={{ color: v2Colors.primary }} onClick={() => {
+                                                setGenerateInvoiceData({
+                                                    ...generateInvoiceData,
+                                                    line_items: generateInvoiceData.line_items.filter((_: any, i: number) => i !== index)
+                                                })
+                                            }}>Remove</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        <Button size='small' onClick={() => {
+                            setGenerateInvoiceData({
+                                ...generateInvoiceData,
+                                line_items: [...generateInvoiceData.line_items, { description: '', hsn_sac: '', qty: 1, unit: 'nos', rate: 0 }]
+                            })
+                        }}>+ Add Item</Button>
+
+                        <Grid2 container spacing={2} sx={{ mt: 1 }}>
+                            <Grid2 size={4}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="Invoice Date"
+                                        sx={{ width: '100%' }}
+                                        value={generateInvoiceData?.invoice_date}
+                                        onChange={(e: any) => setGenerateInvoiceData({ ...generateInvoiceData, invoice_date: e })}
+                                    />
+                                </LocalizationProvider>
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Insurance Charges"
+                                    type="number"
+                                    value={generateInvoiceData?.insurance_charges}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, insurance_charges: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="IGST %"
+                                    type="number"
+                                    value={generateInvoiceData?.igst_percent}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, igst_percent: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Delivery Note"
+                                    value={generateInvoiceData?.delivery_note}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, delivery_note: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="Delivery Note Date"
+                                        sx={{ width: '100%' }}
+                                        value={generateInvoiceData?.delivery_note_date}
+                                        onChange={(e: any) => setGenerateInvoiceData({ ...generateInvoiceData, delivery_note_date: e })}
+                                    />
+                                </LocalizationProvider>
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Dispatch Doc No"
+                                    value={generateInvoiceData?.dispatch_doc_no}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, dispatch_doc_no: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Dispatched Through"
+                                    value={generateInvoiceData?.dispatched_through}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, dispatched_through: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Destination"
+                                    value={generateInvoiceData?.destination}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, destination: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Motor Vehicle No"
+                                    value={generateInvoiceData?.vehicle_no}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, vehicle_no: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Bill of Lading/LR-RR No"
+                                    value={generateInvoiceData?.bill_of_lading_no}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, bill_of_lading_no: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={4}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        label="Bill of Lading Date"
+                                        sx={{ width: '100%' }}
+                                        value={generateInvoiceData?.bill_of_lading_date}
+                                        onChange={(e: any) => setGenerateInvoiceData({ ...generateInvoiceData, bill_of_lading_date: e })}
+                                    />
+                                </LocalizationProvider>
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Mode/Terms of Payment"
+                                    value={generateInvoiceData?.mode_of_payment}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, mode_of_payment: e.target.value })}
+                                />
+                            </Grid2>
+                            <Grid2 size={6}>
+                                <TextField
+                                    fullWidth size='small'
+                                    label="Terms of Delivery"
+                                    value={generateInvoiceData?.terms_of_delivery}
+                                    onChange={(e) => setGenerateInvoiceData({ ...generateInvoiceData, terms_of_delivery: e.target.value })}
+                                />
+                            </Grid2>
+                        </Grid2>
+                    </Box>
+                </V2Drawer>
+
+                {/* Dialog to view/print a generated Invoice */}
+                <V2Drawer
+                    width={720}
+                    open={invoiceDocDialog.open}
+                    onClose={() => setInvoiceDocDialog({ open: false, html: '', id: '' })}
+                    title={<>Tax Invoice</>}
+                    actions={<>
+                        <Button variant='text' onClick={() => setInvoiceDocDialog({ open: false, html: '', id: '' })} sx={{ color: v2Colors.primary }}>Close</Button>
+                        <Button variant="contained" onClick={() => reactToPrintInvoiceFn()}>Print</Button>
+                    </>}
+                >
+                    <Box>
+                        <div ref={invoiceContentRef} dangerouslySetInnerHTML={{ __html: invoiceDocDialog.html }} />
+                    </Box>
                 </V2Drawer>
 
         </V2PageShell>
