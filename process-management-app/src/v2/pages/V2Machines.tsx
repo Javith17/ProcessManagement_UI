@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { Add, Search } from '@mui/icons-material';
 import { createAttachment, createNewMachine, deleteMachine, fetchMachineAttachmentLinks, fetchMachineList } from '../../slices/machineSlice';
 import RefreshButton from '../../components/RefreshButton';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import DisplaySnackbar from '../../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
 import V2PageShell from '../components/V2PageShell';
@@ -19,6 +19,7 @@ import { v2Colors, v2Fonts } from '../theme';
 export default function V2Machines() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const { enqueueSnackbar } = useSnackbar()
 
   const { machines, machineStatus } = useAppSelector(
@@ -45,6 +46,14 @@ export default function V2Machines() {
   useEffect(() => {
     dispatch(fetchMachineList()).unwrap()
   }, [])
+
+  useEffect(() => {
+    if (state?.openCreate) {
+      setErrors({})
+      setCreateDialog(true)
+      navigate('.', { replace: true, state: null })
+    }
+  }, [state])
 
   const handleSearch = () => {
     dispatch(fetchMachineList(searchText)).unwrap()

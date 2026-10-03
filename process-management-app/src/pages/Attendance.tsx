@@ -352,7 +352,7 @@ export default function Attendance() {
                                             Check In Image
                                         </Typography>
 
-                                        <img src={`${process.env.REACT_APP_API_URL}user/loadImage/${formatDate(selectedAttendance.attendance_date)}/${selectedAttendance.attendance_user_id}.png`} style={{ height: '160px', width: '120px' }} />
+                                        <img src={`${process.env.REACT_APP_API_URL}/user/loadImage/${formatDate(selectedAttendance.attendance_date)}/${selectedAttendance.attendance_user_id}.png`} style={{ height: '160px', width: '120px' }} />
                                     </Box>
                                 </Grid2>
 

@@ -3,6 +3,7 @@ import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { createVendor, fetchProcessList, fetchVendors } from '../slices/adminSlice';
+import AddNewIconButton from '../components/AddNewIconButton';
 import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
@@ -719,31 +720,34 @@ export default function NewPart() {
         open={showVendorDialog}>
         <DialogTitle>Add Vendor for {selectedProcessName}</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth margin="normal"
-            error={!!errors?.vendor_name}>
-            <InputLabel id="role-select-label">Vendor</InputLabel>
-            <Select
-              size={'small'}
-              labelId="role-select-label"
-              id="role-select"
-              label="Vendor"
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+            <FormControl fullWidth margin="normal"
+              error={!!errors?.vendor_name}>
+              <InputLabel id="role-select-label">Vendor</InputLabel>
+              <Select
+                size={'small'}
+                labelId="role-select-label"
+                id="role-select"
+                label="Vendor"
 
-              value={selectedVendor.vendor_id}
-              onChange={(e) => {
-                setSelectedVendor({ ...selectedVendor, vendor_id: e.target.value, vendor_name: vendors.list?.find((v) => v.id == e.target.value)?.vendor_name })
-              }}
-            >
+                value={selectedVendor.vendor_id}
+                onChange={(e) => {
+                  setSelectedVendor({ ...selectedVendor, vendor_id: e.target.value, vendor_name: vendors.list?.find((v) => v.id == e.target.value)?.vendor_name })
+                }}
+              >
 
-              {!editVendor && vendors && vendors.list?.length > 0 && vendors.list?.map((vendor) => {
-                // const vendor_process = vendor.process_list?.filter((p: any) => p.process_id == selectedProcess)
-                const existing_vendor = partVendor.filter((v: any) => v.vendor_id == vendor.id && v.process_id == selectedProcess)
-                if (existing_vendor.length == 0) {
-                  return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
-                }
-              })}
-              {editVendor && <MenuItem value={selectedVendor.vendor_id}>{selectedVendor.vendor_name}</MenuItem>}
-            </Select>
-          </FormControl>
+                {!editVendor && vendors && vendors.list?.length > 0 && vendors.list?.map((vendor) => {
+                  // const vendor_process = vendor.process_list?.filter((p: any) => p.process_id == selectedProcess)
+                  const existing_vendor = partVendor.filter((v: any) => v.vendor_id == vendor.id && v.process_id == selectedProcess)
+                  if (existing_vendor.length == 0) {
+                    return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
+                  }
+                })}
+                {editVendor && <MenuItem value={selectedVendor.vendor_id}>{selectedVendor.vendor_name}</MenuItem>}
+              </Select>
+            </FormControl>
+            <AddNewIconButton title="Add new vendor" onClick={() => navigate('/vendors/newVendor')} />
+          </Box>
 
           <TextField
             size={'small'}

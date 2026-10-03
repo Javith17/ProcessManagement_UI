@@ -3,6 +3,7 @@ import SidebarNav from './SidebarNav';
 import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { createVendor, fetchProcessList, fetchSuppliers, fetchVendors } from '../slices/adminSlice';
+import AddNewIconButton from '../components/AddNewIconButton';
 import { TextField, Button, Grid2, Container, Alert, Paper, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, FormGroup, FormControlLabel, FormHelperText, Card, CardActions, Dialog, List, ListItem, ListItemButton, ListItemIcon, DialogTitle, DialogActions, DialogContent, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
@@ -546,28 +547,31 @@ export default function NewBoughtout() {
         open={showSupplierDialog}>
         <DialogTitle>Add Supplier</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth margin="normal"
-            error={!!errors?.supplier_name}>
-            <InputLabel id="role-select-label">Supplier</InputLabel>
-            <Select
-              size={'small'}
-              labelId="role-select-label"
-              id="role-select"
-              label="Supplier"
-              value={selectedSupplier.supplier_id}
-              onChange={(e) => {
-                setSelectedSupplier({ ...selectedSupplier, supplier_id: e.target.value, supplier_name: suppliers.list.find((s) => s.id == e.target.value)?.supplier_name })
-              }}
-            >
-              {!editSupplier && suppliers && suppliers.list.length > 0 && suppliers.list.map((supplier) => {
-                const existing_supplier = boughoutSupplier.filter((s: any) => s.supplier_id == supplier.id)
-                if (existing_supplier.length == 0) {
-                  return <MenuItem value={supplier.id}>{supplier.supplier_name}</MenuItem>
-                }
-              })}
-              {editSupplier && <MenuItem value={selectedSupplier.supplier_id}>{selectedSupplier.supplier_name}</MenuItem>}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+            <FormControl fullWidth margin="normal"
+              error={!!errors?.supplier_name}>
+              <InputLabel id="role-select-label">Supplier</InputLabel>
+              <Select
+                size={'small'}
+                labelId="role-select-label"
+                id="role-select"
+                label="Supplier"
+                value={selectedSupplier.supplier_id}
+                onChange={(e) => {
+                  setSelectedSupplier({ ...selectedSupplier, supplier_id: e.target.value, supplier_name: suppliers.list.find((s) => s.id == e.target.value)?.supplier_name })
+                }}
+              >
+                {!editSupplier && suppliers && suppliers.list.length > 0 && suppliers.list.map((supplier) => {
+                  const existing_supplier = boughoutSupplier.filter((s: any) => s.supplier_id == supplier.id)
+                  if (existing_supplier.length == 0) {
+                    return <MenuItem value={supplier.id}>{supplier.supplier_name}</MenuItem>
+                  }
+                })}
+                {editSupplier && <MenuItem value={selectedSupplier.supplier_id}>{selectedSupplier.supplier_name}</MenuItem>}
+              </Select>
+            </FormControl>
+            <AddNewIconButton title="Add new supplier" onClick={() => navigate('/suppliers/newSupplier')} />
+          </Box>
 
           <TextField
             size={'small'}

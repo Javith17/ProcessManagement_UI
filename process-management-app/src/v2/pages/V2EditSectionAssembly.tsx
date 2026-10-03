@@ -13,6 +13,7 @@ import { Add, ArrowBackIos, Save, Search, Settings } from '@mui/icons-material';
 import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useLocation, useNavigate } from 'react-router-dom';
+import AddNewIconButton from '../../components/AddNewIconButton';
 import { errorTextColor, VisuallyHiddenInput } from '../../constants';
 import { createAttachment, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../../slices/machineSlice';
 import DisplaySnackbar from '../../utils/DisplaySnackbar';
@@ -352,6 +353,7 @@ export default function V2EditSectionAssembly() {
                     </Grid2>
 
                     <Grid2 size={3} sx={{ ml: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
                         <FormControl fullWidth sx={{ ml: 1 }}>
                             <InputLabel id="role-select-label">Machine</InputLabel>
                             <Select
@@ -371,6 +373,8 @@ export default function V2EditSectionAssembly() {
                             </Select>
                             {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
                         </FormControl>
+                        <AddNewIconButton title="Add new machine" onClick={() => navigate('/v2/machines', { state: { openCreate: true } })} />
+                        </Box>
                     </Grid2>
                 </Grid2>
 

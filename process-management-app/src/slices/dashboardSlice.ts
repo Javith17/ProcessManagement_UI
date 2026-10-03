@@ -12,6 +12,13 @@ type DashboardStateApi = {
         count: number
     },
     dashboardDetail: any,
+    assemblyProgress: {
+        list: Array<any>
+    },
+    vendorsPendingPayment: {
+        list: Array<any>,
+        count: number
+    },
     status: 'loading' | 'idle' | 'error',
     error: string | null,
     message: string | null
@@ -28,6 +35,13 @@ const initialState: DashboardStateApi = {
     },
     dashboardDetail: {},
     pendingDelivery: {},
+    assemblyProgress: {
+        list: []
+    },
+    vendorsPendingPayment: {
+        list: [],
+        count: 0
+    },
     status: 'idle',
     error: null,
     message: null
@@ -208,6 +222,38 @@ export const closeOrder = createAsyncThunk('closeOrder', async (data: any) => {
     }
 })
 
+export const fetchAssemblyProgress = createAsyncThunk('assemblyProgress', async (data?: { orderIds?: string[], status?: string }) => {
+    try{
+        const response = await axiosInstance.get('order/assemblyProgress', {
+            params: {
+                order_ids: data?.orderIds?.join(','),
+                status: data?.status
+            },
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return { list: [] }
+    }
+})
+
+export const fetchVendorsWithPendingPayment = createAsyncThunk('vendorsWithPendingPayment', async (data?: { limit?: number, page?: number }) => {
+    try{
+        const response = await axiosInstance.get('admin/vendorsWithPendingPayment', {
+            params: {
+                limit: data?.limit,
+                page: data?.page
+            },
+            headers: {'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken}
+        })
+        const resData = response.data
+        return resData
+    }catch(error){
+        return { list: [], count: 0 }
+    }
+})
+
 const dashboardSlice = createSlice({
     name: 'dashboard',
     initialState,
@@ -290,6 +336,32 @@ const dashboardSlice = createSlice({
         .addCase(fetchDashboardDetail.rejected, (state, action) => {
             state.status = 'error'
             state.error = action.error.message || 'unable to add supplier'
+        })
+
+        .addCase(fetchAssemblyProgress.pending, (state) => {
+            state.status = 'loading';
+            state.error = null
+        })
+        .addCase(fetchAssemblyProgress.fulfilled, (state, action) => {
+            state.status = 'idle';
+            state.assemblyProgress = action.payload
+        })
+        .addCase(fetchAssemblyProgress.rejected, (state, action) => {
+            state.status = 'error';
+            state.error = action.error.message || "Unable to load assembly progress"
+        })
+
+        .addCase(fetchVendorsWithPendingPayment.pending, (state) => {
+            state.status = 'loading';
+            state.error = null
+        })
+        .addCase(fetchVendorsWithPendingPayment.fulfilled, (state, action) => {
+            state.status = 'idle';
+            state.vendorsPendingPayment = action.payload
+        })
+        .addCase(fetchVendorsWithPendingPayment.rejected, (state, action) => {
+            state.status = 'error';
+            state.error = action.error.message || "Unable to load vendor pending payments"
         })
     }
 })

@@ -23,6 +23,7 @@ export const nav_assembly='assembly'
 export const nav_attendance='attendance'
 export const nav_leave_request='leave_request'
 export const nav_logout='Logout'
+export const nav_operations_dashboard='operationsDashboard'
 
 export const primaryColor='#bb0037'
 export const secondaryColor='#3c9e09'

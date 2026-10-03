@@ -28,6 +28,7 @@ import { FiCpu } from "react-icons/fi";
 import { PiHandArrowDownBold } from "react-icons/pi";
 import { SiApplearcade } from "react-icons/si";
 import { VscTypeHierarchySub } from "react-icons/vsc";
+import { MdSpaceDashboard } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import { getPermission } from '../../utils/Permissions';
 import { logout } from '../../slices/authSlice';
@@ -166,7 +167,21 @@ export default function V2SidebarNav(props: { currentPage?: string }) {
         </Toolbar>
         <Divider sx={{ borderColor: v2Colors.sidebarLine }} />
 
-        {renderGroup('General', homeScreens, (screen) => {
+        <List disablePadding>
+          <ListItem key="operationsDashboard" ref={menuData === 'operationsDashboard' ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={() => {
+            setMenuData('operationsDashboard');
+            navigate('/v2/operations-dashboard');
+          }}>
+            <ListItemButton sx={itemSx(menuData === 'operationsDashboard')}>
+              <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto', justifyContent: 'center', color: 'inherit' }}>
+                <MdSpaceDashboard />
+              </ListItemIcon>
+              <ListItemText primary="Operations Dashboard" sx={{ opacity: open ? 1 : 0, '& .MuiTypography-root': { fontSize: 13.5, fontWeight: 600 } }} />
+            </ListItemButton>
+          </ListItem>
+        </List>
+
+        {renderGroup('General', homeScreens?.filter((hs: any) => hs.screen !== 'dashboard'), (screen) => {
           if (screen === 'dashboard') navigate('/v2');
           else if (screen === 'roles') navigate('/v2/roles');
           else if (screen === 'users') navigate('/v2/users');

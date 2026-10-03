@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { Add, ArrowBackIos, Save, Search, Settings } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import AddNewIconButton from '../components/AddNewIconButton';
 import { errorTextColor, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
 import { createAttachment, createImage, fetchBoughtOutList, fetchMachineList, fetchPartsList } from '../slices/machineSlice';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
@@ -486,25 +487,28 @@ export default function EditMainAssembly() {
                     </Grid2>
 
                     <Grid2 size={3} sx={{ ml: 1 }}>
-                        <FormControl fullWidth sx={{ ml: 1 }}>
-                            <InputLabel id="role-select-label">Machine</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Vendor"
-                                value={selectedMainAssembly.machine_id}
-                                error={!!errors?.machine_id}
-                                onChange={(e: any) => {
-                                    setSelectedMainAssembly({ ...selectedMainAssembly, machine_id: e.target.value })
-                                }}
-                            >
-                                {machines.map((machine) => {
-                                    return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                            <FormControl fullWidth sx={{ ml: 1 }}>
+                                <InputLabel id="role-select-label">Machine</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Vendor"
+                                    value={selectedMainAssembly.machine_id}
+                                    error={!!errors?.machine_id}
+                                    onChange={(e: any) => {
+                                        setSelectedMainAssembly({ ...selectedMainAssembly, machine_id: e.target.value })
+                                    }}
+                                >
+                                    {machines.map((machine) => {
+                                        return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new machine" onClick={() => navigate('/machines', { state: { openCreate: true } })} />
+                        </Box>
                     </Grid2>
                 </Grid2>
 

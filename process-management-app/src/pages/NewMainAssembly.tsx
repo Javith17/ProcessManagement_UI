@@ -13,6 +13,7 @@ import { useSnackbar } from 'notistack';
 import { IoMdCloseCircle } from "react-icons/io";
 import { checkAssemblyName, createMainAssembly, fetchSubAssemblByMachine } from '../slices/assemblySlice';
 import { FcAddImage } from "react-icons/fc";
+import AddNewIconButton from '../components/AddNewIconButton';
 
 export default function NewMainAssembly() {
     const dispatch = useAppDispatch()
@@ -259,25 +260,28 @@ export default function NewMainAssembly() {
                     </Grid2>
 
                     <Grid2 size={3} sx={{ ml: 1 }}>
-                        <FormControl fullWidth sx={{ ml: 1 }}>
-                            <InputLabel id="role-select-label">Machine</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Vendor"
-                                value={selectedMainAssembly.machine_id}
-                                error={!!errors?.machine_id}
-                                onChange={(e: any) => {
-                                    setSelectedMainAssembly({ ...selectedMainAssembly, machine_id: e.target.value })
-                                }}
-                            >
-                                {machines.map((machine) => {
-                                    return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                            <FormControl fullWidth sx={{ ml: 1 }}>
+                                <InputLabel id="role-select-label">Machine</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Vendor"
+                                    value={selectedMainAssembly.machine_id}
+                                    error={!!errors?.machine_id}
+                                    onChange={(e: any) => {
+                                        setSelectedMainAssembly({ ...selectedMainAssembly, machine_id: e.target.value })
+                                    }}
+                                >
+                                    {machines.map((machine) => {
+                                        return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new machine" onClick={() => navigate('/machines', { state: { openCreate: true } })} />
+                        </Box>
                     </Grid2>
                 </Grid2>
 

@@ -37,6 +37,7 @@ import SupplierAcceptance from './pages/SupplierAcceptance';
 import Stores from './pages/Stores';
 import Assembly from './pages/Assembly';
 import NewDashboard from './pages/NewDashboard';
+import OperationsDashboard from './pages/OperationsDashboard';
 import Enquiry from './pages/Enquiry';
 import Attendance from './pages/Attendance';
 import LeaveRequest from './pages/LeaveRequest';
@@ -77,6 +78,7 @@ import V2Quotations from './v2/pages/V2Quotations';
 import V2Assembly from './v2/pages/V2Assembly';
 import V2Orders from './v2/pages/V2Orders';
 import V2OrderDetail from './v2/pages/V2OrderDetail';
+import V2OperationsDashboard from './v2/pages/V2OperationsDashboard';
 import V2Enquiry from './v2/pages/V2Enquiry';
 import V2VendorAcceptance from './v2/pages/V2VendorAcceptance';
 import V2SupplierAcceptance from './v2/pages/V2SupplierAcceptance';
@@ -91,7 +93,9 @@ function App() {
           <Route path="/login" element={<Login />} />
          </Route>
         <Route element={<ProtectedLayout />}>
-          <Route path="/" element={<NewDashboard />} />
+          <Route path="/" element={<OperationsDashboard />} />
+          <Route path="/operations-dashboard" element={<OperationsDashboard />} />
+          <Route path="/old-dashboard" element={<NewDashboard />} />
           <Route path="/users" element={<Users />} />
           <Route path="/roles" element={<Roles />} />
           <Route path="/vendors" element={<Vendors />} />
@@ -134,7 +138,9 @@ function App() {
             <Route path="login" element={<V2Login />} />
           </Route>
           <Route element={<V2ProtectedLayout />}>
-            <Route index element={<V2Dashboard />} />
+            <Route index element={<V2OperationsDashboard />} />
+            <Route path="operations-dashboard" element={<V2OperationsDashboard />} />
+            <Route path="old-dashboard" element={<V2Dashboard />} />
             <Route path="users" element={<V2Users />} />
             <Route path="roles" element={<V2Roles />} />
             <Route path="vendors" element={<V2Vendors />} />

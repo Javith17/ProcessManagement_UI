@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux-hooks';
 import { useEffect } from 'react';
 import { fetchProcessList, fetchVendors } from '../../slices/adminSlice';
+import AddNewIconButton from '../../components/AddNewIconButton';
 import { TextField, Button, Grid2, Box, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Checkbox, ListItemText, SelectChangeEvent, Card, Dialog, List, ListItem, ListItemButton, DialogTitle, DialogActions, DialogContent, Typography } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Chip from '@mui/material/Chip';
@@ -737,31 +738,34 @@ export default function V2EditPart() {
                     </Button>
                 </>}
             >
-                    <FormControl fullWidth
-                        error={!!errors?.vendor_name}>
-                        <InputLabel id="role-select-label">Vendor</InputLabel>
-                        <Select
-                            size={'small'}
-                            labelId="role-select-label"
-                            id="role-select"
-                            label="Vendor"
+                    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                        <FormControl fullWidth
+                            error={!!errors?.vendor_name}>
+                            <InputLabel id="role-select-label">Vendor</InputLabel>
+                            <Select
+                                size={'small'}
+                                labelId="role-select-label"
+                                id="role-select"
+                                label="Vendor"
 
-                            value={selectedVendor.vendor_id}
-                            onChange={(e) => {
-                                setSelectedVendor({ ...selectedVendor, vendor_id: e.target.value, vendor_name: vendors.list?.find((v) => v.id == e.target.value)?.vendor_name })
-                            }}
-                        >
+                                value={selectedVendor.vendor_id}
+                                onChange={(e) => {
+                                    setSelectedVendor({ ...selectedVendor, vendor_id: e.target.value, vendor_name: vendors.list?.find((v) => v.id == e.target.value)?.vendor_name })
+                                }}
+                            >
 
-                            {!editVendor && vendors && vendors.list?.length > 0 && vendors.list?.map((vendor) => {
-                                const vendor_process = vendor.process_list?.filter((p: any) => p.process_id == selectedProcess)
-                                const existing_vendor = partVendor.filter((v: any) => v.vendor_id == vendor.id && v.process_id == selectedProcess)
-                                if (existing_vendor.length == 0) {
-                                    return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
-                                }
-                            })}
-                            {editVendor && <MenuItem value={selectedVendor.vendor_id}>{selectedVendor.vendor_name}</MenuItem>}
-                        </Select>
-                    </FormControl>
+                                {!editVendor && vendors && vendors.list?.length > 0 && vendors.list?.map((vendor) => {
+                                    const vendor_process = vendor.process_list?.filter((p: any) => p.process_id == selectedProcess)
+                                    const existing_vendor = partVendor.filter((v: any) => v.vendor_id == vendor.id && v.process_id == selectedProcess)
+                                    if (existing_vendor.length == 0) {
+                                        return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
+                                    }
+                                })}
+                                {editVendor && <MenuItem value={selectedVendor.vendor_id}>{selectedVendor.vendor_name}</MenuItem>}
+                            </Select>
+                        </FormControl>
+                        <AddNewIconButton title="Add new vendor" onClick={() => navigate('/v2/vendors/newVendor')} />
+                    </Box>
 
                     <TextField
                         size={'small'}

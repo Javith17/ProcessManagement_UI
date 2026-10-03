@@ -421,7 +421,7 @@ export const createNewEnquiry = createAsyncThunk('createEnquiry', async (data: a
     const response = await axiosInstance.post('admin/createEnquiry', data, {
         headers: { 'Authorization': 'Bearer ' + JSON.parse(localStorage.getItem("userDetail") as string).accessToken }
     })
-    const resData = response.data.message
+    const resData = response.data
     return resData
 })
 

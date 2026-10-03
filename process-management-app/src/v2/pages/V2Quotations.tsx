@@ -11,8 +11,10 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { Box, Button, Card, CardMedia, CardActionArea, Grid2, InputAdornment, Paper, TextField, FormControl, Alert, Tabs, Tab, InputLabel, FormHelperText, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux-hooks';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createNewProcess, fetchCustomers, fetchProcessList, fetchRoles, fetchSuppliers, fetchUsers, fetchVendors } from '../../slices/adminSlice';
 import { Add, ClosedCaptionDisabled, CloseSharp, Search } from '@mui/icons-material';
+import AddNewIconButton from '../../components/AddNewIconButton';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -52,6 +54,7 @@ const quotationStatusVariant = (status: string): V2BadgeVariant => {
 
 export default function V2Quotations() {
     const dispatch = useAppDispatch()
+    const navigate = useNavigate()
     const { enqueueSnackbar } = useSnackbar()
 
     const { machines, parts, boughtOuts } = useAppSelector(
@@ -1101,26 +1104,29 @@ export default function V2Quotations() {
                     />}
 
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel id="role-select-label">Customer</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Customer"
-                                disabled={!isNew}
-                                value={formData.customer_id}
-                                error={!!errors?.customer_id}
-                                onChange={(e: any) => {
-                                    setFormData({ ...formData, customer_id: e.target.value })
-                                }}
-                            >
-                                {customers && customers.list.length > 0 && customers?.list.map((customer) => {
-                                    return <MenuItem value={customer.id}>{customer.customer_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.customer_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.customer_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, width: '100%' }}>
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel id="role-select-label">Customer</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Customer"
+                                    disabled={!isNew}
+                                    value={formData.customer_id}
+                                    error={!!errors?.customer_id}
+                                    onChange={(e: any) => {
+                                        setFormData({ ...formData, customer_id: e.target.value })
+                                    }}
+                                >
+                                    {customers && customers.list.length > 0 && customers?.list.map((customer) => {
+                                        return <MenuItem value={customer.id}>{customer.customer_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.customer_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.customer_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new customer" onClick={() => navigate('/v2/customers/newCustomer')} />
+                        </Box>
 
                         <FormControl fullWidth sx={{ mt: 2, ml: 2 }}>
                             <InputLabel id="role-select-label">Followup User</InputLabel>
@@ -1144,33 +1150,36 @@ export default function V2Quotations() {
                     </Box>
 
 
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                        <InputLabel id="role-select-label">Machine</InputLabel>
-                        <Select
-                            size={'small'}
-                            labelId="role-select-label"
-                            id="role-select"
-                            label="Machine"
-                            disabled={!isNew}
-                            value={formData.machine_id}
-                            error={!!errors?.machine_id}
-                            onChange={(e: any) => {
-                                const mac = machines.find((m: any) => m.id == e.target.value)
-                                setFormData({ ...formData, machine_id: e.target.value, qty: mac.min_spindles })
-                                setSelectedMachine({
-                                    machine_id: e.target.value,
-                                    min_spindles: mac.min_spindles,
-                                    max_spindles: mac.max_spindles,
-                                    spindles: mac.spindles
-                                })
-                            }}
-                        >
-                            {machines && machines.length > 0 && machines?.map((machine) => {
-                                return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
-                            })}
-                        </Select>
-                        {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
-                    </FormControl>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel id="role-select-label">Machine</InputLabel>
+                            <Select
+                                size={'small'}
+                                labelId="role-select-label"
+                                id="role-select"
+                                label="Machine"
+                                disabled={!isNew}
+                                value={formData.machine_id}
+                                error={!!errors?.machine_id}
+                                onChange={(e: any) => {
+                                    const mac = machines.find((m: any) => m.id == e.target.value)
+                                    setFormData({ ...formData, machine_id: e.target.value, qty: mac.min_spindles })
+                                    setSelectedMachine({
+                                        machine_id: e.target.value,
+                                        min_spindles: mac.min_spindles,
+                                        max_spindles: mac.max_spindles,
+                                        spindles: mac.spindles
+                                    })
+                                }}
+                            >
+                                {machines && machines.length > 0 && machines?.map((machine) => {
+                                    return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
+                                })}
+                            </Select>
+                            {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
+                        </FormControl>
+                        <AddNewIconButton title="Add new machine" onClick={() => navigate('/v2/machines', { state: { openCreate: true } })} />
+                    </Box>
 
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -1405,26 +1414,29 @@ export default function V2Quotations() {
                     />}
 
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel id="role-select-label">Vendor</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Vendor"
-                                value={vendorFormData.vendor_id}
-                                error={!!errors?.vendor_id}
-                                disabled={isApprove}
-                                onChange={(e: any) => {
-                                    setVendorFormData({ ...vendorFormData, vendor_id: e.target.value })
-                                }}
-                            >
-                                {vendors && vendors.list.length > 0 && vendors?.list.map((vendor) => {
-                                    return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.vendor_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.vendor_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, width: '100%' }}>
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel id="role-select-label">Vendor</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Vendor"
+                                    value={vendorFormData.vendor_id}
+                                    error={!!errors?.vendor_id}
+                                    disabled={isApprove}
+                                    onChange={(e: any) => {
+                                        setVendorFormData({ ...vendorFormData, vendor_id: e.target.value })
+                                    }}
+                                >
+                                    {vendors && vendors.list.length > 0 && vendors?.list.map((vendor) => {
+                                        return <MenuItem value={vendor.id}>{vendor.vendor_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.vendor_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.vendor_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new vendor" onClick={() => navigate('/v2/vendors/newVendor')} />
+                        </Box>
 
                         <FormControl fullWidth sx={{ mt: 2, ml: 2 }}>
                             <InputLabel id="role-select-label">Part</InputLabel>
@@ -1632,26 +1644,29 @@ export default function V2Quotations() {
                     />}
 
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel id="role-select-label">Supplier</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Vendor"
-                                value={supplierFormData.supplier_id}
-                                error={!!errors?.supplier_id}
-                                disabled={isApprove}
-                                onChange={(e: any) => {
-                                    setSupplierFormData({ ...supplierFormData, supplier_id: e.target.value })
-                                }}
-                            >
-                                {suppliers && suppliers.list.length > 0 && suppliers?.list.map((supplier) => {
-                                    return <MenuItem value={supplier.id}>{supplier.supplier_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.supplier_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.supplier_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, width: '100%' }}>
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel id="role-select-label">Supplier</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Vendor"
+                                    value={supplierFormData.supplier_id}
+                                    error={!!errors?.supplier_id}
+                                    disabled={isApprove}
+                                    onChange={(e: any) => {
+                                        setSupplierFormData({ ...supplierFormData, supplier_id: e.target.value })
+                                    }}
+                                >
+                                    {suppliers && suppliers.list.length > 0 && suppliers?.list.map((supplier) => {
+                                        return <MenuItem value={supplier.id}>{supplier.supplier_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.supplier_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.supplier_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new supplier" onClick={() => navigate('/v2/suppliers/newSupplier')} />
+                        </Box>
 
                         <FormControl fullWidth sx={{ mt: 2, ml: 2 }}>
                             <InputLabel id="role-select-label">Boughtout</InputLabel>
@@ -1807,25 +1822,28 @@ export default function V2Quotations() {
                     />}
 
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel id="role-select-label">Customer</InputLabel>
-                            <Select
-                                size={'small'}
-                                labelId="role-select-label"
-                                id="role-select"
-                                label="Customer"
-                                value={sparesFormData.customer_id}
-                                error={!!errors?.customer_id}
-                                onChange={(e: any) => {
-                                    setSparesFormData({ ...sparesFormData, customer_id: e.target.value })
-                                }}
-                            >
-                                {customers && customers.list.length > 0 && customers?.list.map((customer) => {
-                                    return <MenuItem value={customer.id}>{customer.customer_name}</MenuItem>
-                                })}
-                            </Select>
-                            {errors?.customer_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.customer_id}</FormHelperText> : <></>}
-                        </FormControl>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1, width: '100%' }}>
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                                <InputLabel id="role-select-label">Customer</InputLabel>
+                                <Select
+                                    size={'small'}
+                                    labelId="role-select-label"
+                                    id="role-select"
+                                    label="Customer"
+                                    value={sparesFormData.customer_id}
+                                    error={!!errors?.customer_id}
+                                    onChange={(e: any) => {
+                                        setSparesFormData({ ...sparesFormData, customer_id: e.target.value })
+                                    }}
+                                >
+                                    {customers && customers.list.length > 0 && customers?.list.map((customer) => {
+                                        return <MenuItem value={customer.id}>{customer.customer_name}</MenuItem>
+                                    })}
+                                </Select>
+                                {errors?.customer_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.customer_id}</FormHelperText> : <></>}
+                            </FormControl>
+                            <AddNewIconButton title="Add new customer" onClick={() => navigate('/v2/customers/newCustomer')} />
+                        </Box>
 
                         <FormControl fullWidth sx={{ mt: 2, ml: 2 }}>
                             <InputLabel id="role-select-label">Followup User</InputLabel>
@@ -1849,32 +1867,35 @@ export default function V2Quotations() {
                     </Box>
 
 
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                        <InputLabel id="role-select-label">Machine</InputLabel>
-                        <Select
-                            size={'small'}
-                            labelId="role-select-label"
-                            id="role-select"
-                            label="Machine"
-                            value={sparesFormData.machine_id}
-                            error={!!errors?.machine_id}
-                            onChange={(e: any) => {
-                                const mac = machines.find((m: any) => m.id == e.target.value)
-                                setSparesFormData({ ...sparesFormData, machine_id: e.target.value })
-                                setSelectedMachine({
-                                    machine_id: e.target.value,
-                                    min_spindles: mac.min_spindles,
-                                    max_spindles: mac.max_spindles,
-                                    spindles: mac.spindles
-                                })
-                            }}
-                        >
-                            {machines && machines.length > 0 && machines?.map((machine) => {
-                                return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
-                            })}
-                        </Select>
-                        {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
-                    </FormControl>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel id="role-select-label">Machine</InputLabel>
+                            <Select
+                                size={'small'}
+                                labelId="role-select-label"
+                                id="role-select"
+                                label="Machine"
+                                value={sparesFormData.machine_id}
+                                error={!!errors?.machine_id}
+                                onChange={(e: any) => {
+                                    const mac = machines.find((m: any) => m.id == e.target.value)
+                                    setSparesFormData({ ...sparesFormData, machine_id: e.target.value })
+                                    setSelectedMachine({
+                                        machine_id: e.target.value,
+                                        min_spindles: mac.min_spindles,
+                                        max_spindles: mac.max_spindles,
+                                        spindles: mac.spindles
+                                    })
+                                }}
+                            >
+                                {machines && machines.length > 0 && machines?.map((machine) => {
+                                    return <MenuItem value={machine.id}>{machine.machine_name}</MenuItem>
+                                })}
+                            </Select>
+                            {errors?.machine_id ? <FormHelperText sx={{ color: errorTextColor }}>{errors?.machine_id}</FormHelperText> : <></>}
+                        </FormControl>
+                        <AddNewIconButton title="Add new machine" onClick={() => navigate('/v2/machines', { state: { openCreate: true } })} />
+                    </Box>
 
                     {spareParts.map((sap, index) => {
                         return (<Box sx={{ display: 'flex', flexDirection: 'row', mt: 2 }}>

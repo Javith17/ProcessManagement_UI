@@ -14,7 +14,7 @@ import { Add, Search } from '@mui/icons-material';
 import { createAttachment, createNewMachine, deleteMachine, fetchBoughtOutList, fetchMachineAttachmentLinks, fetchMachineList } from '../slices/machineSlice';
 import { nav_boughtouts, nav_machines, TableRowStyled } from '../constants';
 import RefreshButton from '../components/RefreshButton';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import DisplaySnackbar from '../utils/DisplaySnackbar';
 import { useSnackbar } from 'notistack';
@@ -23,6 +23,7 @@ import { useSnackbar } from 'notistack';
 export default function Machines() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const { enqueueSnackbar } = useSnackbar()
 
   const { machines, machineStatus } = useAppSelector(
@@ -49,6 +50,14 @@ export default function Machines() {
   useEffect(() => {
     dispatch(fetchMachineList()).unwrap()
   }, [])
+
+  useEffect(() => {
+    if (state?.openCreate) {
+      setErrors({})
+      setCreateDialog(true)
+      navigate('.', { replace: true, state: null })
+    }
+  }, [state])
 
   const handleSearch = () => {
     dispatch(fetchMachineList(searchText)).unwrap()

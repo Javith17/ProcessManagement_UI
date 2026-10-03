@@ -15,6 +15,7 @@ import { Add, ArrowBackIos, Save, Search, Settings } from '@mui/icons-material';
 import { ImCheckboxChecked } from "react-icons/im";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
+import AddNewIconButton from '../components/AddNewIconButton';
 import { nav_customers, nav_subassembly, TableRowStyled, VisuallyHiddenInput } from '../constants';
 import { createAttachment, createImage, fetchBOListByMachine, fetchBoughtOutList, fetchMachineList, fetchPartsList, fetchPartsListByMachine } from '../slices/machineSlice';
 import { checkAssemblyName, createSubAssembly, fetchSubAssembly } from '../slices/assemblySlice';
@@ -251,6 +252,7 @@ export default function NewSubAssembly() {
 
           <Grid2 size={12}>
             <Card sx={{ padding: 2, mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
               <FormControl fullWidth margin="normal">
                 <InputLabel id="demo-multiple-checkbox-label">Machine</InputLabel>
                 <Select
@@ -280,6 +282,8 @@ export default function NewSubAssembly() {
                   ))}
                 </Select>
               </FormControl>
+              <AddNewIconButton title="Add new machine" onClick={() => navigate('/machines', { state: { openCreate: true } })} />
+              </Box>
             </Card>
           </Grid2>
 

@@ -35,7 +35,7 @@ import { FiCpu } from "react-icons/fi";
 import { PiHandArrowDownBold } from "react-icons/pi";
 import { FaUsersLine } from "react-icons/fa6";
 import { Collapse, Tooltip } from '@mui/material';
-import { navHoverBackground, navIconColor, navTextColor, primaryColor } from '../constants';
+import { navHoverBackground, navIconColor, navTextColor, primaryColor, nav_operations_dashboard } from '../constants';
 import { GiCircuitry } from "react-icons/gi";
 import { SiApplearcade } from "react-icons/si";
 import { VscTypeHierarchySub } from "react-icons/vsc";
@@ -44,6 +44,7 @@ import { getPermission, getPermissionScreens } from '../utils/Permissions';
 import { logout } from '../slices/authSlice';
 import { useAppDispatch } from '../hooks/redux-hooks';
 import { FaStroopwafel } from "react-icons/fa";
+import { MdSpaceDashboard } from "react-icons/md";
 
 const drawerWidth = 240;
 
@@ -261,7 +262,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
           
           <Typography variant="h6" noWrap component="div">
             <img src={ceLogo} alt="" width={"50px"} height={"50px"} />
-            {getPermission()?.length > 0 ? getPermission().find((per:any)=> per.screen == menuData).name : ""}
+            {getPermission()?.length > 0 ? (getPermission().find((per:any)=> per.screen == menuData)?.name || "") : ""}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -274,7 +275,30 @@ export default function SidebarNav(props: {currentPage?: string}) {
         <Divider />
         
           <List>
-            {homeScreens?.map((hs:any) => (
+            <ListItem key={nav_operations_dashboard} ref={menuData == nav_operations_dashboard ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={() => {
+                setMenuData(nav_operations_dashboard)
+                navigate("/operations-dashboard")
+              }} >
+                <ListItemButton
+                  sx={[
+                    { height: 40, minHeight: 28, px: 2.5, backgroundColor: menuData == nav_operations_dashboard ? primaryColor : 'white',
+                      ":hover":{ backgroundColor: menuData == nav_operations_dashboard ? primaryColor : navHoverBackground } },
+                    open ? { justifyContent: 'initial', } : { justifyContent: 'center', }]}>
+                  <ListItemIcon
+                    sx={[
+                      { minWidth: 0, justifyContent: 'center', backgroundColor: menuData == nav_operations_dashboard ? primaryColor : 'white',
+                        color: menuData == nav_operations_dashboard ? 'white' : navIconColor,":hover":{ backgroundColor: menuData == nav_operations_dashboard ? primaryColor : navHoverBackground } },
+                      open ? { mr: 3, } : { mr: 'auto', },]} >
+                      <MdSpaceDashboard />
+                    </ListItemIcon>
+                  <ListItemText
+                    primary="Operations Dashboard"
+                    sx={[{color: menuData == nav_operations_dashboard ? 'white' : navTextColor},
+                      open ? {  opacity: 1 } : { opacity: 0 } ]} />
+                </ListItemButton>
+              </ListItem>
+
+            {homeScreens?.filter((hs:any) => hs.screen !== 'dashboard').map((hs:any) => (
               <ListItem key={hs.screen} ref={menuData == hs.screen ? activeItemRef : undefined} disablePadding sx={{ display: 'block' }} onClick={()=>{
                   setMenuData(hs.screen)
                   if(hs.screen == "dashboard") {
@@ -312,7 +336,7 @@ export default function SidebarNav(props: {currentPage?: string}) {
                     </ListItemButton>
               </ListItem>
             ))}
-          
+
           </List>
         {/* </Collapse> */}
           
