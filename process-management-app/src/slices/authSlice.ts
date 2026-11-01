@@ -25,12 +25,16 @@ const initialState: AuthApiState = {
     productionBoughtout: {}
 }
 
-export const login = createAsyncThunk("login", async (data: SignIn) => {
-    const response = await axiosInstance.post("auth/signIn", data);
-    const resData = response.data
+export const login = createAsyncThunk("login", async (data: SignIn, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post("auth/signIn", data);
+        const resData = response.data
 
-    localStorage.setItem("userDetail", JSON.stringify(resData))
-    return resData
+        localStorage.setItem("userDetail", JSON.stringify(resData))
+        return resData
+    } catch (error: any) {
+        return rejectWithValue(error?.response?.data)
+    }
 })
 
 export const productionPartDetail = createAsyncThunk("productionPartDetail", async (data: any) => {
@@ -81,7 +85,7 @@ const authSlice = createSlice({
             })
             .addCase(login.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.error.message || 'Login failed'
+                state.error = (action.payload as any)?.message || action.error.message || 'Login failed'
             })
 
             

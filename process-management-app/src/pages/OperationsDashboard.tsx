@@ -23,7 +23,7 @@ import { nav_operations_dashboard, TableRowStyled } from '../constants';
 import { useAppDispatch } from '../hooks/redux-hooks';
 import { getRole, SuperAdminRole, AdminRole, StoreRole, EngineerRole, FollowupRole } from '../utils/Permissions';
 import DisplaySnackbar from '../utils/DisplaySnackbar';
-import { fetchEnquiries } from '../slices/adminSlice';
+import { fetchEmployeeAttendanceList, fetchEnquiries, fetchLeaveRequestList } from '../slices/adminSlice';
 import { fetchOrdersList, fetchOrdersDetail, movePartToAssembly, moveBoughtoutToAssembly } from '../slices/quotationSlice';
 import {
     fetchDashboardDetail, fetchOrderParts, fetchPartsInStores, fetchPendingDeliveryBOs, fetchPendingDeliveryParts,
@@ -90,6 +90,17 @@ function statusChartData(values?: StatusCount[]): { label: string, value: number
     return (values || []).map((v) => ({ label: v.status, value: Number(v.count) || 0 }));
 }
 
+function buildVendorDueBuckets(vendorDues: any[]): { label: string, value: number }[] {
+    return vendorDues.map((v) => ({ label: v.name, value: Number(v.pending_payment) || 0 }));
+}
+
+function buildSupplierDueBuckets(supplierDues: any[]): { label: string, value: number }[] {
+    return bucketSumByField(
+        supplierDues.map((s) => ({ ...s, pending_amount: Math.max(0, (Number(s.cost) || 0) - (Number(s.paid_amount) || 0)) })),
+        'supplier_name', 'pending_amount'
+    );
+}
+
 function assemblyStageIndex(items?: AssemblyItems): number {
     const subItems = items?.subAssembly || [];
     const mainItems = items?.mainAssembly || [];
@@ -128,6 +139,10 @@ export default function OperationsDashboard() {
     const [vendorDues, setVendorDues] = useState<any[]>([]);
     const [supplierDues, setSupplierDues] = useState<any[]>([]);
     const [lowStockParts, setLowStockParts] = useState<any[]>([]);
+
+    // ---- Admin state ----
+    const [pendingLeaveRequests, setPendingLeaveRequests] = useState<any[]>([]);
+    const [todaysAttendance, setTodaysAttendance] = useState<any[]>([]);
 
     const [orderDialog, setOrderDialog] = useState<{ open: boolean, order?: any }>({ open: false });
     const [orderDetailsPopup, setOrderDetailsPopup] = useState<{ open: boolean, order?: any }>({ open: false });
@@ -183,7 +198,7 @@ export default function OperationsDashboard() {
     useEffect(() => {
         if (!currentRole) return;
 
-        if (currentRole === SuperAdminRole || currentRole === AdminRole) {
+        if (currentRole === SuperAdminRole) {
             Promise.all(ENQUIRY_STATUSES.map((s) =>
                 dispatch(fetchEnquiries({ status: s })).unwrap().then((res: any): [string, any[]] => [s, res?.list || []])
             )).then((entries) => setEnquiriesByStatus(Object.fromEntries(entries)));
@@ -202,6 +217,14 @@ export default function OperationsDashboard() {
             dispatch(fetchPendingPaymentBOs({})).unwrap().then((res: any) => setSupplierDues(res?.list || []));
 
             dispatch(fetchPartsInStores({})).unwrap().then((res: any) => setLowStockParts(res?.list || []));
+        }
+
+        if (currentRole === AdminRole) {
+            dispatch(fetchEnquiries({ status: 'In Progress' })).unwrap().then((res: any) => setEnquiriesByStatus({ 'In Progress': res?.list || [] }));
+            dispatch(fetchVendorsWithPendingPayment({})).unwrap().then((res: any) => setVendorDues(res?.list || []));
+            dispatch(fetchPendingPaymentBOs({})).unwrap().then((res: any) => setSupplierDues(res?.list || []));
+            dispatch(fetchLeaveRequestList({ status: 'Pending' })).unwrap().then((res: any) => setPendingLeaveRequests(res?.list || []));
+            dispatch(fetchEmployeeAttendanceList({ attendance_date: moment().format('YYYY-MM-DD') })).unwrap().then((res: any) => setTodaysAttendance(res?.list || []));
         }
 
         if (currentRole === FollowupRole) {
@@ -446,11 +469,8 @@ export default function OperationsDashboard() {
             quantity: proc.order_qty ?? p.pm_order_qty,
         })));
         const supplierBOBuckets = bucketSumByField(pendingBOs, 'bo_supplier_name');
-        const vendorDueBuckets = vendorDues.map((v) => ({ label: v.name, value: Number(v.pending_payment) || 0 }));
-        const supplierDueBuckets = bucketSumByField(
-            supplierDues.map((s) => ({ ...s, pending_amount: Math.max(0, (Number(s.cost) || 0) - (Number(s.paid_amount) || 0)) })),
-            'supplier_name', 'pending_amount'
-        );
+        const vendorDueBuckets = buildVendorDueBuckets(vendorDues);
+        const supplierDueBuckets = buildSupplierDueBuckets(supplierDues);
 
         const filteredEnquiries = activeEnquiryStatus ? (enquiriesByStatus[activeEnquiryStatus] || []) : inProgressEnquiries;
         const filteredOrders = activeOrderStatus ? allOrders.filter((o) => o.status === activeOrderStatus) : inProgressOrders;
@@ -597,6 +617,118 @@ export default function OperationsDashboard() {
 
                 <Typography variant="h6" sx={{ mt: 3, mb: 1 }} id="lowstock-section">Low-stock parts</Typography>
                 <LowStockTable parts={lowStockParts} lowStockOnly onView={() => navigate('/parts')} />
+            </>
+        );
+    };
+
+    const renderAdminSection = () => {
+        const inProgressEnquiries = enquiriesByStatus['In Progress'] || [];
+        const vendorDueBuckets = buildVendorDueBuckets(vendorDues);
+        const supplierDueBuckets = buildSupplierDueBuckets(supplierDues);
+        const vendorDueTotal = vendorDueBuckets.reduce((s, b) => s + b.value, 0);
+        const supplierDueTotal = supplierDueBuckets.reduce((s, b) => s + b.value, 0);
+        const presentCount = todaysAttendance.filter((a) => a.status === 'Present').length;
+        const leaveCount = todaysAttendance.filter((a) => a.status === 'Leave').length;
+        const absentCount = todaysAttendance.filter((a) => a.status === 'Absent').length;
+
+        return (
+            <>
+                <Grid2 container spacing={2} sx={{ mb: 4 }}>
+                    <Grid2 size={{ xs: 6, md: 2.4 }}><StatTile label="In-progress enquiries" value={inProgressEnquiries.length} color={dashboardColors.info} onClick={() => scrollToId('admin-enquiries-section')} /></Grid2>
+                    <Grid2 size={{ xs: 6, md: 2.4 }}><StatTile label="Pending leave requests" value={pendingLeaveRequests.length} color={dashboardColors.warn} onClick={() => scrollToId('admin-leave-section')} /></Grid2>
+                    <Grid2 size={{ xs: 6, md: 2.4 }}><StatTile label="Present today" value={presentCount} sub={`${leaveCount} on leave · ${absentCount} absent`} color={dashboardColors.good} onClick={() => scrollToId('admin-attendance-section')} /></Grid2>
+                    <Grid2 size={{ xs: 6, md: 2.4 }}><StatTile label="Pending amount — vendors" value={`₹${vendorDueTotal}`} color={dashboardColors.critical} onClick={() => scrollToId('admin-vendor-dues-section')} /></Grid2>
+                    <Grid2 size={{ xs: 6, md: 2.4 }}><StatTile label="Pending amount — suppliers" value={`₹${supplierDueTotal}`} color={dashboardColors.critical} onClick={() => scrollToId('admin-supplier-dues-section')} /></Grid2>
+                </Grid2>
+
+                <Typography variant="h6" sx={{ mb: 1 }} id="admin-enquiries-section">In-progress enquiries</Typography>
+                <TableContainer component={Paper}>
+                    <Table sx={{ '& .MuiTableCell-head': { backgroundColor: '#fadbda', fontWeight: 'bold' } }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Customer Name</TableCell>
+                                <TableCell>Machine Name</TableCell>
+                                <TableCell>Follow-up User</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {inProgressEnquiries.length > 0 ? inProgressEnquiries.map((row: any) => (
+                                <TableRowStyled key={row.id}>
+                                    <TableCell>{row.customer_name}</TableCell>
+                                    <TableCell>{row.machine_name}</TableCell>
+                                    <TableCell>{row.level2_user?.emp_name || '—'}</TableCell>
+                                    <TableCell style={{ cursor: 'pointer' }}><MdOutlineRemoveRedEye onClick={() => navigate('/enquiries')} /></TableCell>
+                                </TableRowStyled>
+                            )) : <TableRow><TableCell colSpan={4} align="center">No Data</TableCell></TableRow>}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                <Typography variant="h6" sx={{ mt: 3, mb: 1 }} id="admin-leave-section">Pending leave requests</Typography>
+                <TableContainer component={Paper}>
+                    <Table sx={{ '& .MuiTableCell-head': { backgroundColor: '#fadbda', fontWeight: 'bold' } }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Employee</TableCell>
+                                <TableCell>Leave Date</TableCell>
+                                <TableCell>Description</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {pendingLeaveRequests.length > 0 ? pendingLeaveRequests.map((row: any) => (
+                                <TableRowStyled key={row.id}>
+                                    <TableCell>{row.user?.emp_name}</TableCell>
+                                    <TableCell>{row.leave_date ? moment(row.leave_date).format('DD-MM-YYYY') : '—'}</TableCell>
+                                    <TableCell>{row.description || '—'}</TableCell>
+                                    <TableCell style={{ cursor: 'pointer' }}><MdOutlineRemoveRedEye onClick={() => navigate('/leave-request')} /></TableCell>
+                                </TableRowStyled>
+                            )) : <TableRow><TableCell colSpan={4} align="center">No Data</TableCell></TableRow>}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                <Typography variant="h6" sx={{ mt: 3, mb: 1 }} id="admin-attendance-section">Today's attendance</Typography>
+                <TableContainer component={Paper}>
+                    <Table sx={{ '& .MuiTableCell-head': { backgroundColor: '#fadbda', fontWeight: 'bold' } }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Employee</TableCell>
+                                <TableCell>Check In</TableCell>
+                                <TableCell>Check Out</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {todaysAttendance.length > 0 ? todaysAttendance.map((row: any, idx: number) => (
+                                <TableRowStyled key={row.id || idx}>
+                                    <TableCell>{row.emp_name}</TableCell>
+                                    <TableCell>{row.check_in_time ? new Date(Number(row.check_in_time)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}</TableCell>
+                                    <TableCell>{row.check_out_time ? new Date(Number(row.check_out_time)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '—'}</TableCell>
+                                    <TableCell>{row.status || '—'}</TableCell>
+                                    <TableCell style={{ cursor: 'pointer' }}><MdOutlineRemoveRedEye onClick={() => navigate('/attendance')} /></TableCell>
+                                </TableRowStyled>
+                            )) : <TableRow><TableCell colSpan={5} align="center">No Data</TableCell></TableRow>}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                <Grid2 container spacing={2} sx={{ mt: 3 }}>
+                    <Grid2 size={{ xs: 12, md: 6 }} id="admin-vendor-dues-section">
+                        <Card sx={{ p: 2 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Pending amount — vendors</Typography>
+                            <BucketTable data={vendorDueBuckets} labelHeader="Vendor" valueHeader="Pending Amount" valueFormatter={(v) => `₹${v}`} />
+                        </Card>
+                    </Grid2>
+                    <Grid2 size={{ xs: 12, md: 6 }} id="admin-supplier-dues-section">
+                        <Card sx={{ p: 2 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Pending amount — suppliers</Typography>
+                            <BucketTable data={supplierDueBuckets} labelHeader="Supplier" valueHeader="Pending Amount" valueFormatter={(v) => `₹${v}`} />
+                        </Card>
+                    </Grid2>
+                </Grid2>
             </>
         );
     };
@@ -951,7 +1083,8 @@ export default function OperationsDashboard() {
                     <RefreshButton onClick={handleRefresh} />
                 </Box>
 
-                {(currentRole === SuperAdminRole || currentRole === AdminRole) && renderSuperAdminSection()}
+                {currentRole === SuperAdminRole && renderSuperAdminSection()}
+                {currentRole === AdminRole && renderAdminSection()}
                 {currentRole === FollowupRole && renderFollowupSection()}
                 {currentRole === StoreRole && renderStoresSection()}
                 {currentRole === EngineerRole && renderEngineerSection()}

@@ -17,23 +17,30 @@ import {
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
+import { useSnackbar } from "notistack";
 import { useAppDispatch, useAppSelector } from "../hooks/redux-hooks";
 import { login } from "../slices/authSlice";
+import DisplaySnackbar from "../utils/DisplaySnackbar";
 import ceLogo from "../assets/image/ce_logo.png"
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useAppDispatch()
+  const { enqueueSnackbar } = useSnackbar()
   const { status } = useAppSelector(
           (state) => state.auth
   );
 
   const handleLogin = async () => {
-      await dispatch(login({
-          emp_code : email,
-          password: password
-      })).unwrap()
+      try {
+          await dispatch(login({
+              emp_code : email,
+              password: password
+          })).unwrap()
+      } catch (err: any) {
+          DisplaySnackbar(err?.statusCode === 403 ? 'Invalid Credentials' : (err?.message || 'Login failed'), 'error', enqueueSnackbar)
+      }
   };
   return (
     <>
